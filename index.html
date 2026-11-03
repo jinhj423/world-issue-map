@@ -469,7 +469,7 @@ function renderKeyword(kw){
   rows.sort((x,y)=>(y[2].k*(y[2].sc||1))-(x[2].k*(x[2].sc||1)));
   const nC=new Set(rows.map(r=>r[0])).size;
   side.innerHTML=`
-    <button type="button" class="back" data-clearkw><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>오늘 순위</button>
+    <button type="button" class="back" data-clearkw><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
     <h2>‘${esc(kw)}’가 나온 뉴스</h2>
     <p class="sub">${nC}개 나라 · ${rows.length}건 · 지도에도 이 단어가 나온 나라만 남아요.</p>
     <ul class="news">${rows.slice(0,30).map(([a,c,i])=>`<li>
@@ -489,7 +489,7 @@ function renderCountry(a2){
   const hasLocal=c.local&&c.local.length, showLocal=state.tab==="local"&&hasLocal;
   if(state.ckw&&!showLocal) items=items.filter(i=>i.t.includes(state.ckw));
   side.innerHTML=`
-    <button type="button" class="back" data-back><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>오늘 순위</button>
+    <button type="button" class="back" data-back><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
     <h2 class="cname">${esc(c.ko)}</h2>
     <p class="cstat">${esc(c.region)} · ${bits.join(" · ")}</p>
     ${cs.length>1?`<div class="mix"><div class="bar">${cs.map(k=>`<span style="width:${100*c.cats[k]/total}%;background:${CAT_COLOR[k]}"></span>`).join("")}</div>
