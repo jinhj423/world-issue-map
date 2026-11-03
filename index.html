@@ -173,6 +173,14 @@ dialog ul{padding-left:18px;margin:8px 0}
 dialog li{margin-bottom:6px}
 dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;padding:9px 20px;font-weight:700;margin-top:8px}
 
+/* 데스크톱: 순위 카드는 지도 카드 높이만큼만, 내부 스크롤 */
+@media (min-width:981px){
+  .side{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .side::-webkit-scrollbar{width:10px}
+  .side::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:3px solid var(--card)}
+  .side::-webkit-scrollbar-track{background:transparent}
+}
+
 /* ── 모바일 ── */
 .nav{display:none}
 @media (max-width:980px){
@@ -381,8 +389,13 @@ function legend(){
     ST.map((s,i)=>`<span class="sw"><i style="background:${s}"></i>${["뉴스 적음","보통","많음"][i]}</span>`).join("")+
     `<span class="sw"><i style="background:${LAND}"></i>집계 밖</span>`;
 }
-layout();paint();
-new ResizeObserver(()=>layout()).observe(stage);
+function sizeSide(){
+  const side=document.getElementById("side");
+  if(innerWidth>980) side.style.maxHeight=document.querySelector(".mapcard").offsetHeight+"px";
+  else side.style.maxHeight="";
+}
+layout();paint();sizeSide();
+new ResizeObserver(()=>{layout();sizeSide()}).observe(stage);
 
 const zoom=d3.zoom().scaleExtent([1,8]).on("zoom",e=>{T=e.transform;g.attr("transform",T);marks()});
 svg.call(zoom).on("dblclick.zoom",null);
@@ -479,7 +492,7 @@ side.addEventListener("click",e=>{
 function select(a2,fromHash){
   state.sel=a2;state.tab="ko";hideTip();
   if(!fromHash){try{history.replaceState(null,"",a2?"#"+a2:location.pathname+location.search)}catch(e){}}
-  paint();render();
+  paint();render();side.scrollTop=0;
   if(a2) side.scrollIntoView({behavior:reduceMotion?"auto":"smooth",block:"nearest"});
 }
 const fromHash=()=>{const h=location.hash.slice(1).toUpperCase();select(C[h]&&C[h].n?h:null,true)};
