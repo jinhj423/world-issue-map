@@ -1,0 +1,850 @@
+{
+ "countries": [
+  {
+   "a2": "KR",
+   "ko": "대한민국",
+   "region": "아시아",
+   "aliases": [],
+   "exclude": [],
+   "local": "KR:ko",
+   "id": "410",
+   "lon": 127.82,
+   "lat": 36.42,
+   "point": false
+  },
+  {
+   "a2": "KP",
+   "ko": "북한",
+   "region": "아시아",
+   "aliases": [
+    "북한",
+    "北"
+   ],
+   "exclude": [
+    "北美",
+    "北극",
+    "北欧"
+   ],
+   "local": null,
+   "id": "408",
+   "lon": 127.13,
+   "lat": 40.13,
+   "point": false
+  },
+  {
+   "a2": "CN",
+   "ko": "중국",
+   "region": "아시아",
+   "aliases": [
+    "중국",
+    "中"
+   ],
+   "exclude": [
+    "中企",
+    "中東",
+    "中小",
+    "中銀",
+    "中道",
+    "中間",
+    "中期",
+    "中高",
+    "中低",
+    "中장기",
+    "中견"
+   ],
+   "local": "CN:zh-Hans",
+   "id": "156",
+   "lon": 103.42,
+   "lat": 36.75,
+   "point": false
+  },
+  {
+   "a2": "JP",
+   "ko": "일본",
+   "region": "아시아",
+   "aliases": [
+    "일본",
+    "日"
+   ],
+   "exclude": [],
+   "local": "JP:ja",
+   "id": "392",
+   "lon": 136.71,
+   "lat": 36.01,
+   "point": false
+  },
+  {
+   "a2": "TW",
+   "ko": "대만",
+   "region": "아시아",
+   "aliases": [
+    "대만",
+    "타이완"
+   ],
+   "exclude": [],
+   "local": "TW:zh-Hant",
+   "id": "158",
+   "lon": 120.97,
+   "lat": 23.74,
+   "point": false
+  },
+  {
+   "a2": "MN",
+   "ko": "몽골",
+   "region": "아시아",
+   "aliases": [
+    "몽골"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "496",
+   "lon": 103.02,
+   "lat": 46.95,
+   "point": false
+  },
+  {
+   "a2": "IN",
+   "ko": "인도",
+   "region": "아시아",
+   "aliases": [
+    "인도"
+   ],
+   "exclude": [
+    "인도네시아",
+    "인도양",
+    "인도적",
+    "인도주의",
+    "인도교"
+   ],
+   "local": "IN:en",
+   "id": "356",
+   "lon": 79.54,
+   "lat": 22.82,
+   "point": false
+  },
+  {
+   "a2": "PK",
+   "ko": "파키스탄",
+   "region": "아시아",
+   "aliases": [
+    "파키스탄"
+   ],
+   "exclude": [],
+   "local": "PK:en",
+   "id": "586",
+   "lon": 69.23,
+   "lat": 29.91,
+   "point": false
+  },
+  {
+   "a2": "AF",
+   "ko": "아프가니스탄",
+   "region": "아시아",
+   "aliases": [
+    "아프가니스탄",
+    "아프간",
+    "탈레반"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "004",
+   "lon": 66,
+   "lat": 33.84,
+   "point": false
+  },
+  {
+   "a2": "BD",
+   "ko": "방글라데시",
+   "region": "아시아",
+   "aliases": [
+    "방글라데시"
+   ],
+   "exclude": [],
+   "local": "BD:bn",
+   "id": "050",
+   "lon": 90.28,
+   "lat": 23.83,
+   "point": false
+  },
+  {
+   "a2": "ID",
+   "ko": "인도네시아",
+   "region": "아시아",
+   "aliases": [
+    "인도네시아",
+    "인니"
+   ],
+   "exclude": [],
+   "local": "ID:id",
+   "id": "360",
+   "lon": 114.02,
+   "lat": -0.25,
+   "point": false
+  },
+  {
+   "a2": "VN",
+   "ko": "베트남",
+   "region": "아시아",
+   "aliases": [
+    "베트남"
+   ],
+   "exclude": [],
+   "local": "VN:vi",
+   "id": "704",
+   "lon": 106.33,
+   "lat": 16.56,
+   "point": false
+  },
+  {
+   "a2": "TH",
+   "ko": "태국",
+   "region": "아시아",
+   "aliases": [
+    "태국"
+   ],
+   "exclude": [],
+   "local": "TH:th",
+   "id": "764",
+   "lon": 101,
+   "lat": 14.98,
+   "point": false
+  },
+  {
+   "a2": "PH",
+   "ko": "필리핀",
+   "region": "아시아",
+   "aliases": [
+    "필리핀"
+   ],
+   "exclude": [],
+   "local": "PH:en",
+   "id": "608",
+   "lon": 121.55,
+   "lat": 15.74,
+   "point": false
+  },
+  {
+   "a2": "MY",
+   "ko": "말레이시아",
+   "region": "아시아",
+   "aliases": [
+    "말레이시아"
+   ],
+   "exclude": [],
+   "local": "MY:en",
+   "id": "458",
+   "lon": 114.67,
+   "lat": 3.55,
+   "point": false
+  },
+  {
+   "a2": "SG",
+   "ko": "싱가포르",
+   "region": "아시아",
+   "aliases": [
+    "싱가포르"
+   ],
+   "exclude": [],
+   "local": "SG:en",
+   "id": "702",
+   "lon": 103.82,
+   "lat": 1.35,
+   "point": true
+  },
+  {
+   "a2": "MM",
+   "ko": "미얀마",
+   "region": "아시아",
+   "aliases": [
+    "미얀마"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "104",
+   "lon": 96.51,
+   "lat": 20.94,
+   "point": false
+  },
+  {
+   "a2": "AU",
+   "ko": "호주",
+   "region": "오세아니아",
+   "aliases": [
+    "호주"
+   ],
+   "exclude": [],
+   "local": "AU:en",
+   "id": "036",
+   "lon": 134.23,
+   "lat": -25.62,
+   "point": false
+  },
+  {
+   "a2": "NZ",
+   "ko": "뉴질랜드",
+   "region": "오세아니아",
+   "aliases": [
+    "뉴질랜드"
+   ],
+   "exclude": [],
+   "local": "NZ:en",
+   "id": "554",
+   "lon": 170.6,
+   "lat": -43.96,
+   "point": false
+  },
+  {
+   "a2": "IR",
+   "ko": "이란",
+   "region": "중동",
+   "aliases": [
+    "이란"
+   ],
+   "exclude": [
+    "이란성"
+   ],
+   "local": null,
+   "id": "364",
+   "lon": 54.45,
+   "lat": 32.47,
+   "point": false
+  },
+  {
+   "a2": "IQ",
+   "ko": "이라크",
+   "region": "중동",
+   "aliases": [
+    "이라크"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "368",
+   "lon": 43.79,
+   "lat": 33.01,
+   "point": false
+  },
+  {
+   "a2": "SY",
+   "ko": "시리아",
+   "region": "중동",
+   "aliases": [
+    "시리아"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "760",
+   "lon": 38.52,
+   "lat": 35.01,
+   "point": false
+  },
+  {
+   "a2": "IL",
+   "ko": "이스라엘",
+   "region": "중동",
+   "aliases": [
+    "이스라엘"
+   ],
+   "exclude": [],
+   "local": "IL:he",
+   "id": "376",
+   "lon": 35,
+   "lat": 31.48,
+   "point": false
+  },
+  {
+   "a2": "PS",
+   "ko": "팔레스타인",
+   "region": "중동",
+   "aliases": [
+    "팔레스타인",
+    "가자",
+    "하마스",
+    "가자지구"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "275",
+   "lon": 35.27,
+   "lat": 31.94,
+   "point": false
+  },
+  {
+   "a2": "LB",
+   "ko": "레바논",
+   "region": "중동",
+   "aliases": [
+    "레바논",
+    "헤즈볼라"
+   ],
+   "exclude": [],
+   "local": "LB:ar",
+   "id": "422",
+   "lon": 35.87,
+   "lat": 33.91,
+   "point": false
+  },
+  {
+   "a2": "YE",
+   "ko": "예멘",
+   "region": "중동",
+   "aliases": [
+    "예멘",
+    "후티"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "887",
+   "lon": 47.52,
+   "lat": 15.92,
+   "point": false
+  },
+  {
+   "a2": "SA",
+   "ko": "사우디아라비아",
+   "region": "중동",
+   "aliases": [
+    "사우디"
+   ],
+   "exclude": [],
+   "local": "SA:ar",
+   "id": "682",
+   "lon": 44.64,
+   "lat": 24.09,
+   "point": false
+  },
+  {
+   "a2": "AE",
+   "ko": "아랍에미리트",
+   "region": "중동",
+   "aliases": [
+    "UAE",
+    "아랍에미리트",
+    "두바이",
+    "아부다비"
+   ],
+   "exclude": [],
+   "local": "AE:ar",
+   "id": "784",
+   "lon": 54.2,
+   "lat": 23.87,
+   "point": false
+  },
+  {
+   "a2": "QA",
+   "ko": "카타르",
+   "region": "중동",
+   "aliases": [
+    "카타르"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "634",
+   "lon": 51.18,
+   "lat": 25.32,
+   "point": false
+  },
+  {
+   "a2": "TR",
+   "ko": "튀르키예",
+   "region": "중동",
+   "aliases": [
+    "튀르키예",
+    "터키"
+   ],
+   "exclude": [],
+   "local": "TR:tr",
+   "id": "792",
+   "lon": 35.37,
+   "lat": 39.06,
+   "point": false
+  },
+  {
+   "a2": "EG",
+   "ko": "이집트",
+   "region": "아프리카",
+   "aliases": [
+    "이집트"
+   ],
+   "exclude": [],
+   "local": "EG:ar",
+   "id": "818",
+   "lon": 29.86,
+   "lat": 26.47,
+   "point": false
+  },
+  {
+   "a2": "SD",
+   "ko": "수단",
+   "region": "아프리카",
+   "aliases": [
+    "수단"
+   ],
+   "exclude": [
+    "수단과",
+    "수단을",
+    "수단으로",
+    "수단이",
+    "결제수단",
+    "교통수단",
+    "수단·"
+   ],
+   "local": null,
+   "id": "729",
+   "lon": 29.83,
+   "lat": 15.97,
+   "point": false
+  },
+  {
+   "a2": "ET",
+   "ko": "에티오피아",
+   "region": "아프리카",
+   "aliases": [
+    "에티오피아"
+   ],
+   "exclude": [],
+   "local": "ET:en",
+   "id": "231",
+   "lon": 39.56,
+   "lat": 8.65,
+   "point": false
+  },
+  {
+   "a2": "KE",
+   "ko": "케냐",
+   "region": "아프리카",
+   "aliases": [
+    "케냐"
+   ],
+   "exclude": [],
+   "local": "KE:en",
+   "id": "404",
+   "lon": 37.79,
+   "lat": 0.6,
+   "point": false
+  },
+  {
+   "a2": "NG",
+   "ko": "나이지리아",
+   "region": "아프리카",
+   "aliases": [
+    "나이지리아"
+   ],
+   "exclude": [],
+   "local": "NG:en",
+   "id": "566",
+   "lon": 7.99,
+   "lat": 9.54,
+   "point": false
+  },
+  {
+   "a2": "ZA",
+   "ko": "남아프리카공화국",
+   "region": "아프리카",
+   "aliases": [
+    "남아공",
+    "남아프리카"
+   ],
+   "exclude": [],
+   "local": "ZA:en",
+   "id": "710",
+   "lon": 25.16,
+   "lat": -28.92,
+   "point": false
+  },
+  {
+   "a2": "CD",
+   "ko": "콩고민주공화국",
+   "region": "아프리카",
+   "aliases": [
+    "콩고",
+    "민주콩고"
+   ],
+   "exclude": [],
+   "local": null,
+   "id": "180",
+   "lon": 23.58,
+   "lat": -2.84,
+   "point": false
+  },
+  {
+   "a2": "US",
+   "ko": "미국",
+   "region": "미주",
+   "aliases": [
+    "미국",
+    "美",
+    "트럼프"
+   ],
+   "exclude": [
+    "美術",
+    "美용",
+    "美인",
+    "美食"
+   ],
+   "local": "US:en",
+   "id": "840",
+   "lon": -98.5,
+   "lat": 39.5,
+   "point": false
+  },
+  {
+   "a2": "CA",
+   "ko": "캐나다",
+   "region": "미주",
+   "aliases": [
+    "캐나다"
+   ],
+   "exclude": [],
+   "local": "CA:en",
+   "id": "124",
+   "lon": -97.86,
+   "lat": 58.45,
+   "point": false
+  },
+  {
+   "a2": "MX",
+   "ko": "멕시코",
+   "region": "미주",
+   "aliases": [
+    "멕시코"
+   ],
+   "exclude": [],
+   "local": "MX:es-419",
+   "id": "484",
+   "lon": -102.22,
+   "lat": 23.91,
+   "point": false
+  },
+  {
+   "a2": "BR",
+   "ko": "브라질",
+   "region": "미주",
+   "aliases": [
+    "브라질"
+   ],
+   "exclude": [],
+   "local": "BR:pt-419",
+   "id": "076",
+   "lon": -53.17,
+   "lat": -10.66,
+   "point": false
+  },
+  {
+   "a2": "AR",
+   "ko": "아르헨티나",
+   "region": "미주",
+   "aliases": [
+    "아르헨티나"
+   ],
+   "exclude": [],
+   "local": "AR:es-419",
+   "id": "032",
+   "lon": -64.74,
+   "lat": -34.57,
+   "point": false
+  },
+  {
+   "a2": "CL",
+   "ko": "칠레",
+   "region": "미주",
+   "aliases": [
+    "칠레"
+   ],
+   "exclude": [],
+   "local": "CL:es-419",
+   "id": "152",
+   "lon": -71.24,
+   "lat": -35.88,
+   "point": false
+  },
+  {
+   "a2": "CO",
+   "ko": "콜롬비아",
+   "region": "미주",
+   "aliases": [
+    "콜롬비아"
+   ],
+   "exclude": [],
+   "local": "CO:es-419",
+   "id": "170",
+   "lon": -73.07,
+   "lat": 3.92,
+   "point": false
+  },
+  {
+   "a2": "VE",
+   "ko": "베네수엘라",
+   "region": "미주",
+   "aliases": [
+    "베네수엘라"
+   ],
+   "exclude": [],
+   "local": "VE:es-419",
+   "id": "862",
+   "lon": -66.15,
+   "lat": 7.16,
+   "point": false
+  },
+  {
+   "a2": "CU",
+   "ko": "쿠바",
+   "region": "미주",
+   "aliases": [
+    "쿠바"
+   ],
+   "exclude": [],
+   "local": "CU:es-419",
+   "id": "192",
+   "lon": -78.93,
+   "lat": 21.65,
+   "point": false
+  },
+  {
+   "a2": "GB",
+   "ko": "영국",
+   "region": "유럽",
+   "aliases": [
+    "영국",
+    "英"
+   ],
+   "exclude": [],
+   "local": "GB:en",
+   "id": "826",
+   "lon": -2.57,
+   "lat": 53.77,
+   "point": false
+  },
+  {
+   "a2": "FR",
+   "ko": "프랑스",
+   "region": "유럽",
+   "aliases": [
+    "프랑스",
+    "佛"
+   ],
+   "exclude": [],
+   "local": "FR:fr",
+   "id": "250",
+   "lon": 2.4,
+   "lat": 46.6,
+   "point": false
+  },
+  {
+   "a2": "DE",
+   "ko": "독일",
+   "region": "유럽",
+   "aliases": [
+    "독일",
+    "獨"
+   ],
+   "exclude": [],
+   "local": "DE:de",
+   "id": "276",
+   "lon": 10.27,
+   "lat": 51.08,
+   "point": false
+  },
+  {
+   "a2": "IT",
+   "ko": "이탈리아",
+   "region": "유럽",
+   "aliases": [
+    "이탈리아"
+   ],
+   "exclude": [],
+   "local": "IT:it",
+   "id": "380",
+   "lon": 12.37,
+   "lat": 43.43,
+   "point": false
+  },
+  {
+   "a2": "ES",
+   "ko": "스페인",
+   "region": "유럽",
+   "aliases": [
+    "스페인"
+   ],
+   "exclude": [],
+   "local": "ES:es",
+   "id": "724",
+   "lon": -3.62,
+   "lat": 40.32,
+   "point": false
+  },
+  {
+   "a2": "NL",
+   "ko": "네덜란드",
+   "region": "유럽",
+   "aliases": [
+    "네덜란드"
+   ],
+   "exclude": [],
+   "local": "NL:nl",
+   "id": "528",
+   "lon": 5.5,
+   "lat": 52.29,
+   "point": false
+  },
+  {
+   "a2": "PL",
+   "ko": "폴란드",
+   "region": "유럽",
+   "aliases": [
+    "폴란드"
+   ],
+   "exclude": [],
+   "local": "PL:pl",
+   "id": "616",
+   "lon": 19.34,
+   "lat": 52.13,
+   "point": false
+  },
+  {
+   "a2": "UA",
+   "ko": "우크라이나",
+   "region": "유럽",
+   "aliases": [
+    "우크라이나",
+    "우크라",
+    "젤렌스키"
+   ],
+   "exclude": [],
+   "local": "UA:uk",
+   "id": "804",
+   "lon": 31.29,
+   "lat": 49.19,
+   "point": false
+  },
+  {
+   "a2": "RU",
+   "ko": "러시아",
+   "region": "유럽",
+   "aliases": [
+    "러시아",
+    "露",
+    "푸틴"
+   ],
+   "exclude": [],
+   "local": "RU:ru",
+   "id": "643",
+   "lon": 95.72,
+   "lat": 65.94,
+   "point": false
+  },
+  {
+   "a2": "SE",
+   "ko": "스웨덴",
+   "region": "유럽",
+   "aliases": [
+    "스웨덴"
+   ],
+   "exclude": [],
+   "local": "SE:sv",
+   "id": "752",
+   "lon": 16.11,
+   "lat": 62.42,
+   "point": false
+  }
+ ]
+}

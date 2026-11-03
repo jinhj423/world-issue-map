@@ -1,0 +1,6 @@
+build/
+preview.html
+drafts/
+__pycache__/
+*.pyc
+*.png
