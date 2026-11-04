@@ -28,8 +28,9 @@
   --map1:#D8E6FB; --map2:#8FB8F4; --map3:#3182F6;
   --blue:#3182F6; --red:#F04438; --tipbg:#191F28;
   --inv-bg:#191F28; --inv-fg:#FFFFFF; --raise:#FFFFFF;
-  --c-conflict:#F04438; --c-disaster:#F79009; --c-politics:#3182F6; --c-economy:#12B76A;
-  --c-tech:#7A5AF8; --c-society:#667085; --c-etc:#98A2B3;
+  --c-conflict:#F04438; --c-disaster:#F79009; --c-health:#DD4F93; --c-politics:#3182F6;
+  --c-energy:#0E9384; --c-economy:#12B76A; --c-tech:#7A5AF8; --c-sports:#85B210;
+  --c-society:#667085; --c-etc:#98A2B3;
   --sans:"Gothic A1","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;
   --r:20px;
 }
@@ -39,8 +40,9 @@ html[data-theme="dark"]{
   --map1:#2C4A75; --map2:#3E71C0; --map3:#61A0FF;
   --blue:#5B9BFF; --red:#FF6257; --tipbg:#33373E;
   --inv-bg:#F0F2F5; --inv-fg:#15171B; --raise:#3A3F47;
-  --c-conflict:#FF6257; --c-disaster:#FFAB3D; --c-politics:#5B9BFF; --c-economy:#2FD080;
-  --c-tech:#9D85FF; --c-society:#98A2B3; --c-etc:#6C7682;
+  --c-conflict:#FF6257; --c-disaster:#FFAB3D; --c-health:#F679B8; --c-politics:#5B9BFF;
+  --c-energy:#2CC5B2; --c-economy:#2FD080; --c-tech:#9D85FF; --c-sports:#A8D94A;
+  --c-society:#98A2B3; --c-etc:#6C7682;
 }
 html[data-theme="dark"] .brand .pv{background:#42201E;color:#FF9B93}
 html[data-theme="dark"] .mark{box-shadow:0 1px 5px rgba(0,0,0,.55)}
@@ -307,8 +309,8 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
 <!--INLINE_DATA-->
 <script>
 (async function(){
-const CAT_ORDER=["conflict","disaster","politics","economy","tech","society","etc"];
-const CAT_W={conflict:1.3,disaster:1.3,politics:1.1,economy:1.0,tech:.9,society:.8,etc:.8};
+const CAT_ORDER=["conflict","disaster","health","politics","energy","economy","tech","sports","society","etc"];
+const CAT_W={conflict:1.3,disaster:1.3,health:1.1,politics:1.1,energy:1.0,economy:1.0,tech:.9,sports:.6,society:.8,etc:.8};
 const cv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let CAT_COLOR={}; const readCats=()=>{CAT_COLOR=Object.fromEntries(CAT_ORDER.map(k=>[k,cv("--c-"+k)]))}; readCats();
 const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
