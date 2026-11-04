@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import newsmap  # noqa: E402
 
 ROOT = newsmap.ROOT
-DATA = ROOT / "data"
+DATA = ROOT / "public" / "data"
 UA = "Mozilla/5.0 (compatible; WorldIssueMap/1.0; +https://github.com/)"
 LI_RE = re.compile(r"<li\b", re.I)
 

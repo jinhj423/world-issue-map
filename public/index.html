@@ -7,7 +7,7 @@
 <meta name="description" content="자기 전 3분, 오늘 세계에서 무슨 일이 있었는지. 56개국 뉴스를 한국어 헤드라인으로 모아 지도와 순위로 보여줍니다.">
 <meta name="theme-color" id="metaTheme" content="#F2F4F6">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="이슈 지도">
@@ -313,7 +313,7 @@ const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ── 데이터 ──
 let data=window.__NEWS__, world=window.__WORLD__;
 try{
-  if(!data) data=await (await fetch("../data/news.json",{cache:"no-cache"})).json();
+  if(!data) data=await (await fetch("data/news.json",{cache:"no-cache"})).json();
   if(!world) world=await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")).json();
 }catch(e){document.getElementById("loading").textContent="데이터를 불러오지 못했어요. 새로고침해 주세요.";return}
 document.getElementById("loading").remove();

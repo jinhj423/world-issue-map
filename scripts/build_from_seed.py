@@ -23,7 +23,7 @@ now = datetime(2026, 11, 3, 23, 30, tzinfo=newsmap.KST)
 ds = newsmap.build_dataset(raw, {}, now, "2026년 11월 3일 웹 검색으로 모은 실제 기사 헤드라인(미리보기)",
                            filter_mentions=False)
 ds["preview"] = True
-out = ROOT / "data" / "news.json"
+out = ROOT / "public" / "data" / "news.json"
 out.write_text(json.dumps(ds, ensure_ascii=False, separators=(",", ":")), "utf-8")
 print("countries with items:", sum(1 for d in ds["countries"].values() if d["n"]), "/", len(ds["countries"]))
 for a2 in ds["ranking"][:12]:
