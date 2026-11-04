@@ -66,6 +66,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .top .how{font-size:13px;font-weight:500;color:var(--ink-3)}
 .top .how:hover{color:var(--ink-2)}
 .how .short{display:none}
+.appbtn{color:var(--blue);font-weight:700}
+.appbtn:hover{color:var(--blue)}
 .theme{width:34px;height:34px;border-radius:50%;background:var(--card);display:grid;place-items:center;color:var(--ink-2)}
 .theme:hover{color:var(--ink)}
 .theme svg{display:none}
@@ -236,6 +238,7 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   <header class="top" id="secToday">
     <span class="brand"><i></i>세계 이슈 지도<span class="pv" id="pv" hidden>미리보기</span></span>
     <div class="topr">
+      <button type="button" class="how appbtn" id="installBtn" hidden>앱 설치</button>
       <button type="button" class="how" id="aboutBtn"><span class="full">순위는 어떻게 매기나요?</span><span class="short">계산법</span></button>
       <button type="button" class="theme" id="themeBtn" aria-label="어두운 화면으로">
         <svg class="ic-moon" width="17" height="17" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -579,13 +582,15 @@ fromHash(); if(!state.sel) render();
   var standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
   if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js")}catch(e){}}
   if(standalone) return;
-  var dismissed=null; try{dismissed=localStorage.getItem("wim-install")}catch(e){}
-  if(dismissed) return;
-  var bar=null;
+  var btn=document.getElementById("installBtn");
+  var ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  var deferred=null, bar=null;
+  btn.hidden=false;
+  function snoozed(){ try{var t=+localStorage.getItem("wim-install")||0; return Date.now()-t < 3*864e5}catch(e){return false} }
   function close(save){ if(bar){bar.remove();bar=null}
-    if(save){try{localStorage.setItem("wim-install","1")}catch(e){}} }
+    if(save){try{localStorage.setItem("wim-install",String(Date.now()))}catch(e){}} }
   function show(msg,goLabel,onGo){
-    if(bar) return;
+    close(false);
     bar=document.createElement("div"); bar.className="install"; bar.setAttribute("role","dialog");
     bar.innerHTML='<span class="ico" aria-hidden="true"><i></i></span><p>'+msg+'</p><span class="btns">'
       +(onGo?'<button type="button" class="go">'+goLabel+'</button>':'')
@@ -594,18 +599,20 @@ fromHash(); if(!state.sel) render();
     var go=bar.querySelector(".go"); if(go) go.onclick=onGo;
     bar.querySelector(".no").onclick=function(){close(true)};
   }
-  var deferred=null;
+  function doPrompt(){ if(!deferred) return; deferred.prompt();
+    deferred.userChoice.then(function(){close(true);deferred=null}); }
+  function openInstall(){
+    if(deferred) return doPrompt();
+    if(ios) return show("아이폰은 사파리에서 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null);
+    show("브라우저 메뉴(⋮ 또는 주소창 오른쪽 아이콘)에서 <b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 누르면 설치돼요. 크롬·엣지에서 가장 잘 돼요.",null,null);
+  }
+  btn.onclick=openInstall;
   addEventListener("beforeinstallprompt",function(e){
     e.preventDefault(); deferred=e;
-    show("<b>앱으로 설치</b>할 수 있어요. 홈 화면에서 바로 열립니다.","설치하기",function(){
-      if(!deferred) return; deferred.prompt();
-      deferred.userChoice.then(function(){close(true);deferred=null});
-    });
+    if(!snoozed()) show("<b>앱으로 설치</b>할 수 있어요. 홈 화면에서 바로 열립니다.","설치하기",doPrompt);
   });
-  addEventListener("appinstalled",function(){close(true)});
-  // iOS 사파리는 설치 이벤트가 없어서 안내만
-  var ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-  if(ios) setTimeout(function(){ if(!bar) show("아이폰은 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null) },1500);
+  addEventListener("appinstalled",function(){close(true);btn.hidden=true});
+  if(ios&&!snoozed()) setTimeout(function(){ if(!bar) show("아이폰은 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null) },1500);
 })();
 </script>
 </body>
