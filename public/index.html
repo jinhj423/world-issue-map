@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="이슈 지도">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233182F6'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='white'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233182F6'/%3E%3Cg fill='none' stroke='white' stroke-width='2'%3E%3Ccircle cx='16' cy='17' r='8'/%3E%3Cellipse cx='16' cy='17' rx='3.5' ry='8'/%3E%3Cpath d='M8.3 14.3h15.4M8.3 19.7h15.4'/%3E%3C/g%3E%3Ccircle cx='23' cy='9' r='3.4' fill='%23FF5D52' stroke='%233182F6' stroke-width='1.8'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:title" content="세계 이슈 지도">
 <meta property="og:description" content="자기 전 3분, 오늘 세계에서 무슨 일이 있었는지. 56개국 뉴스를 한국어로.">
@@ -60,7 +60,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* ── 상단 ── */
 .top{display:flex;justify-content:space-between;align-items:center;padding:18px 2px 6px}
 .brand{font-size:16px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
-.brand i{width:10px;height:10px;border-radius:50%;background:var(--blue);display:inline-block}
+.brand svg{display:block;border-radius:5px}
 .brand .pv{font-size:12px;font-weight:700;color:var(--red);background:#FEE4E2;border-radius:10px;padding:2px 8px}
 .topr{display:flex;align-items:center;gap:16px}
 .top .how{font-size:13px;font-weight:500;color:var(--ink-3)}
@@ -239,7 +239,7 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
 <body>
 <div class="shell">
   <header class="top" id="secToday">
-    <span class="brand"><i></i>세계 이슈 지도<span class="pv" id="pv" hidden>미리보기</span></span>
+    <span class="brand"><svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#3182F6"/><g fill="none" stroke="#fff" stroke-width="2"><circle cx="16" cy="17" r="8"/><ellipse cx="16" cy="17" rx="3.5" ry="8"/><path d="M8.3 14.3h15.4M8.3 19.7h15.4"/></g><circle cx="23" cy="9" r="3.4" fill="#FF5D52" stroke="#3182F6" stroke-width="1.8"/></svg>세계 이슈 지도<span class="pv" id="pv" hidden>미리보기</span></span>
     <div class="topr">
       <button type="button" class="how appbtn" id="installBtn" hidden>앱 설치</button>
       <button type="button" class="how" id="aboutBtn"><span class="full">순위는 어떻게 매기나요?</span><span class="short">계산법</span></button>

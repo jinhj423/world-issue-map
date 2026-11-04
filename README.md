@@ -20,7 +20,11 @@ scripts/build_preview.py       라이브러리와 데이터를 한 파일로 묶
 tests/fixtures/*.xml           네트워크 없이 파싱을 확인하는 샘플 RSS
 ```
 
-## 배포 — 결정: GitHub Pages 단독
+## 배포 — 2026-11-04부터 Cloudflare Workers
+
+본 주소 **https://wnm.jinhj423-42b.workers.dev/** — main에 푸시하면 Workers Builds가 자동 배포(`wrangler.jsonc`). 아래 GitHub Pages 절차는 과거 기록이다.
+
+### (과거) GitHub Pages 단독
 
 저장소 하나로 수집·데이터·서빙을 전부 해결하고, 배포 횟수 제한이 없어서(공개 저장소는 Actions 무료·무제한) 30분마다 데이터를 커밋해도 비용이 0원입니다. Cloudflare Pages는 무료 플랜의 월 500회 빌드 제한에 30분 주기 커밋(월 ~1,440회)이 걸려서 제외했습니다.
 

@@ -1,7 +1,7 @@
 // Cloudflare Workers 설정 — main에 푸시하면 Workers Builds가 npx wrangler deploy로 자동 배포
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "issue-map",
+  "name": "wnm",
   "compatibility_date": "2026-01-01",
   "assets": { "directory": "./public" }
 }

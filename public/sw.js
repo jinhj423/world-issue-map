@@ -1,5 +1,5 @@
 // 세계 이슈 지도 — 서비스 워커: 설치 요건 + 오프라인에서 마지막 데이터 보여주기
-const V = "wim-v2";
+const V = "wim-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", e => {
