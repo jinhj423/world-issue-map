@@ -89,6 +89,12 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .grid{display:grid;grid-template-columns:1fr 404px;gap:16px;align-items:start}
 .card{background:var(--card);border-radius:var(--r);padding:22px 22px 20px}
 .card h2{font-size:17px;font-weight:800;margin:0 0 2px;letter-spacing:-.01em}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.shead h2{margin:0}
+.sorttab{display:flex;gap:3px;background:var(--soft);border-radius:10px;padding:3px;flex:0 0 auto}
+.sorttab button{padding:4px 10px;font-size:12px;font-weight:700;color:var(--ink-3);border-radius:8px;white-space:nowrap}
+.sorttab button[aria-pressed="true"]{background:var(--raise);color:var(--ink);box-shadow:0 1px 3px rgba(25,31,40,.12)}
+html[data-theme="dark"] .sorttab button[aria-pressed="true"]{box-shadow:none}
 .card .sub{font-size:13px;color:var(--ink-3);margin:0 0 14px}
 .card .sub button{color:var(--blue);font-weight:600}
 
@@ -324,7 +330,8 @@ try{
 document.getElementById("loading").remove();
 const C=data.countries, CAT=data.categories;
 const byId={}; for(const [a2,c] of Object.entries(C)) if(c.id) byId[c.id]=a2;
-const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null};
+const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null,sort:"hot"};
+try{if(localStorage.getItem("wim-sort")==="new")state.sort="new"}catch(e){}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 // ── 인사말 ──
@@ -468,13 +475,26 @@ words.onclick=e=>{const b=e.target.closest("button");if(!b)return;
 // ── 오른쪽 카드 ──
 const side=document.getElementById("side");
 const BASE=8, STEP=12; let shown=BASE;
+function sortTab(){
+  return `<div class="sorttab" role="group" aria-label="정렬">
+    <button type="button" data-sort="hot" aria-pressed="${state.sort==="hot"}">뜨거운 순</button>
+    <button type="button" data-sort="new" aria-pressed="${state.sort==="new"}">최신순</button></div>`;
+}
+function latestRows(){
+  const rows=[];
+  for(const a of ranked()){const c=C[a];
+    for(const i of c.items){ if(state.cat!=="all"&&i.c!==state.cat) continue; rows.push([a,c,i]); }}
+  rows.sort((x,y)=>(y[2].p||"").localeCompare(x[2].p||""));
+  return rows;
+}
 function render(){
   if(state.sel) return renderCountry(state.sel);
   if(state.kw) return renderKeyword(state.kw);
+  if(state.sort==="new") return renderLatest();
   const list=ranked();
   const head=state.cat==="all"?"지금 뜨거운 나라":`${CAT[state.cat]}, 지금 뜨거운 나라`;
   side.innerHTML=`
-    <h2>${head}</h2>
+    <div class="shead"><h2>${head}</h2>${sortTab()}</div>
     <p class="sub">${state.kw?`'${esc(state.kw)}'가 나온 나라만 보고 있어요. <button type="button" data-clearkw>모두 보기</button>`:"같은 사건을 다룬 기사가 많을수록 위로 와요."}</p>
     ${list.slice(0,shown).map((a,i)=>{const c=C[a],it=state.cat==="all"?c.items[0]:c.items.find(x=>x.c===state.cat);
       return `<button type="button" class="story${i<3?" hot":""}" data-a2="${a}"><span class="no">${i+1}</span><span>
@@ -502,6 +522,21 @@ function renderKeyword(kw){
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
       <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${i.k>1?`<span>관련 ${i.k}건</span>`:""}</div>
     </li>`).join("")||`<li class="empty">이 단어가 제목에 들어간 뉴스가 없어요.</li>`}</ul>`;
+}
+function renderLatest(){
+  const rows=latestRows();
+  const head=state.cat==="all"?"방금 올라온 뉴스":`${CAT[state.cat]} 최신 뉴스`;
+  side.innerHTML=`
+    <div class="shead"><h2>${head}</h2>${sortTab()}</div>
+    <p class="sub">새로 올라온 기사부터 보여드려요. 나라 이름을 누르면 그 나라로 갑니다.</p>
+    <ul class="news">${rows.slice(0,shown).map(([a,c,i])=>`<li>
+      <button type="button" class="ctag" data-a2="${a}">${esc(c.ko)}</button>
+      <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
+      <div class="meta">${i.p?`<span>${when(i.p)}</span>`:""}<span>${esc(i.s)}</span>${i.k>1?`<span>관련 ${i.k}건</span>`:""}<span class="cat"><i style="background:${CAT_COLOR[i.c]}"></i>${CAT[i.c]}</span></div>
+    </li>`).join("")||`<li class="empty">이 조건에 맞는 뉴스가 없어요.</li>`}</ul>
+    ${rows.length>shown||shown>BASE?`<div class="morebar">
+      ${rows.length>shown?`<button type="button" class="more" data-more>뉴스 ${Math.min(STEP,rows.length-shown)}개 더 보기 · ${rows.length-shown}개 남음</button>`:""}
+      ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
 function renderCountry(a2){
   const c=C[a2];
@@ -534,10 +569,11 @@ side.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
   if(t.dataset.a2) select(t.dataset.a2);
   else if("back" in t.dataset) select(null);
-  else if("more" in t.dataset){shown=Math.min(shown+STEP,ranked().length);render()}
+  else if("more" in t.dataset){shown=Math.min(shown+STEP,state.sort==="new"?latestRows().length:ranked().length);render()}
   else if("fold" in t.dataset){shown=BASE;render();side.scrollIntoView({behavior:"auto",block:"start"})}
   else if(t.dataset.tab){state.tab=t.dataset.tab;if(state.tab==="local")state.ckw=null;render()}
   else if(t.dataset.ckw!==undefined){state.ckw=t.dataset.ckw||null;render()}
+  else if(t.dataset.sort){state.sort=t.dataset.sort;shown=BASE;try{localStorage.setItem("wim-sort",state.sort)}catch(e){}render()}
   else if("clearkw" in t.dataset){state.kw=null;words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));paint();render()}
 });
 function select(a2,fromHash){
