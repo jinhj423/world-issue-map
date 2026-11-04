@@ -604,7 +604,7 @@ fromHash(); if(!state.sel) render();
   function openInstall(){
     if(deferred) return doPrompt();
     if(ios) return show("아이폰은 사파리에서 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null);
-    show("브라우저 메뉴(⋮ 또는 주소창 오른쪽 아이콘)에서 <b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 누르면 설치돼요. 크롬·엣지에서 가장 잘 돼요.",null,null);
+    show("브라우저 메뉴(⋮)에 <b>'앱 설치'</b>가 보이면 그걸 누르면 돼요. 대신 '앱이 이미 설치되어 있습니다'라고 나오면, 폰 설정 → 애플리케이션에서 기존 '세계 이슈 지도'를 제거한 뒤 다시 시도해 주세요.",null,null);
   }
   btn.onclick=openInstall;
   addEventListener("beforeinstallprompt",function(e){
