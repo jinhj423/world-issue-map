@@ -132,6 +132,9 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .story .src{font-size:12px;color:var(--ink-3);margin-top:4px;font-weight:500}
 .more{display:block;width:100%;text-align:center;font-size:13.5px;font-weight:700;color:var(--ink-2);background:var(--soft);border-radius:12px;padding:10px 0;margin-top:12px}
 .more:hover{color:var(--ink)}
+.morebar{display:flex;gap:8px;margin-top:12px}
+.morebar .more{margin-top:0}
+.morebar .fold{flex:0 0 auto;padding:10px 16px}
 
 /* 단어 카드 */
 .words{display:flex;flex-wrap:wrap;gap:8px}
@@ -446,7 +449,7 @@ const chips=document.getElementById("chips");
 const catsPresent=CAT_ORDER.filter(k=>k!=="etc"&&Object.values(C).some(c=>c.items.some(i=>i.c===k)));
 chips.innerHTML=[`<button type="button" data-cat="all" aria-pressed="true">전체</button>`]
   .concat(catsPresent.map(k=>`<button type="button" data-cat="${k}" aria-pressed="false">${CAT[k]}</button>`)).join("");
-chips.onclick=e=>{const b=e.target.closest("button");if(!b)return;state.cat=b.dataset.cat;
+chips.onclick=e=>{const b=e.target.closest("button");if(!b)return;state.cat=b.dataset.cat;shown=BASE;
   chips.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
   document.getElementById("mapSub").textContent=state.cat==="all"?"색이 진할수록 오늘 뉴스가 많았던 나라예요":`색이 진할수록 ${CAT[state.cat]} 뉴스가 많았던 나라예요`;
   paint();render()};
@@ -456,13 +459,13 @@ const words=document.getElementById("words");
 words.innerHTML=(data.global_keywords||[]).map(k=>`<button type="button" data-kw="${esc(k.kw)}" aria-pressed="false"><b>${esc(k.kw)}</b><small>${k.countries.length}개국</small></button>`).join("")
   ||`<span class="empty">아직 집계된 단어가 없어요.</span>`;
 words.onclick=e=>{const b=e.target.closest("button");if(!b)return;
-  state.kw=state.kw===b.dataset.kw?null:b.dataset.kw;
+  state.kw=state.kw===b.dataset.kw?null:b.dataset.kw;shown=BASE;
   words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.kw===state.kw));
   paint();render()};
 
 // ── 오른쪽 카드 ──
 const side=document.getElementById("side");
-let shown=8;
+const BASE=8, STEP=12; let shown=BASE;
 function render(){
   if(state.sel) return renderCountry(state.sel);
   if(state.kw) return renderKeyword(state.kw);
@@ -477,7 +480,9 @@ function render(){
         <h3>${esc(it?it.t:"")}</h3>
         <span class="src">${esc(it?it.s:"")} · 기사 ${c.n}건</span></span></button>`}).join("")
       ||`<p class="empty">이 조건에 맞는 나라가 없어요. 분야를 '전체'로 바꿔 보세요.</p>`}
-    ${list.length>shown?`<button type="button" class="more" data-more>${list.length-shown}개 나라 더 보기</button>`:""}`;
+    ${list.length>shown||shown>BASE?`<div class="morebar">
+      ${list.length>shown?`<button type="button" class="more" data-more>나라 ${Math.min(STEP,list.length-shown)}개 더 보기 · ${list.length-shown}개 남음</button>`:""}
+      ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
 function renderKeyword(kw){
   const rows=[];
@@ -527,7 +532,8 @@ side.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
   if(t.dataset.a2) select(t.dataset.a2);
   else if("back" in t.dataset) select(null);
-  else if("more" in t.dataset){shown=100;render()}
+  else if("more" in t.dataset){shown=Math.min(shown+STEP,ranked().length);render()}
+  else if("fold" in t.dataset){shown=BASE;render();side.scrollIntoView({behavior:"auto",block:"start"})}
   else if(t.dataset.tab){state.tab=t.dataset.tab;if(state.tab==="local")state.ckw=null;render()}
   else if(t.dataset.ckw!==undefined){state.ckw=t.dataset.ckw||null;render()}
   else if("clearkw" in t.dataset){state.kw=null;words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));paint();render()}
@@ -580,7 +586,7 @@ fromHash(); if(!state.sel) render();
 (function(){
   if(window.self!==window.top) return;                               // 미리보기 프레임 제외
   var standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
-  if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js")}catch(e){}}
+  if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js").catch(function(){})}catch(e){}}
   if(standalone) return;
   var btn=document.getElementById("installBtn");
   var ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
