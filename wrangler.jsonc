@@ -2,6 +2,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "wnm",
+  "main": "src/worker.js",
   "compatibility_date": "2026-01-01",
-  "assets": { "directory": "./public" }
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // 30분마다 GitHub 수집 워크플로를 깨운다 (비밀값 GH_TOKEN 필요)
+  "triggers": { "crons": ["7,37 * * * *"] },
+  "observability": { "enabled": true }
 }
