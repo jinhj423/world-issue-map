@@ -45,6 +45,18 @@ export default {
     if (url.pathname === "/api/visit" && request.method === "POST") {
       try { return await visit(request, env); } catch (e) { return json({ error: "fail" }, 500); }
     }
+    // 점검용(읽기만): 지금 숫자를 기록 없이 돌려준다
+    if (url.pathname === "/api/visit" && request.method === "GET") {
+      try {
+        if (!env.DB) return json({ error: "no db" }, 503);
+        await ensureTables(env.DB);
+        const [t, a] = await env.DB.batch([
+          env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE day = ?").bind(kstDay()),
+          env.DB.prepare("SELECT COUNT(*) AS n FROM visitors"),
+        ]);
+        return json({ today: t.results[0].n, total: a.results[0].n, day: kstDay() });
+      } catch (e) { return json({ error: "fail" }, 500); }
+    }
     // 점검용: 토큰이 들어 있는지, GitHub이 받아 주는지만 알려 준다(토큰 값은 절대 내보내지 않음)
     if (url.pathname === "/api/cron-check") {
       const out = { hasToken: !!env.GH_TOKEN, cron: "7,37 * * * *" };
