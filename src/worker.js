@@ -123,3 +123,4 @@ export default {
     console.log("수집 깨우기:", r.status, r.status === 204 ? "성공" : await r.text());
   },
 };
+// 15분 주기 배포 2026-11-07T07:47:24Z
