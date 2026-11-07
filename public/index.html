@@ -185,6 +185,8 @@ html[data-theme="dark"] .sorttab button[aria-pressed="true"]{box-shadow:none}
 .wide{grid-column:1 / -1}
 .foot{padding:20px 4px 0;font-size:12px;color:var(--ink-3);line-height:1.7}
 .foot p{margin:0}
+.visits{margin-top:8px!important;font-weight:600;color:var(--ink-2)}
+.visits b{color:var(--ink);font-weight:800}
 
 .install{position:fixed;left:16px;right:16px;bottom:20px;max-width:430px;margin:0 auto;background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(15,20,30,.22);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:9}
 .install .ico{flex:0 0 40px;width:40px;height:40px;border-radius:10px;background:var(--blue);display:grid;place-items:center}
@@ -616,7 +618,20 @@ themeBtn.onclick=()=>{
   readCats();paint();render();syncTheme();
 };
 syncTheme();
-document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)} · 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p>분야와 단어는 자동 분류라 가끔 어긋날 수 있어요.</p>`;
+document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)} · 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p>분야와 단어는 자동 분류라 가끔 어긋날 수 있어요.</p><p class="visits" id="visits" hidden></p>`;
+// 방문자 수 (브라우저마다 무작위 번호 하나, 개인정보 없음)
+(async()=>{
+  let vid=null;
+  try{vid=localStorage.getItem("wim-vid");if(!vid){vid=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",vid)}}catch(e){}
+  if(!vid) return;
+  try{
+    const r=await fetch("api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid})});
+    if(!r.ok) return;
+    const v=await r.json(); const el=document.getElementById("visits");
+    el.innerHTML=`방문자 · 오늘 <b>${v.today.toLocaleString("ko-KR")}</b>명 · 누적 <b>${v.total.toLocaleString("ko-KR")}</b>명`;
+    el.hidden=false;
+  }catch(e){}
+})();
 fromHash(); if(!state.sel) render();
 })();
 </script>
