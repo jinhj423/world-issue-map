@@ -85,7 +85,7 @@ def parse_rss(xml_bytes: bytes, limit: int = 60) -> list[dict]:
     return out
 
 
-def fetch_country(c: dict) -> tuple[str, dict]:
+def fetch_country(c: dict, do_local: bool = True) -> tuple[str, dict]:
     time.sleep(random.uniform(0.3, 1.2))  # 예의상 간격
     res: dict = {"items": [], "local": []}
     body = get(search_url(c))
@@ -94,7 +94,7 @@ def fetch_country(c: dict) -> tuple[str, dict]:
             res["items"] = parse_rss(body)
         except ET.ParseError as e:
             print(f"  ! parse {c['a2']}: {e}", file=sys.stderr)
-    lu = local_url(c)
+    lu = local_url(c) if do_local else None
     if lu:
         lb = get(lu)
         if lb:
@@ -119,8 +119,20 @@ def main() -> None:
         for f in fx.glob("*.xml"):
             raw[f.stem.upper()] = {"items": parse_rss(f.read_bytes()), "local": []}
     else:
+        # 15분 주기 중 :07·:37 회차만 현지 1면을 새로 받는다(구글 요청 절반으로, 현지 1면은 천천히 바뀜)
+        do_local = now.minute % 30 < 15
+        prev_local = {}
+        try:
+            prev = json.loads((DATA / "news.json").read_text("utf-8"))
+            prev_local = {a: c.get("local") or [] for a, c in prev.get("countries", {}).items()}
+        except Exception:
+            do_local = True
         with ThreadPoolExecutor(max_workers=4) as ex:
-            raw = dict(ex.map(fetch_country, countries))
+            raw = dict(ex.map(lambda c: fetch_country(c, do_local), countries))
+        if not do_local:
+            for a2, r in raw.items():
+                r["local"] = prev_local.get(a2, [])
+        print("현지 1면:", "새로 받음" if do_local else "직전 값 재사용")
 
     hist_path = DATA / "history.json"
     history = json.loads(hist_path.read_text("utf-8")) if hist_path.exists() else {}
