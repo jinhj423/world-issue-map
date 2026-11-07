@@ -8,6 +8,19 @@ const WORKFLOW = "update-news.yml";
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+    // 점검용: 토큰이 들어 있는지, GitHub이 받아 주는지만 알려 준다(토큰 값은 절대 내보내지 않음)
+    if (url.pathname === "/api/cron-check") {
+      const out = { hasToken: !!env.GH_TOKEN, cron: "7,37 * * * *" };
+      if (env.GH_TOKEN) {
+        const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}`, {
+          headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github+json",
+                     "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "wnm-cron" },
+        });
+        out.github = r.status; // 200이면 토큰 정상, 401 만료·오타, 404 저장소 권한 없음
+      }
+      return new Response(JSON.stringify(out), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
     return env.ASSETS.fetch(request);
   },
 
