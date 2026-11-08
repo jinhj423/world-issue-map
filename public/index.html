@@ -22,12 +22,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&display=swap" rel="stylesheet">
 <!--LOCAL_FONTS-->
 <style>
+/* Hallmark · checked: 2026-11-08 · genre: editorial (inferred) · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* critique: tokens carry every colour, labels pass 4.5:1, meta strings split into spans, one headline shown once */
 :root{
-  --bg:#F2F4F6; --card:#FFFFFF; --ink:#191F28; --ink-2:#4E5968; --ink-3:#8B95A1;
+  --bg:#F2F4F6; --card:#FFFFFF; --ink:#191F28; --ink-2:#4E5968; --ink-3:#5F6B78;
   --line:#E5E8EB; --soft:#F2F4F6; --stage:#F2F4F6; --land:#E7EAEE; --stroke:#FFFFFF;
   --map1:#D8E6FB; --map2:#8FB8F4; --map3:#3182F6;
   --blue:#3182F6; --red:#F04438; --tipbg:#191F28;
-  --inv-bg:#191F28; --inv-fg:#FFFFFF; --raise:#FFFFFF;
+  --inv-bg:#191F28; --inv-fg:#F7F9FC; --raise:#FFFFFF;
+  --link:#1B64DA; --red-ink:#C8261A; --accent-fill:#1B64DA; --red-fill:#C8261A; --on-fill:#F7FAFF;
+  --pv-bg:#FEE4E2; --pv-ink:#A8231A; --sel-bg:#CFE0FB;
+  --tip-ink:#F7F8FA; --tip-ink-2:#D5DAE0; --tip-ink-3:#AEB6C0;
+  --shadow-1:0 1px 3px rgba(25,31,40,.12); --shadow-2:0 1px 4px rgba(25,31,40,.16);
+  --shadow-pop:0 6px 24px rgba(15,20,30,.22); --backdrop:rgba(25,31,40,.45);
   --c-conflict:#F04438; --c-disaster:#F79009; --c-health:#DD4F93; --c-politics:#3182F6;
   --c-energy:#0E9384; --c-economy:#12B76A; --c-tech:#7A5AF8; --c-sports:#85B210;
   --c-society:#667085; --c-etc:#98A2B3;
@@ -35,73 +42,77 @@
   --r:20px;
 }
 html[data-theme="dark"]{
-  --bg:#121418; --card:#1C1F24; --ink:#F0F2F5; --ink-2:#B3BAC4; --ink-3:#7E8692;
+  --bg:#121418; --card:#1C1F24; --ink:#F0F2F5; --ink-2:#B3BAC4; --ink-3:#8E96A2;
   --line:#2C3037; --soft:#272B31; --stage:#15171B; --land:#2B2F36; --stroke:#15171B;
   --map1:#2C4A75; --map2:#3E71C0; --map3:#61A0FF;
   --blue:#5B9BFF; --red:#FF6257; --tipbg:#33373E;
   --inv-bg:#F0F2F5; --inv-fg:#15171B; --raise:#3A3F47;
+  --link:#6EA8FF; --red-ink:#FF7A70; --accent-fill:#6EA8FF; --red-fill:#FF7A70; --on-fill:#0F1620;
+  --pv-bg:#42201E; --pv-ink:#FF9B93; --sel-bg:#2C4A75;
+  --shadow-1:none; --shadow-2:0 1px 5px rgba(4,6,10,.55); --shadow-pop:0 6px 24px rgba(4,6,10,.5);
   --c-conflict:#FF6257; --c-disaster:#FFAB3D; --c-health:#F679B8; --c-politics:#5B9BFF;
   --c-energy:#2CC5B2; --c-economy:#2FD080; --c-tech:#9D85FF; --c-sports:#A8D94A;
   --c-society:#98A2B3; --c-etc:#6C7682;
 }
-html[data-theme="dark"] .brand .pv{background:#42201E;color:#FF9B93}
-html[data-theme="dark"] .mark{box-shadow:0 1px 5px rgba(0,0,0,.55)}
-html[data-theme="dark"] .zoom button{box-shadow:0 1px 4px rgba(0,0,0,.45)}
-html[data-theme="dark"] .tabs button[aria-selected="true"]{box-shadow:none}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+[hidden]{display:none!important}
+button:disabled{opacity:.45;cursor:not-allowed}
+html{scroll-behavior:smooth;caret-color:var(--link);scrollbar-color:var(--line) transparent}
+::selection{background:var(--sel-bg);color:var(--ink)}
+h1,h2,h3{text-wrap:balance}
+p{text-wrap:pretty}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;word-break:keep-all;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
-:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
 
 .shell{max-width:1240px;margin:0 auto;padding:0 28px 44px}
 
 /* ── 상단 ── */
-.top{display:flex;justify-content:space-between;align-items:center;padding:18px 2px 6px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:20px 4px 8px}
 .brand{font-size:16px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
 .brand svg{display:block;border-radius:5px}
-.brand .pv{font-size:12px;font-weight:700;color:var(--red);background:#FEE4E2;border-radius:10px;padding:2px 8px}
+.brand .pv{font-size:12px;font-weight:700;color:var(--pv-ink);background:var(--pv-bg);border-radius:10px;padding:4px 8px}
 .topr{display:flex;align-items:center;gap:16px}
 .top .how{font-size:13px;font-weight:500;color:var(--ink-3)}
 .top .how:hover{color:var(--ink-2)}
 .how .short{display:none}
-.appbtn{color:var(--blue);font-weight:700}
-.appbtn:hover{color:var(--blue)}
+.appbtn{color:var(--link);font-weight:700}
+.appbtn:hover{color:var(--link)}
 .theme{width:34px;height:34px;border-radius:50%;background:var(--card);display:grid;place-items:center;color:var(--ink-2)}
 .theme:hover{color:var(--ink)}
 .theme svg{display:none}
 html[data-theme="light"] .theme .ic-moon{display:block}
 html[data-theme="dark"] .theme .ic-sun{display:block}
 
-.hero{padding:16px 2px 4px}
-.hero .d{font-size:13.5px;font-weight:500;color:var(--ink-3)}
-.hero h1{font-size:30px;font-weight:800;line-height:1.4;letter-spacing:-.02em;margin:6px 0 0;max-width:640px}
-.hero h1 em{font-style:normal;color:var(--blue)}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:16px 2px 18px;scrollbar-width:none}
+.hero{padding:16px 4px 4px}
+.hero .d{font-size:13.5px;font-weight:500;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:0 12px;margin:0}
+.hero h1{font-size:30px;font-weight:800;line-height:1.4;letter-spacing:-.02em;margin:8px 0 0;max-width:640px}
+.hero h1 em{font-style:normal;color:inherit}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:16px 4px 20px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chips button{flex:0 0 auto;background:var(--card);color:var(--ink-2);font-size:14px;font-weight:600;padding:8px 15px;border-radius:19px}
+.chips button{flex:0 0 auto;background:var(--card);color:var(--ink-2);font-size:14px;font-weight:600;padding:8px 16px;border-radius:19px}
 .chips button[aria-pressed="true"]{background:var(--inv-bg);color:var(--inv-fg)}
 
 /* ── 본문 그리드 ── */
 .grid{display:grid;grid-template-columns:1fr 404px;gap:16px;align-items:start}
-.card{background:var(--card);border-radius:var(--r);padding:22px 22px 20px}
-.card h2{font-size:17px;font-weight:800;margin:0 0 2px;letter-spacing:-.01em}
-.shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card{background:var(--card);border-radius:var(--r);padding:24px 24px 20px}
+.card h2{font-size:17px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .shead h2{margin:0}
-.sorttab{display:flex;gap:3px;background:var(--soft);border-radius:10px;padding:3px;flex:0 0 auto}
-.sorttab button{padding:4px 10px;font-size:12px;font-weight:700;color:var(--ink-3);border-radius:8px;white-space:nowrap}
-.sorttab button[aria-pressed="true"]{background:var(--raise);color:var(--ink);box-shadow:0 1px 3px rgba(25,31,40,.12)}
-html[data-theme="dark"] .sorttab button[aria-pressed="true"]{box-shadow:none}
-.card .sub{font-size:13px;color:var(--ink-3);margin:0 0 14px}
-.card .sub button{color:var(--blue);font-weight:600}
+.sorttab{display:flex;gap:4px;background:var(--soft);border-radius:10px;padding:4px;flex:0 0 auto}
+.sorttab button{padding:4px 12px;font-size:12px;font-weight:700;color:var(--ink-3);border-radius:8px;white-space:nowrap}
+.sorttab button[aria-pressed="true"]{background:var(--raise);color:var(--ink);box-shadow:var(--shadow-1)}
+.card .sub{font-size:13px;color:var(--ink-3);margin:0 0 16px}
+.card .sub button{color:var(--link);font-weight:600}
 
 /* 지도 카드 */
-.mapcard{padding:22px 22px 16px}
+.mapcard{padding:24px 24px 16px}
 .maphead{display:flex;justify-content:space-between;align-items:baseline}
-.stagewrap{position:relative;margin-top:6px}
+.stagewrap{position:relative;margin-top:8px}
 .stage{position:relative;height:540px;border-radius:14px;overflow:hidden;background:var(--stage);touch-action:none}
 .stage svg{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
 .stage svg:active{cursor:grabbing}
@@ -112,74 +123,72 @@ html[data-theme="dark"] .sorttab button[aria-pressed="true"]{box-shadow:none}
 .country.dim{opacity:.25}
 .pt{stroke:var(--stroke);stroke-width:1;vector-effect:non-scaling-stroke;cursor:pointer}
 .marks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.mark{position:absolute;transform:translate(-50%,-130%);pointer-events:auto;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:16px;padding:4px 10px 4px 5px;font-size:12.5px;font-weight:700;box-shadow:0 1px 4px rgba(25,31,40,.16);white-space:nowrap}
-.mark b{width:17px;height:17px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.mark{position:absolute;transform:translate(-50%,-130%);pointer-events:auto;display:flex;align-items:center;gap:4px;background:var(--card);border-radius:16px;padding:4px 12px 4px 4px;font-size:12.5px;font-weight:700;box-shadow:var(--shadow-2);white-space:nowrap}
+.mark b{width:17px;height:17px;border-radius:50%;background:var(--red-fill);color:var(--on-fill);font-variant-numeric:tabular-nums;display:grid;place-items:center;font-size:11px;font-weight:700}
 .mark::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--card)}
 .mark.dim{opacity:.3}
-.maplegend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);padding:12px 2px 0}
-.maplegend .sw{display:inline-flex;align-items:center;gap:5px}
+.maplegend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);padding:12px 4px 0}
+.maplegend .sw{display:inline-flex;align-items:center;gap:4px}
 .maplegend i{width:14px;height:9px;border-radius:2.5px;display:inline-block}
-.zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
-.zoom button{width:34px;height:34px;border-radius:10px;background:var(--card);box-shadow:0 1px 4px rgba(25,31,40,.14);font-size:17px;color:var(--ink-2)}
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px}
+.zoom button{width:34px;height:34px;border-radius:10px;background:var(--card);box-shadow:var(--shadow-2);font-size:17px;color:var(--ink-2)}
 .zoom button:hover{color:var(--ink)}
-.tip{position:absolute;pointer-events:none;background:var(--tipbg);color:#fff;border-radius:12px;padding:10px 13px;max-width:280px;opacity:0;transition:opacity .1s;font-size:13px;line-height:1.5;z-index:3}
+.tip{position:absolute;pointer-events:none;background:var(--tipbg);color:var(--tip-ink);border-radius:12px;padding:12px 12px;max-width:280px;opacity:0;transition:opacity .1s;font-size:13px;line-height:1.5;z-index:3}
 .tip b{font-size:14.5px}
-.tip .m{color:#B6BDC6;margin-left:8px;font-weight:500;font-size:12px}
-.tip p{margin:3px 0 0;color:#D5DAE0}
+.tip .m{color:var(--tip-ink-3);margin-left:8px;font-weight:500;font-size:12px}
+.tip p{margin:4px 0 0;color:var(--tip-ink-2)}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-3);font-size:14px}
 
 /* 순위 카드 */
-.story{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line);width:100%;text-align:left}
+.story{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line);width:100%;text-align:left}
 .story:first-of-type{border-top:0;padding-top:4px}
-.story .no{flex:0 0 24px;font-size:17px;font-weight:800;color:var(--ink-3);padding-top:1px}
-.story.hot .no{color:var(--red)}
-.story .nm{font-size:13px;font-weight:700;color:var(--blue);margin:0 0 3px;display:flex;align-items:center;gap:7px}
-.story .up{color:var(--red);font-size:12px;font-weight:700}
-.story h3{font-size:15px;font-weight:700;margin:0;line-height:1.5}
-.story:hover h3{text-decoration:underline;text-underline-offset:3px}
-.story .src{font-size:12px;color:var(--ink-3);margin-top:4px;font-weight:500}
-.more{display:block;width:100%;text-align:center;font-size:13.5px;font-weight:700;color:var(--ink-2);background:var(--soft);border-radius:12px;padding:10px 0;margin-top:12px}
+.story .no{flex:0 0 24px;font-size:17px;font-weight:800;color:var(--ink-3);padding-top:0;font-variant-numeric:tabular-nums}
+.story.hot .no{color:var(--red-ink)}
+.story .nm{font-size:13px;font-weight:700;color:var(--link);margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.story .up{color:var(--red-ink);font-size:12px;font-weight:700}
+.story .h{display:block;font-size:15px;font-weight:700;margin:0;line-height:1.5;text-wrap:pretty}
+.story:hover .h{text-decoration:underline;text-underline-offset:3px}
+.story .src{display:flex;flex-wrap:wrap;gap:0 12px;font-size:12px;color:var(--ink-3);margin-top:4px;font-weight:500}
+.more{display:block;width:100%;text-align:center;font-size:13.5px;font-weight:700;color:var(--ink-2);background:var(--soft);border-radius:12px;padding:12px 0;margin-top:12px}
 .more:hover{color:var(--ink)}
 .morebar{display:flex;gap:8px;margin-top:12px}
 .morebar .more{margin-top:0}
-.morebar .fold{flex:0 0 auto;padding:10px 16px}
+.morebar .fold{flex:0 0 auto;padding:12px 16px}
 
 /* 단어 카드 */
 .words{display:flex;flex-wrap:wrap;gap:8px}
-.words button{background:var(--soft);border-radius:11px;padding:8px 13px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.words button{background:var(--soft);border-radius:11px;padding:8px 12px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
 .words button b{color:var(--ink);font-weight:700}
 .words button small{font-weight:600;color:var(--ink-3);margin-left:4px}
-.words button[aria-pressed="true"]{background:var(--blue);color:#fff}
-.words button[aria-pressed="true"] b,.words button[aria-pressed="true"] small{color:#fff}
+.words button[aria-pressed="true"]{background:var(--accent-fill);color:var(--on-fill)}
+.words button[aria-pressed="true"] b,.words button[aria-pressed="true"] small{color:var(--on-fill)}
 
 /* 나라 상세 카드 */
-.back{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;font-weight:600;color:var(--ink-3);margin-bottom:10px}
+.back{display:inline-flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;color:var(--ink-3);margin-bottom:12px}
 .back:hover{color:var(--ink-2)}
 .cname{font-size:27px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.3}
-.cstat{font-size:13.5px;font-weight:500;color:var(--ink-2);margin:4px 0 0}
-.cstat .up{color:var(--red);font-weight:700}
+.cstat{display:flex;flex-wrap:wrap;gap:0 12px;font-size:13.5px;font-weight:500;color:var(--ink-2);margin:4px 0 0}
+.cstat .up{color:var(--red-ink);font-weight:700}
 .mix{margin:16px 0 0}
 .mix .bar{display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--soft)}
-.mix .keys{display:flex;flex-wrap:wrap;gap:3px 13px;margin-top:9px;font-size:12.5px;font-weight:500;color:var(--ink-2)}
-.mix .keys span{display:inline-flex;align-items:center;gap:5px}
+.mix .keys{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12.5px;font-weight:500;color:var(--ink-2)}
+.mix .keys span{display:inline-flex;align-items:center;gap:4px}
 .mix .keys i{width:8px;height:8px;border-radius:50%}
-.kws{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-.kws button{background:var(--soft);border-radius:9px;padding:5px 11px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.kws{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.kws button{background:var(--soft);border-radius:9px;padding:4px 12px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .kws button[aria-pressed="true"]{background:var(--inv-bg);color:var(--inv-fg)}
-.ctag{display:inline-block;font-size:12.5px;font-weight:700;color:var(--blue);margin-bottom:3px}
+.ctag{display:inline-block;font-size:12.5px;font-weight:700;color:var(--link);margin-bottom:4px}
 .ctag:hover{text-decoration:underline;text-underline-offset:3px}
-.tabs{display:flex;gap:6px;background:var(--soft);border-radius:12px;padding:4px;margin-top:18px}
-.tabs button{flex:1;font-size:13.5px;font-weight:700;color:var(--ink-3);padding:7px 0;border-radius:9px;text-align:center}
-.tabs button[aria-selected="true"]{background:var(--raise);color:var(--ink);box-shadow:0 1px 3px rgba(25,31,40,.12)}
+.tabs{display:flex;gap:8px;background:var(--soft);border-radius:12px;padding:4px;margin-top:20px}
+.tabs button{flex:1;font-size:13.5px;font-weight:700;color:var(--ink-3);padding:8px 0;border-radius:9px;text-align:center}
+.tabs button[aria-selected="true"]{background:var(--raise);color:var(--ink);box-shadow:var(--shadow-1)}
 .news{list-style:none;margin:0;padding:0}
-.news li{padding:13px 0;border-bottom:1px solid var(--line)}
+.news li{padding:12px 0;border-bottom:1px solid var(--line)}
 .news li:last-child{border-bottom:0}
 .news a{text-decoration:none;font-size:14.5px;font-weight:700;line-height:1.55;display:block}
 .news a:hover{text-decoration:underline;text-underline-offset:3px}
-.news .orig{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.5;font-weight:400}
-.news .meta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;margin-top:5px;font-size:12px;font-weight:500;color:var(--ink-3)}
-.news .meta .cat{display:inline-flex;align-items:center;gap:5px}
-.news .meta .cat i{width:7px;height:7px;border-radius:50%}
+.news .orig{font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.5;font-weight:400}
+.news .meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:4px;font-size:12px;font-weight:500;color:var(--ink-3)}
 .empty{padding:16px 0;color:var(--ink-3);font-size:13.5px}
 
 .wide{grid-column:1 / -1}
@@ -188,23 +197,23 @@ html[data-theme="dark"] .sorttab button[aria-pressed="true"]{box-shadow:none}
 .visits{margin-top:8px!important;font-weight:600;color:var(--ink-2)}
 .visits b{color:var(--ink);font-weight:800}
 
-.install{position:fixed;left:16px;right:16px;bottom:20px;max-width:430px;margin:0 auto;background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(15,20,30,.22);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:9}
-.install .ico{flex:0 0 40px;width:40px;height:40px;border-radius:10px;background:var(--blue);display:grid;place-items:center}
-.install .ico i{width:14px;height:14px;border-radius:50%;background:#fff;display:block}
+.install{position:fixed;left:16px;right:16px;bottom:20px;max-width:430px;margin:0 auto;background:var(--card);border-radius:16px;box-shadow:var(--shadow-pop);padding:16px 16px;display:flex;align-items:center;gap:12px;z-index:9}
+.install .ico{flex:0 0 40px;width:40px;height:40px}
+.install .ico svg{display:block;border-radius:10px}
 .install p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
 .install p b{color:var(--ink);font-weight:700}
-.install .btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
-.install .go{background:var(--blue);color:#fff;font-size:13.5px;font-weight:700;border-radius:10px;padding:8px 14px}
+.install .btns{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.install .go{background:var(--accent-fill);color:var(--on-fill);font-size:13.5px;font-weight:700;border-radius:10px;padding:8px 16px}
 .install .no{font-size:12.5px;color:var(--ink-3);font-weight:600}
 @media (max-width:980px){.install{bottom:calc(74px + env(safe-area-inset-bottom))}}
 
-dialog{border:0;border-radius:var(--r);padding:26px 26px 22px;max-width:440px;background:var(--card);color:var(--ink)}
-dialog::backdrop{background:rgba(25,31,40,.45)}
-dialog h2{font-size:19px;font-weight:800;margin:0 0 10px}
+dialog{border:0;border-radius:var(--r);padding:28px 28px 24px;max-width:440px;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:var(--backdrop)}
+dialog h2{font-size:19px;font-weight:800;margin:0 0 12px}
 dialog p,dialog li{font-size:14px;color:var(--ink-2)}
-dialog ul{padding-left:18px;margin:8px 0}
-dialog li{margin-bottom:6px}
-dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;padding:9px 20px;font-weight:700;margin-top:8px}
+dialog ul{padding-left:20px;margin:8px 0}
+dialog li{margin-bottom:8px}
+dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;padding:8px 20px;font-weight:700;margin-top:8px}
 
 /* 데스크톱: 순위 카드는 지도 카드 높이만큼만, 내부 스크롤 */
 @media (min-width:981px){
@@ -218,17 +227,17 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
 .nav{display:none}
 @media (max-width:980px){
   .shell{padding:0 16px 84px}
-  .top{padding:16px 2px 4px}
-  .topr{gap:10px}
+  .top{padding:16px 4px 4px}
+  .topr{gap:12px}
   .how .full{display:none}
   .how .short{display:inline}
   .hero .d{font-size:12.5px}
   .hero h1{font-size:23px;line-height:1.45}
-  .chips{padding:14px 2px 16px}
+  .chips{padding:16px 4px 16px}
   .card h2{font-size:16px}
-  .story .no{font-size:16px;padding-top:2px}
-  .story h3{font-size:14.5px}
-  .maplegend{gap:4px 10px;font-size:12px;padding-top:10px}
+  .story .no{font-size:16px;padding-top:4px}
+  .story .h{font-size:14.5px}
+  .maplegend{gap:4px 12px;font-size:12px;padding-top:12px}
   .cname{font-size:23px}
   .cstat{font-size:13px}
   .news a{font-size:14px}
@@ -236,13 +245,13 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   .side{order:-1}
   .stage{height:min(62vw,420px)}
   .mark span{display:none}
-  .mark{padding:4px 6px}
+  .mark{padding:4px 8px}
   .zoom{display:none}
-  .card{padding:18px 18px 16px}
-  .nav{display:grid;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);grid-template-columns:repeat(3,1fr);padding:9px 0 calc(10px + env(safe-area-inset-bottom));z-index:5}
+  .card{padding:20px 20px 16px}
+  .nav{display:grid;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);grid-template-columns:repeat(3,1fr);padding:8px 0 calc(12px + env(safe-area-inset-bottom));z-index:5}
   .nav button{text-align:center;font-size:11px;font-weight:700;color:var(--ink-3)}
   .nav button.on{color:var(--ink)}
-  .nav button svg{display:block;margin:0 auto 3px}
+  .nav button svg{display:block;margin:0 auto 4px}
 }
 </style>
 </head>
@@ -305,8 +314,8 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   <h2>순위는 이렇게 매겨요</h2>
   <p>나라마다 <b>이슈 지수</b>(0~100)를 계산해 줄 세워요.</p>
   <ul>
-    <li><b>보도량 60%</b> — 최근 24시간 그 나라 관련 헤드라인 수예요. 같은 사건을 여러 언론이 다루면 더 크게 세고, 분쟁·재난 기사는 가중치를 줘요.</li>
-    <li><b>평소 대비 40%</b> — 오늘 보도량을 그 나라의 최근 7일과 비교해요. 평소 조용하던 나라에 일이 터지면 '평소보다 ↑'가 붙어요. 기록이 3일 미만이면 평소 수준으로 계산해요.</li>
+    <li><b>보도량 60%</b>: 최근 24시간 그 나라 관련 헤드라인 수예요. 같은 사건을 여러 언론이 다루면 더 크게 세고, 분쟁·재난 기사는 가중치를 줘요.</li>
+    <li><b>평소 대비 40%</b>: 오늘 보도량을 그 나라의 최근 7일과 비교해요. 평소 조용하던 나라에 일이 터지면 '평소보다 많음'이 붙어요. 기록이 3일 미만이면 평소 수준으로 계산해요.</li>
   </ul>
   <p>분야와 단어는 자동으로 분류해서 가끔 어긋날 수 있어요. 기사 원문은 각 언론사 사이트에서 볼 수 있어요.</p>
   <form method="dialog"><button class="close">알겠어요</button></form>
@@ -339,7 +348,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 // ── 인사말 ──
 const upd=new Date(data.updated_at), DOW="일월화수목금토";
 const slot=h=>h<5?"새벽":h<11?"아침":h<17?"낮":h<21?"저녁":"밤";
-document.getElementById("date").textContent=`${upd.getMonth()+1}월 ${upd.getDate()}일 ${DOW[upd.getDay()]}요일 ${slot(upd.getHours())} · ${Object.values(C).filter(c=>c.n).length}개국 집계`;
+document.getElementById("date").innerHTML=`<span>${upd.getMonth()+1}월 ${upd.getDate()}일 ${DOW[upd.getDay()]}요일 ${slot(upd.getHours())}</span><span>${Object.values(C).filter(c=>c.n).length}개국 집계</span>`;
 if(data.preview) document.getElementById("pv").hidden=false;
 const iga=w=>{const c=w.charCodeAt(w.length-1);return c>=0xAC00&&c<=0xD7A3&&!((c-0xAC00)%28)?"가":"이"};
 function when(p){
@@ -487,7 +496,8 @@ function latestRows(){
   for(const a of ranked()){const c=C[a];
     for(const i of c.items){ if(state.cat!=="all"&&i.c!==state.cat) continue; rows.push([a,c,i]); }}
   rows.sort((x,y)=>(y[2].p||"").localeCompare(x[2].p||""));
-  return rows;
+  const seen=new Set();
+  return rows.filter(r=>{const k1=r[2].u,k2=r[2].t; if(seen.has(k1)||seen.has(k2)) return false; seen.add(k1);seen.add(k2); return true});
 }
 function render(){
   if(state.sel) return renderCountry(state.sel);
@@ -498,14 +508,16 @@ function render(){
   side.innerHTML=`
     <div class="shead"><h2>${head}</h2>${sortTab()}</div>
     <p class="sub">${state.kw?`'${esc(state.kw)}'가 나온 나라만 보고 있어요. <button type="button" data-clearkw>모두 보기</button>`:"같은 사건을 다룬 기사가 많을수록 위로 와요."}</p>
-    ${list.slice(0,shown).map((a,i)=>{const c=C[a],it=state.cat==="all"?c.items[0]:c.items.find(x=>x.c===state.cat);
+    ${(()=>{const used=new Set();return list.slice(0,shown).map((a,i)=>{const c=C[a];
+      const pool=state.cat==="all"?c.items:c.items.filter(x=>x.c===state.cat);
+      const it=pool.find(x=>!used.has(x.u)&&!used.has(x.t))||pool[0]; if(it){used.add(it.u);used.add(it.t)}
       return `<button type="button" class="story${i<3?" hot":""}" data-a2="${a}"><span class="no">${i+1}</span><span>
-        <span class="nm">${esc(c.ko)}${c.surge!=null&&c.surge>1.3?`<span class="up">평소보다 ↑</span>`:""}</span>
-        <h3>${esc(it?it.t:"")}</h3>
-        <span class="src">${esc(it?it.s:"")} · 기사 ${c.n}건</span></span></button>`}).join("")
-      ||`<p class="empty">이 조건에 맞는 나라가 없어요. 분야를 '전체'로 바꿔 보세요.</p>`}
+        <span class="nm">${esc(c.ko)}${c.surge!=null&&c.surge>1.3?`<span class="up">평소보다 많음</span>`:""}</span>
+        <span class="h">${esc(it?it.t:"")}</span>
+        <span class="src"><span>${esc(it?it.s:"")}</span><span>기사 ${c.n}건</span></span></span></button>`}).join("")
+      ||`<p class="empty">이 조건에 맞는 나라가 없어요. 분야를 '전체'로 바꿔 보세요.</p>`})()}
     ${list.length>shown||shown>BASE?`<div class="morebar">
-      ${list.length>shown?`<button type="button" class="more" data-more>나라 ${Math.min(STEP,list.length-shown)}개 더 보기 · ${list.length-shown}개 남음</button>`:""}
+      ${list.length>shown?`<button type="button" class="more" data-more>나라 ${Math.min(STEP,list.length-shown)}개 더 보기 (${list.length-shown}개 남음)</button>`:""}
       ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
 function renderKeyword(kw){
@@ -518,7 +530,7 @@ function renderKeyword(kw){
   side.innerHTML=`
     <button type="button" class="back" data-clearkw><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
     <h2>‘${esc(kw)}’가 나온 뉴스</h2>
-    <p class="sub">${nC}개 나라 · ${rows.length}건 · 지도에도 이 단어가 나온 나라만 남아요.</p>
+    <p class="sub">${nC}개 나라에서 ${rows.length}건이 나왔어요. 지도에도 이 나라들만 남겨 뒀어요.</p>
     <ul class="news">${rows.slice(0,30).map(([a,c,i])=>`<li>
       <button type="button" class="ctag" data-a2="${a}">${esc(c.ko)}</button>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
@@ -534,10 +546,10 @@ function renderLatest(){
     <ul class="news">${rows.slice(0,shown).map(([a,c,i])=>`<li>
       <button type="button" class="ctag" data-a2="${a}">${esc(c.ko)}</button>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
-      <div class="meta">${i.p?`<span>${when(i.p)}</span>`:""}<span>${esc(i.s)}</span>${i.k>1?`<span>관련 ${i.k}건</span>`:""}<span class="cat"><i style="background:${CAT_COLOR[i.c]}"></i>${CAT[i.c]}</span></div>
+      <div class="meta">${i.p?`<span>${when(i.p)}</span>`:""}<span>${esc(i.s)}</span>${i.k>1?`<span>관련 ${i.k}건</span>`:""}<span class="cat">${CAT[i.c]}</span></div>
     </li>`).join("")||`<li class="empty">이 조건에 맞는 뉴스가 없어요.</li>`}</ul>
     ${rows.length>shown||shown>BASE?`<div class="morebar">
-      ${rows.length>shown?`<button type="button" class="more" data-more>뉴스 ${Math.min(STEP,rows.length-shown)}개 더 보기 · ${rows.length-shown}개 남음</button>`:""}
+      ${rows.length>shown?`<button type="button" class="more" data-more>뉴스 ${Math.min(STEP,rows.length-shown)}개 더 보기 (${rows.length-shown}개 남음)</button>`:""}
       ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
 function renderCountry(a2){
@@ -546,14 +558,14 @@ function renderCountry(a2){
   const cs=CAT_ORDER.filter(k=>c.cats[k]);
   const rk=ranked().indexOf(a2)+1;
   const bits=[rk?`오늘 ${rk}위`:null,`기사 ${c.n}건`,
-    c.surge==null?null:(c.surge>1.3?`<span class="up">평소보다 ↑ ${Math.round((c.surge-1)*100)}%</span>`:c.surge<0.8?"평소보다 조용한 편":"평소와 비슷해요")].filter(Boolean);
+    c.surge==null?null:(c.surge>1.3?`<span class="up">평소보다 ${Math.round((c.surge-1)*100)}% 많음</span>`:c.surge<0.8?"평소보다 조용한 편":"평소와 비슷해요")].filter(Boolean);
   let items=state.cat==="all"?c.items:c.items.filter(i=>i.c===state.cat);
   const hasLocal=c.local&&c.local.length, showLocal=state.tab==="local"&&hasLocal;
   if(state.ckw&&!showLocal) items=items.filter(i=>i.t.includes(state.ckw));
   side.innerHTML=`
     <button type="button" class="back" data-back><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
     <h2 class="cname">${esc(c.ko)}</h2>
-    <p class="cstat">${esc(c.region)} · ${bits.join(" · ")}</p>
+    <p class="cstat">${[esc(c.region),...bits].map(x=>`<span>${x}</span>`).join("")}</p>
     ${cs.length>1?`<div class="mix"><div class="bar">${cs.map(k=>`<span style="width:${100*c.cats[k]/total}%;background:${CAT_COLOR[k]}"></span>`).join("")}</div>
       <div class="keys">${cs.map(k=>`<span><i style="background:${CAT_COLOR[k]}"></i>${CAT[k]} ${Math.round(100*c.cats[k]/total)}%</span>`).join("")}</div></div>`:""}
     ${c.kw.length&&!showLocal?`<div class="kws" role="group" aria-label="단어 필터">
@@ -564,7 +576,7 @@ function renderCountry(a2){
       <button type="button" role="tab" data-tab="local" aria-selected="${showLocal}">현지 1면</button></div>`:""}
     <ul class="news" style="margin-top:${hasLocal?8:16}px">${(showLocal?c.local:items).map(i=>`<li>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
-      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span>언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat"><i style="background:${CAT_COLOR[i.c]}"></i>${CAT[i.c]}</span>`:""}</div>
+      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span>언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat">${CAT[i.c]}</span>`:""}</div>
     </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>`;
 }
 side.addEventListener("click",e=>{
@@ -618,7 +630,7 @@ themeBtn.onclick=()=>{
   readCats();paint();render();syncTheme();
 };
 syncTheme();
-document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)} · 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p>분야와 단어는 자동 분류라 가끔 어긋날 수 있어요.</p><p class="visits" id="visits" hidden></p>`;
+document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)}</p><p>헤드라인을 누르면 언론사 원문으로 이동해요. 분야와 단어는 자동 분류라 가끔 어긋날 수 있어요.</p><p class="visits" id="visits" hidden></p>`;
 // 방문자 수 (브라우저마다 무작위 번호 하나, 개인정보 없음)
 (async()=>{
   let vid=null;
@@ -628,7 +640,7 @@ document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)} · 헤
     const r=await fetch("api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid})});
     if(!r.ok) return;
     const v=await r.json(); const el=document.getElementById("visits");
-    el.innerHTML=`방문자 · 오늘 <b>${v.today.toLocaleString("ko-KR")}</b>명 · 누적 <b>${v.total.toLocaleString("ko-KR")}</b>명`;
+    el.innerHTML=`오늘 방문 <b>${v.today.toLocaleString("ko-KR")}</b>명, 누적 <b>${v.total.toLocaleString("ko-KR")}</b>명`;
     el.hidden=false;
   }catch(e){}
 })();
@@ -651,7 +663,7 @@ fromHash(); if(!state.sel) render();
   function show(msg,goLabel,onGo){
     close(false);
     bar=document.createElement("div"); bar.className="install"; bar.setAttribute("role","dialog");
-    bar.innerHTML='<span class="ico" aria-hidden="true"><i></i></span><p>'+msg+'</p><span class="btns">'
+    bar.innerHTML='<span class="ico" aria-hidden="true">'+(document.querySelector(".brand svg")||{outerHTML:""}).outerHTML.replace(/width="20" height="20"/,'width="40" height="40"')+'</span><p>'+msg+'</p><span class="btns">'
       +(onGo?'<button type="button" class="go">'+goLabel+'</button>':'')
       +'<button type="button" class="no">'+(onGo?"나중에":"확인")+'</button></span>';
     document.body.appendChild(bar);
@@ -662,8 +674,8 @@ fromHash(); if(!state.sel) render();
     deferred.userChoice.then(function(){close(true);deferred=null}); }
   function openInstall(){
     if(deferred) return doPrompt();
-    if(ios) return show("아이폰은 사파리에서 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null);
-    show("브라우저 메뉴(⋮)에 <b>'앱 설치'</b>가 보이면 그걸 누르면 돼요. 대신 '앱이 이미 설치되어 있습니다'라고 나오면, 폰 설정 → 애플리케이션에서 기존 '세계 이슈 지도'를 제거한 뒤 다시 시도해 주세요.",null,null);
+    if(ios) return show("아이폰은 사파리에서 공유 버튼을 누르고 <b>'홈 화면에 추가'</b>를 고르면 앱으로 설치돼요.",null,null);
+    show("브라우저 메뉴(⋮)에 <b>'앱 설치'</b>가 보이면 그걸 누르면 돼요. 대신 '앱이 이미 설치되어 있습니다'라고 나오면, 폰 설정의 애플리케이션 목록에서 기존 '세계 이슈 지도'를 제거한 뒤 다시 시도해 주세요.",null,null);
   }
   btn.onclick=openInstall;
   addEventListener("beforeinstallprompt",function(e){
@@ -671,7 +683,7 @@ fromHash(); if(!state.sel) render();
     if(!snoozed()) show("<b>앱으로 설치</b>할 수 있어요. 홈 화면에서 바로 열립니다.","설치하기",doPrompt);
   });
   addEventListener("appinstalled",function(){close(true);btn.hidden=true});
-  if(ios&&!snoozed()) setTimeout(function(){ if(!bar) show("아이폰은 공유 버튼 → <b>'홈 화면에 추가'</b>를 누르면 앱으로 설치돼요.",null,null) },1500);
+  if(ios&&!snoozed()) setTimeout(function(){ if(!bar) show("아이폰은 공유 버튼을 누르고 <b>'홈 화면에 추가'</b>를 고르면 앱으로 설치돼요.",null,null) },1500);
 })();
 </script>
 </body>
