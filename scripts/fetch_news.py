@@ -119,8 +119,8 @@ def main() -> None:
         for f in fx.glob("*.xml"):
             raw[f.stem.upper()] = {"items": parse_rss(f.read_bytes()), "local": []}
     else:
-        # 15분 주기 중 :07·:37 회차만 현지 1면을 새로 받는다(구글 요청 절반으로, 현지 1면은 천천히 바뀜)
-        do_local = now.minute % 30 < 15
+        # 10분 주기 중 매시 0~9분·30~39분 회차만 현지 1면을 새로 받는다(구글 요청 절반으로, 현지 1면은 천천히 바뀜)
+        do_local = now.minute % 30 < 10   # 10분마다 실행, 현지판은 30분에 한 번
         prev_local = {}
         try:
             prev = json.loads((DATA / "news.json").read_text("utf-8"))

@@ -1,6 +1,6 @@
 // 세계 이슈 지도 Worker
 // - 화면 파일(public/)은 assets가 그대로 내보낸다.
-// - 예약 실행(15분마다): GitHub Actions '뉴스 수집' 워크플로를 깨운다.
+// - 예약 실행(10분마다): GitHub Actions '뉴스 수집' 워크플로를 깨운다.
 //   GitHub 자체 예약은 수 시간씩 밀려서, 정확한 Cloudflare 예약으로 대신 깨운다.
 //   필요한 비밀값: GH_TOKEN (GitHub fine-grained token, 이 저장소 Actions: Read and write)
 const REPO = "jinhj423/world-issue-map";
@@ -42,15 +42,14 @@ async function visit(request, env) {
 // 뉴스 데이터: 수집 커밋마다 사이트를 재배포하지 않도록, 저장소의 최신 파일을 직접 읽어 내보낸다.
 // 1) GitHub API(토큰, 캐시 없음) → 2) raw.githubusercontent.com(최대 5분 캐시) → 3) 배포된 파일
 // 같은 Worker 인스턴스 안에서는 60초 동안 재사용한다.
-const DATA_PATH = "public/data/news.json";
 let dataMemo = { at: 0, body: null };
 async function newsData(request, env) {
   if (dataMemo.body && Date.now() - dataMemo.at < 60e3) return dataResp(dataMemo.body, "memo");
   const tries = [];
-  if (env.GH_TOKEN) tries.push(["api", `https://api.github.com/repos/${REPO}/contents/${DATA_PATH}?ref=main`, {
+  if (env.GH_TOKEN) tries.push(["api", `https://api.github.com/repos/${REPO}/contents/news.json?ref=data`, {
     Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github.raw+json",
     "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "wnm-site" }]);
-  tries.push(["raw", `https://raw.githubusercontent.com/${REPO}/main/${DATA_PATH}`, { "User-Agent": "wnm-site" }]);
+  tries.push(["raw", `https://raw.githubusercontent.com/${REPO}/data/news.json`, { "User-Agent": "wnm-site" }]);
   for (const [src, u, headers] of tries) {
     try {
       const r = await fetch(u, { headers });
@@ -88,7 +87,7 @@ export default {
     }
     // 점검용: 토큰이 들어 있는지, GitHub이 받아 주는지만 알려 준다(토큰 값은 절대 내보내지 않음)
     if (url.pathname === "/api/cron-check") {
-      const out = { hasToken: !!env.GH_TOKEN, cron: "7,22,37,52 * * * *" };
+      const out = { hasToken: !!env.GH_TOKEN, cron: "3,13,23,33,43,53 * * * *" };
       if (env.GH_TOKEN) {
         const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}`, {
           headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github+json",
@@ -123,4 +122,3 @@ export default {
     console.log("수집 깨우기:", r.status, r.status === 204 ? "성공" : await r.text());
   },
 };
-// 15분 주기 배포 2026-11-07T07:47:24Z

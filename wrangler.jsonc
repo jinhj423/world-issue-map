@@ -7,8 +7,8 @@
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/data/*"] },
   // 방문자 수 저장소. database_id가 없으면 배포할 때 Wrangler가 자동으로 만들어 연결한다.
   "d1_databases": [{ "binding": "DB", "database_name": "wnm-stats" }],
-  // 15분마다 GitHub 수집 워크플로를 깨운다 (비밀값 GH_TOKEN 필요)
-  "triggers": { "crons": ["7,22,37,52 * * * *"] },
+  // 10분마다 GitHub 수집 워크플로를 깨운다 (비밀값 GH_TOKEN 필요)
+  "triggers": { "crons": ["3,13,23,33,43,53 * * * *"] },
   "observability": { "enabled": true },
   // 대시보드에서 넣은 변수가 배포(데이터 커밋마다 일어남) 때 지워지지 않게
   "keep_vars": true
