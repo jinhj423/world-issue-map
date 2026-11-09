@@ -37,10 +37,12 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 </head><body><div class="wrap">
 <header class="top"><a class="brand" href="/">${LOGO}세계 이슈 지도</a><a class="go" href="/">지도 열기</a></header>
 <main>${body}</main>
-<footer><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
+<footer><p class="visits" id="visits" hidden></p><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
+(function(){var v=null;try{v=localStorage.getItem("wim-vid");if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",v)}}catch(e){}
+if(!v)return;fetch("/api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid:v})}).then(function(r){return r.ok?r.json():null}).then(function(x){if(!x)return;var el=document.getElementById("visits");el.innerHTML="오늘 방문 <b>"+x.today.toLocaleString("ko-KR")+"</b>명, 누적 <b>"+x.total.toLocaleString("ko-KR")+"</b>명";el.hidden=false}).catch(function(){})})();
 document.addEventListener("click",async function(e){var b=e.target.closest("[data-share]");if(!b)return;var u=location.href.split("#")[0],t=document.title;
 try{if(navigator.share){await navigator.share({title:t,url:u});return}await navigator.clipboard.writeText(u);var o=document.getElementById("toast");o.textContent="링크를 복사했어요";o.classList.add("on");setTimeout(function(){o.classList.remove("on")},1800)}catch(x){}});
 </script>
@@ -82,8 +84,10 @@ export function countryPage(origin, d, a2, arc) {
 <ul class="days">${rows.map((x) => `<li class="${x.r === 1 ? "top1" : ""}"><span class="d">${hm(x.day)}</span><span class="bar"><i style="width:${x.heat || 0}%"></i></span><span class="r">${x.r ? x.r + "위" : "밖"}</span></li>`).join("")}</ul></section>`;
     }
   }
-  const list = items.map((i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
-<div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}${CAT[i.c] ? `<span>${esc(CAT[i.c])}</span>` : ""}</div></li>`).join("");
+  const li = (i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
+<div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}${CAT[i.c] ? `<span>${esc(CAT[i.c])}</span>` : ""}</div></li>`;
+  const list = items.slice(0, 8).map(li).join("");
+  const rest = items.length > 8 ? `<details class="more"><summary>헤드라인 ${items.length - 8}개 더 보기</summary><ol class="list" start="9">${items.slice(8).map(li).join("")}</ol></details>` : "";
   const local = (c.local || []).slice(0, 10).map((i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
 <div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}</div></li>`).join("");
   const body = `
@@ -93,10 +97,12 @@ export function countryPage(origin, d, a2, arc) {
 <ul class="facts">${facts}</ul>
 <div class="acts"><a class="btn pri" href="/#${a2}">지도에서 보기</a><button type="button" class="btn sec" data-share>공유하기</button></div>
 ${kw.length ? `<section class="card"><h2>많이 나온 말</h2><ul class="kw">${kw.map((k) => `<li>${esc(k)}</li>`).join("")}</ul></section>` : ""}
-<section class="card"><h2>한국어 헤드라인</h2><p class="sub">같은 사건을 여러 언론이 다룬 기사가 위로 와요.</p><ol class="list">${list || "<li>아직 기사가 없어요.</li>"}</ol></section>
-${local ? `<section class="card"><h2>현지 언론 1면</h2><p class="sub">그 나라 구글 뉴스 판의 주요 기사예요.</p><ol class="list">${local}</ol></section>` : ""}
+<section class="card"><h2>한국어 헤드라인</h2><p class="sub">같은 사건을 여러 언론이 다룬 기사가 위로 와요.</p><ol class="list">${list || "<li>아직 기사가 없어요.</li>"}</ol>${rest}</section>
+${local ? `<section class="card"><details class="fold"><summary><h2>현지 언론 1면</h2></summary><p class="sub">그 나라 구글 뉴스 판의 주요 기사예요.</p><ol class="list">${local}</ol></details></section>` : ""}
 ${week}
-<section class="card"><h2>다른 나라 뉴스</h2><p class="sub">숫자는 최근 24시간 기사 수예요.</p>${countryLinks(d, a2)}</section>`;
+<section class="card"><h2>지금 뜨거운 다른 나라</h2><p class="sub">숫자는 최근 24시간 기사 수예요.</p>
+<ul class="chips">${(d.ranking || []).filter((x) => x !== a2).slice(0, 10).map((x) => `<li><a href="/c/${x.toLowerCase()}/">${esc(d.countries[x].ko)}<span class="n">${d.countries[x].n || 0}</span></a></li>`).join("")}<li><a href="/econ/">경제·증시</a></li></ul>
+<details class="fold" style="margin-top:16px"><summary><span class="region" style="margin:0">모든 나라 보기</span></summary>${countryLinks(d, a2)}</details></section>`;
   const title = `${c.ko} 뉴스 오늘, 실시간 주요 헤드라인 | 세계 이슈 지도`;
   const desc = top ? `${c.ko} 관련 최근 24시간 기사 ${c.n}건. 지금 1위 소식: ${top.t}` : `${c.ko} 관련 최근 24시간 뉴스를 한국어로 모아 봅니다.`;
   return shell({
@@ -113,8 +119,10 @@ ${week}
 export function econPage(origin, d) {
   const e = d.econ || { items: [], kw: [] }, CAT = d.categories || {};
   const items = (e.items || []).slice(0, 30);
-  const list = items.map((i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
-<div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}${i.k > 1 ? `<span>관련 ${i.k}건</span>` : ""}</div></li>`).join("");
+  const eli = (i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
+<div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}</div></li>`;
+  const list = items.slice(0, 12).map(eli).join("");
+  const rest = items.length > 12 ? `<details class="more"><summary>${items.length - 12}개 더 보기</summary><ol class="list" start="13">${items.slice(12).map(eli).join("")}</ol></details>` : "";
   const econCountries = (d.ranking || []).map((a2) => [a2, d.countries[a2]])
     .map(([a2, c]) => [a2, c, (c.items || []).filter((i) => i.c === "economy")])
     .filter(([, , xs]) => xs.length).sort((a, b) => b[2].length - a[2].length).slice(0, 8);
@@ -123,7 +131,7 @@ export function econPage(origin, d) {
 <h1>오늘의 경제·증시 뉴스</h1>
 <p class="lead">증시, 환율, 금리, 기업 실적처럼 나라 이름이 없는 경제 뉴스까지 모았어요. 여러 언론이 함께 다룬 소식이 위로 와요. ${hm(d.updated_at)} 기준이에요.</p>
 ${(e.kw || []).length ? `<section class="card"><h2>지금 경제 키워드</h2><ul class="kw">${e.kw.map((k) => `<li>${esc(k)}</li>`).join("")}</ul></section>` : ""}
-<section class="card"><h2>많이 다뤄진 경제 뉴스</h2><p class="sub">최근 24시간, 같은 사건은 하나로 묶었어요.</p><ol class="list">${list || "<li>아직 모인 기사가 없어요.</li>"}</ol></section>
+<section class="card"><h2>많이 다뤄진 경제 뉴스</h2><p class="sub">최근 24시간, 같은 사건은 하나로 묶었어요.</p><ol class="list">${list || "<li>아직 모인 기사가 없어요.</li>"}</ol>${rest}</section>
 ${econCountries.length ? `<section class="card"><h2>나라별 경제 뉴스</h2><ul class="chips">${econCountries.map(([a2, c, xs]) => `<li><a href="/c/${a2.toLowerCase()}/">${esc(c.ko)}<span class="n">${xs.length}</span></a></li>`).join("")}</ul></section>` : ""}
 <div class="acts"><a class="btn pri" href="/">지도에서 보기</a><button type="button" class="btn sec" data-share>공유하기</button></div>`;
   return shell({

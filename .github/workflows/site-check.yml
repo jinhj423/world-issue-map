@@ -1,0 +1,23 @@
+name: 사이트 점검 (수동)
+# 사이트가 실제로 잘 도는지 밖에서 확인한다: 방문자 수, 수집 깨우기 토큰, 주요 주소 응답.
+# 방문자 수는 읽기만 하는 주소(GET /api/visit)라 이 점검이 숫자를 늘리지 않는다.
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 점검
+        env:
+          SITE: https://wnm.jinhj423-42b.workers.dev
+        run: |
+          echo "## 방문자·알림 구독"; curl -s "$SITE/api/visit"; echo
+          echo "## 수집 깨우기"; curl -s "$SITE/api/cron-check"; echo
+          echo "## 주소별 응답"
+          for p in / /c/jp/ /c/us/ /econ/ /about/ /sitemap.xml /robots.txt /data/news.json /data/archive.json /og.png /page.css; do
+            printf "%-20s " "$p"; curl -s -o /dev/null -w "%{http_code} %{size_download}B\n" "$SITE$p"
+          done
+          echo "## 메인 공유 제목"; curl -s "$SITE/" | grep -o '<meta property="og:title" content="[^"]*"'
+          echo "## 데이터 출처·시각"; curl -sI "$SITE/data/news.json" | grep -i x-data-source; curl -s "$SITE/data/news.json" | head -c 60; echo
