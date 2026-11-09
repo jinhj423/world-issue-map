@@ -106,6 +106,27 @@ def fetch_country(c: dict, do_local: bool = True) -> tuple[str, dict]:
     return c["a2"], res
 
 
+def update_archive(ds: dict, now: datetime) -> None:
+    """지난 7일 보기용: 한국 날짜마다 그날 마지막 수집의 상위 5개 나라와 대표 헤드라인을 남긴다."""
+    path = DATA / "archive.json"
+    try:
+        arc = json.loads(path.read_text("utf-8"))
+    except Exception:
+        arc = {}
+    days = arc.get("days", {})
+    day = now.astimezone(newsmap.KST).strftime("%Y-%m-%d")
+    top = []
+    for a2 in ds["ranking"][:5]:
+        c = ds["countries"][a2]
+        it = (c.get("items") or [{}])[0]
+        top.append({"a2": a2, "heat": c.get("heat"), "n": c.get("n"), "cat": c.get("cat"),
+                    "t": it.get("t"), "s": it.get("s"), "u": it.get("u"), "sc": it.get("sc")})
+    days[day] = {"at": ds["updated_at"], "top": top}
+    keep = sorted(days)[-8:]
+    arc["days"] = {d: days[d] for d in keep}
+    path.write_text(json.dumps(arc, ensure_ascii=False, separators=(",", ":")), "utf-8")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true", help="네트워크 없이 tests/fixtures RSS로 실행")
@@ -148,6 +169,7 @@ def main() -> None:
     out.write_text(json.dumps(ds, ensure_ascii=False, separators=(",", ":")), "utf-8")
     if not args.dry:
         hist_path.write_text(json.dumps(newsmap.update_history(history, ds, now), ensure_ascii=False), "utf-8")
+        update_archive(ds, now)
     print(f"완료: {got}/{len(countries)}개국 → {out.relative_to(ROOT)}")
 
 

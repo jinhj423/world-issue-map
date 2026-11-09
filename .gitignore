@@ -4,3 +4,5 @@ drafts/
 __pycache__/
 *.pyc
 
+.wrangler/
+.hallmark/

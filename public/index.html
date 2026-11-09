@@ -196,6 +196,44 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .foot p{margin:0}
 .visits{margin-top:8px!important;font-weight:600;color:var(--ink-2)}
 .visits b{color:var(--ink);font-weight:800}
+.cnav{padding:16px 4px 0;font-size:12px;line-height:1.9}
+.cnav h2{font-size:12px;font-weight:700;color:var(--ink-3);margin:0 0 4px}
+.cnav a{color:var(--ink-3);text-decoration:none;margin-right:12px;white-space:nowrap}
+.cnav a:hover{color:var(--ink-2);text-decoration:underline}
+.bell{position:relative}
+.bell svg{display:block!important}
+.bell[aria-pressed="true"]{color:var(--link)}
+.bell[aria-pressed="true"] .ic-bell path{fill:currentColor}
+.story .tag{font-size:12px;font-weight:700;color:var(--red-ink)}
+.story .tag.new{color:var(--link)}
+.story .ok,.news .meta .ok{color:var(--link);font-weight:700}
+.grp{font-size:12.5px;font-weight:700;color:var(--ink-3);margin:12px 0 4px}
+.grp:first-of-type{margin-top:4px}
+.chead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cacts{display:flex;gap:8px;flex:0 0 auto;padding-top:4px}
+.cbtn{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 12px;border-radius:999px;background:var(--soft);font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.cbtn:hover{color:var(--ink)}
+.cbtn[aria-pressed="true"]{background:var(--accent-fill);color:var(--on-fill)}
+.cbtn svg{display:block}
+.cbtn[aria-pressed="true"] svg path{fill:currentColor}
+.clink{display:inline-block;margin:12px 0 0;font-size:13px;font-weight:700;color:var(--link);text-decoration:none}
+.clink:hover{text-decoration:underline}
+.rep{font-size:12px;color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
+.rep:hover{color:var(--ink-2)}
+.rep:disabled{text-decoration:none;opacity:1;cursor:default}
+.week{list-style:none;margin:0;padding:0}
+.week>li{padding:12px 0;border-top:1px solid var(--line)}
+.week>li:first-child{border-top:0;padding-top:4px}
+.week .day{font-size:13px;font-weight:800;color:var(--ink-2);margin:0 0 4px}
+.week ol{list-style:none;margin:0;padding:0}
+.week ol li{display:flex;gap:8px;padding:4px 0;font-size:14px;line-height:1.5}
+.week ol .r{flex:0 0 16px;font-weight:800;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.week ol li:first-child .r{color:var(--red-ink)}
+.week ol a{text-decoration:none;font-weight:600}
+.week ol a:hover{text-decoration:underline;text-underline-offset:3px}
+.week .ctag{margin:0 8px 0 0}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--inv-bg);color:var(--inv-fg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1}
 
 .install{position:fixed;left:16px;right:16px;bottom:20px;max-width:430px;margin:0 auto;background:var(--card);border-radius:16px;box-shadow:var(--shadow-pop);padding:16px 16px;display:flex;align-items:center;gap:12px;z-index:9}
 .install .ico{flex:0 0 40px;width:40px;height:40px}
@@ -262,6 +300,9 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
     <div class="topr">
       <button type="button" class="how appbtn" id="installBtn" hidden>앱 설치</button>
       <button type="button" class="how" id="aboutBtn"><span class="full">순위는 어떻게 매기나요?</span><span class="short">계산법</span></button>
+      <button type="button" class="theme bell" id="bellBtn" aria-label="급상승 알림 받기" aria-pressed="false" hidden>
+        <svg class="ic-bell" width="17" height="17" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3a5 5 0 0 0-5 5v3.2L3.6 14h12.8L15 11.2V8a5 5 0 0 0-5-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 16.2a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
       <button type="button" class="theme" id="themeBtn" aria-label="어두운 화면으로">
         <svg class="ic-moon" width="17" height="17" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
         <svg class="ic-sun" width="17" height="17" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.2v2M10 15.8v2M2.2 10h2M15.8 10h2M4.5 4.5l1.4 1.4M14.1 14.1l1.4 1.4M15.5 4.5l-1.4 1.4M5.9 14.1l-1.4 1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -302,7 +343,9 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   </div>
 
   <footer class="foot" id="foot"></footer>
+  <nav class="cnav" aria-label="나라별 뉴스"><h2>나라별 뉴스 페이지</h2><div id="cnav"></div></nav>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <nav class="nav" aria-label="바로가기">
   <button type="button" data-go="secToday" class="on"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5V17h-5v-4.5H8V17H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>오늘</button>
@@ -317,7 +360,8 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
     <li><b>보도량 60%</b>: 최근 24시간 그 나라 관련 헤드라인 수예요. 같은 사건을 여러 언론이 다루면 더 크게 세고, 분쟁·재난 기사는 가중치를 줘요.</li>
     <li><b>평소 대비 40%</b>: 오늘 보도량을 그 나라의 최근 7일과 비교해요. 평소 조용하던 나라에 일이 터지면 '평소보다 많음'이 붙어요. 기록이 3일 미만이면 평소 수준으로 계산해요.</li>
   </ul>
-  <p>분야와 단어는 자동으로 분류해서 가끔 어긋날 수 있어요. 기사 원문은 각 언론사 사이트에서 볼 수 있어요.</p>
+  <p>분야와 단어는 자동으로 분류해서 가끔 어긋날 수 있어요. 나라에 맞지 않는 기사는 나라 화면에서 '잘못 분류'로 알려 주세요. 3건이 모이면 목록에서 빠져요.</p>
+  <p><a href="/about/">소개, 개인정보, 문의</a></p>
   <form method="dialog"><button class="close">알겠어요</button></form>
 </dialog>
 
@@ -342,7 +386,16 @@ document.getElementById("loading").remove();
 const C=data.countries, CAT=data.categories;
 const byId={}; for(const [a2,c] of Object.entries(C)) if(c.id) byId[c.id]=a2;
 const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null,sort:"hot"};
-try{if(localStorage.getItem("wim-sort")==="new")state.sort="new"}catch(e){}
+try{const v=localStorage.getItem("wim-sort");if(v==="new"||v==="week")state.sort=v}catch(e){}
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let pins=ls.get("wim-pins",[]).filter(a=>data.countries[a]);
+// 지난 방문과 비교: 이번 방문 동안은 처음 비교한 기록을 그대로 쓴다(새로고침해도 같은 표시)
+let cmp=null;
+try{cmp=JSON.parse(sessionStorage.getItem("wim-cmp")||"null")}catch(e){}
+if(!cmp){const prev=ls.get("wim-seen",null);if(prev&&prev.at!==data.updated_at&&Array.isArray(prev.rank)){cmp=prev;try{sessionStorage.setItem("wim-cmp",JSON.stringify(prev))}catch(e){}}}
+ls.set("wim-seen",{at:data.updated_at,rank:(data.ranking||[]).slice(0,20)});
+const toastEl=document.getElementById("toast");let toastT=0;
+function toast(m){toastEl.textContent=m;toastEl.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove("on"),2000)}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 // ── 인사말 ──
@@ -350,6 +403,7 @@ const upd=new Date(data.updated_at), DOW="일월화수목금토";
 const slot=h=>h<5?"새벽":h<11?"아침":h<17?"낮":h<21?"저녁":"밤";
 document.getElementById("date").innerHTML=`<span>${upd.getMonth()+1}월 ${upd.getDate()}일 ${DOW[upd.getDay()]}요일 ${slot(upd.getHours())}</span><span>${Object.values(C).filter(c=>c.n).length}개국 집계</span>`;
 if(data.preview) document.getElementById("pv").hidden=false;
+const eul=w=>{const c=w.charCodeAt(w.length-1);return c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28?"을":"를"};
 const iga=w=>{const c=w.charCodeAt(w.length-1);return c>=0xAC00&&c<=0xD7A3&&!((c-0xAC00)%28)?"가":"이"};
 function when(p){
   if(!p) return "";
@@ -360,6 +414,7 @@ function when(p){
   return `${t.getMonth()+1}월 ${t.getDate()}일`;
 }
 
+const hm=p=>{if(!p)return"";const t=new Date(p);return `${t.getMonth()+1}.${t.getDate()} ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`};
 // ── 값 ──
 const catW=(c,cat)=>c.items.filter(i=>i.c===cat).reduce((s,i)=>s+i.k*CAT_W[i.c],0);
 const catMax={}; for(const k of CAT_ORDER) catMax[k]=Math.max(1,...Object.values(C).map(c=>catW(c,k)));
@@ -489,7 +544,8 @@ const BASE=8, STEP=12; let shown=BASE;
 function sortTab(){
   return `<div class="sorttab" role="group" aria-label="정렬">
     <button type="button" data-sort="hot" aria-pressed="${state.sort==="hot"}">뜨거운 순</button>
-    <button type="button" data-sort="new" aria-pressed="${state.sort==="new"}">최신순</button></div>`;
+    <button type="button" data-sort="new" aria-pressed="${state.sort==="new"}">최신순</button>
+    <button type="button" data-sort="week" aria-pressed="${state.sort==="week"}">7일</button></div>`;
 }
 function latestRows(){
   const rows=[];
@@ -503,18 +559,32 @@ function render(){
   if(state.sel) return renderCountry(state.sel);
   if(state.kw) return renderKeyword(state.kw);
   if(state.sort==="new") return renderLatest();
+  if(state.sort==="week") return renderWeek();
   const list=ranked();
+  const plain=state.cat==="all"&&!state.kw;
+  const prevRank=plain&&cmp?cmp.rank:null;
+  const mvTag=(a,i)=>{if(!prevRank) return "";const j=prevRank.indexOf(a);
+    if(j<0&&i<10) return `<span class="tag new">새로 올라옴</span>`;
+    if(j>=0&&j-i>=3) return `<span class="tag">${j-i}계단 올라감</span>`;return ""};
+  const nNew=prevRank?list.slice(0,10).filter((a,i)=>!prevRank.includes(a)||prevRank.indexOf(a)-i>=3).length:0;
+  const pinned=plain?pins.filter(a=>list.includes(a)):[];
   const head=state.cat==="all"?"지금 뜨거운 나라":`${CAT[state.cat]}, 지금 뜨거운 나라`;
   side.innerHTML=`
     <div class="shead"><h2>${head}</h2>${sortTab()}</div>
-    <p class="sub">${state.kw?`'${esc(state.kw)}'가 나온 나라만 보고 있어요. <button type="button" data-clearkw>모두 보기</button>`:"같은 사건을 다룬 기사가 많을수록 위로 와요."}</p>
+    <p class="sub">${state.kw?`'${esc(state.kw)}'가 나온 나라만 보고 있어요. <button type="button" data-clearkw>모두 보기</button>`
+      :prevRank?(nNew?`지난번(${hm(cmp.at)}) 뒤로 새로 오르거나 크게 오른 나라가 ${nNew}곳 있어요.`:`지난번(${hm(cmp.at)})과 상위 순위가 비슷해요.`)
+      :"같은 사건을 다룬 기사가 많을수록 위로 와요."}</p>
+    ${pinned.length?`<p class="grp">관심 나라</p>${pinned.map(a=>{const c=C[a],it=c.items[0],i=list.indexOf(a);
+      return `<button type="button" class="story" data-a2="${a}"><span class="no">${i+1}</span><span>
+        <span class="nm">${esc(c.ko)}${mvTag(a,i)}</span><span class="h">${esc(it?it.t:"")}</span>
+        <span class="src"><span>${esc(it?it.s:"")}</span><span>기사 ${c.n}건</span></span></span></button>`}).join("")}<p class="grp">전체 순위</p>`:""}
     ${(()=>{const used=new Set();return list.slice(0,shown).map((a,i)=>{const c=C[a];
       const pool=state.cat==="all"?c.items:c.items.filter(x=>x.c===state.cat);
       const it=pool.find(x=>!used.has(x.u)&&!used.has(x.t))||pool[0]; if(it){used.add(it.u);used.add(it.t)}
       return `<button type="button" class="story${i<3?" hot":""}" data-a2="${a}"><span class="no">${i+1}</span><span>
-        <span class="nm">${esc(c.ko)}${c.surge!=null&&c.surge>1.3?`<span class="up">평소보다 많음</span>`:""}</span>
+        <span class="nm">${esc(c.ko)}${c.surge!=null&&c.surge>1.3?`<span class="up">평소보다 많음</span>`:""}${mvTag(a,i)}</span>
         <span class="h">${esc(it?it.t:"")}</span>
-        <span class="src"><span>${esc(it?it.s:"")}</span><span>기사 ${c.n}건</span></span></span></button>`}).join("")
+        <span class="src"><span>${esc(it?it.s:"")}</span>${it&&it.sc>1?`<span class="ok">언론 ${it.sc}곳</span>`:""}<span>기사 ${c.n}건</span></span></span></button>`}).join("")
       ||`<p class="empty">이 조건에 맞는 나라가 없어요. 분야를 '전체'로 바꿔 보세요.</p>`})()}
     ${list.length>shown||shown>BASE?`<div class="morebar">
       ${list.length>shown?`<button type="button" class="more" data-more>나라 ${Math.min(STEP,list.length-shown)}개 더 보기 (${list.length-shown}개 남음)</button>`:""}
@@ -552,6 +622,24 @@ function renderLatest(){
       ${rows.length>shown?`<button type="button" class="more" data-more>뉴스 ${Math.min(STEP,rows.length-shown)}개 더 보기 (${rows.length-shown}개 남음)</button>`:""}
       ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
+let arc=null, arcP=null;
+function renderWeek(){
+  if(!arc){
+    side.innerHTML=`<div class="shead"><h2>지난 7일</h2>${sortTab()}</div><p class="sub">불러오는 중이에요.</p>`;
+    if(!arcP) arcP=fetch("data/archive.json",{cache:"no-cache"}).then(r=>r.json()).catch(()=>({days:{}})).then(x=>{arc=x;if(state.sort==="week"&&!state.sel&&!state.kw)render()});
+    return;
+  }
+  const days=Object.keys(arc.days||{}).sort().reverse().slice(0,7);
+  const used=new Set();
+  side.innerHTML=`
+    <div class="shead"><h2>지난 7일</h2>${sortTab()}</div>
+    <p class="sub">날마다 마지막 집계의 상위 3곳이에요. 오늘은 지금까지의 순위예요.</p>
+    <ul class="week">${days.map(d=>{const [y,m,dd]=d.split("-"),dow=DOW[new Date(+y,+m-1,+dd).getDay()];
+      return `<li><p class="day">${+m}월 ${+dd}일 ${dow}요일</p><ol>${(arc.days[d].top||[]).slice(0,3).map((x,i)=>{
+        const c=C[x.a2];if(!c) return "";
+        return `<li><span class="r">${i+1}</span><span><button type="button" class="ctag" data-a2="${x.a2}">${esc(c.ko)}</button>${x.u?`<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>`:""}</span></li>`}).join("")}</ol></li>`}).join("")
+      ||`<li class="empty">아직 쌓인 기록이 없어요.</li>`}</ul>`;
+}
 function renderCountry(a2){
   const c=C[a2];
   const total=Object.values(c.cats).reduce((s,x)=>s+x,0)||1;
@@ -564,7 +652,9 @@ function renderCountry(a2){
   if(state.ckw&&!showLocal) items=items.filter(i=>i.t.includes(state.ckw));
   side.innerHTML=`
     <button type="button" class="back" data-back><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
-    <h2 class="cname">${esc(c.ko)}</h2>
+    <div class="chead"><h2 class="cname">${esc(c.ko)}</h2><div class="cacts">
+      <button type="button" class="cbtn" data-pin aria-pressed="${pins.includes(a2)}"><svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2.5 2.3 4.8 5.2.7-3.8 3.6.9 5.2-4.6-2.5-4.6 2.5.9-5.2L2.5 8l5.2-.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>관심</button>
+      <button type="button" class="cbtn" data-share>공유</button></div></div>
     <p class="cstat">${[esc(c.region),...bits].map(x=>`<span>${x}</span>`).join("")}</p>
     ${cs.length>1?`<div class="mix"><div class="bar">${cs.map(k=>`<span style="width:${100*c.cats[k]/total}%;background:${CAT_COLOR[k]}"></span>`).join("")}</div>
       <div class="keys">${cs.map(k=>`<span><i style="background:${CAT_COLOR[k]}"></i>${CAT[k]} ${Math.round(100*c.cats[k]/total)}%</span>`).join("")}</div></div>`:""}
@@ -576,9 +666,11 @@ function renderCountry(a2){
       <button type="button" role="tab" data-tab="local" aria-selected="${showLocal}">현지 1면</button></div>`:""}
     <ul class="news" style="margin-top:${hasLocal?8:16}px">${(showLocal?c.local:items).map(i=>`<li>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
-      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span>언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat">${CAT[i.c]}</span>`:""}</div>
-    </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>`;
+      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span class="ok">언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat">${CAT[i.c]}</span><button type="button" class="rep" data-rep="${esc(i.u)}"${reported.has(i.u)?" disabled":""}>${reported.has(i.u)?"신고했어요":"잘못 분류"}</button>`:""}</div>
+    </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>
+    <a class="clink" href="/c/${a2.toLowerCase()}/">${esc(c.ko)} 뉴스 페이지 열기</a>`;
 }
+const reported=new Set(ls.get("wim-rep",[]));
 side.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
   if(t.dataset.a2) select(t.dataset.a2);
@@ -588,6 +680,17 @@ side.addEventListener("click",e=>{
   else if(t.dataset.tab){state.tab=t.dataset.tab;if(state.tab==="local")state.ckw=null;render()}
   else if(t.dataset.ckw!==undefined){state.ckw=t.dataset.ckw||null;render()}
   else if(t.dataset.sort){state.sort=t.dataset.sort;shown=BASE;try{localStorage.setItem("wim-sort",state.sort)}catch(e){}render()}
+  else if("pin" in t.dataset){const a=state.sel;if(!a)return;
+    pins=pins.includes(a)?pins.filter(x=>x!==a):[a,...pins].slice(0,5);ls.set("wim-pins",pins);
+    toast(pins.includes(a)?`${C[a].ko}${eul(C[a].ko)} 관심 나라로 고정했어요. 순위 맨 위에 보여요.`:"관심 나라에서 뺐어요.");render()}
+  else if("share" in t.dataset){const a=state.sel;if(!a)return;
+    const u=location.origin+"/c/"+a.toLowerCase()+"/",ti=`${C[a].ko} 오늘의 주요 뉴스`;
+    (async()=>{try{if(navigator.share){await navigator.share({title:ti,url:u});return}await navigator.clipboard.writeText(u);toast("링크를 복사했어요")}catch(x){}})()}
+  else if(t.dataset.rep){const u=t.dataset.rep,a=state.sel,it=C[a]&&C[a].items.find(x=>x.u===u);let vid=null;try{vid=localStorage.getItem("wim-vid")}catch(e){}
+    if(!vid||!it) return;
+    t.disabled=true;t.textContent="신고했어요";reported.add(u);ls.set("wim-rep",[...reported].slice(-200));
+    fetch("api/report",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid,u,a2:a,t:it.t})}).catch(()=>{});
+    toast("알려 주셔서 고마워요. 3건이 모이면 이 나라 목록에서 빠져요.")}
   else if("clearkw" in t.dataset){state.kw=null;words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));paint();render()}
 });
 function select(a2,fromHash){
@@ -644,7 +747,42 @@ document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)}</p><p>
     el.hidden=false;
   }catch(e){}
 })();
+const cnav=document.getElementById("cnav");
+if(cnav&&!cnav.children.length) cnav.innerHTML=(data.ranking||[]).map(a=>`<a href="/c/${a.toLowerCase()}/">${esc(C[a].ko)} 뉴스</a>`).join("");
 fromHash(); if(!state.sel) render();
+})();
+// ── 급상승 알림(웹 푸시): 하루 최대 2번, 밤에는 보내지 않음 ──
+(function(){
+  const btn=document.getElementById("bellBtn");
+  if(!btn||!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)) return;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  const toast=m=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
+  btn.hidden=false;
+  const u8=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");const b=atob(s+"===".slice((s.length+3)%4));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+  const set=on=>{btn.setAttribute("aria-pressed",on);btn.setAttribute("aria-label",on?"급상승 알림 끄기":"급상승 알림 받기")};
+  const reg=()=>navigator.serviceWorker.ready;
+  reg().then(r=>r.pushManager.getSubscription()).then(s=>set(!!s)).catch(()=>{});
+  btn.onclick=async()=>{
+    if(ios&&!standalone){toast("아이폰은 홈 화면에 앱으로 설치한 뒤 알림을 켤 수 있어요.");return}
+    btn.disabled=true;
+    try{
+      const r=await reg(), cur=await r.pushManager.getSubscription();
+      if(cur){
+        await fetch("api/push/sub",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:cur.endpoint})}).catch(()=>{});
+        await cur.unsubscribe(); set(false); toast("알림을 껐어요.");
+      }else{
+        const perm=await Notification.requestPermission();
+        if(perm!=="granted"){toast("브라우저에서 알림이 꺼져 있어요. 사이트 설정에서 알림을 허용해 주세요.");return}
+        const {key}=await (await fetch("api/push/key")).json();
+        const sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
+        const res=await fetch("api/push/sub",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sub:sub.toJSON(),test:true})});
+        if(!res.ok) throw new Error("save");
+        set(true); toast("알림을 켰어요. 큰 이슈가 생기면 하루 최대 2번 알려 드려요.");
+      }
+    }catch(e){toast("알림을 켜지 못했어요. 잠시 뒤 다시 해 주세요.")}
+    finally{btn.disabled=false}
+  };
 })();
 </script>
 <script>
