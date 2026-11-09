@@ -196,12 +196,6 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .foot p{margin:0}
 .visits{margin-top:8px!important;font-weight:600;color:var(--ink-2)}
 .visits b{color:var(--ink);font-weight:800}
-.cnav{padding:16px 4px 0;font-size:12px;line-height:1.9}
-.cnav summary{font-size:12px;font-weight:700;color:var(--ink-3);cursor:pointer;width:max-content;max-width:100%}
-.cnav summary:hover{color:var(--ink-2)}
-#cnav{display:flex;flex-wrap:wrap;gap:0 12px;padding-top:4px;min-width:0}
-.cnav a{color:var(--ink-3);text-decoration:none;white-space:nowrap}
-.cnav a:hover{color:var(--ink-2);text-decoration:underline}
 .bell{position:relative}
 .bell svg{display:block!important}
 .bell[aria-pressed="true"]{color:var(--link)}
@@ -218,6 +212,11 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .cbtn[aria-pressed="true"]{background:var(--accent-fill);color:var(--on-fill)}
 .cbtn svg{display:block}
 .cbtn[aria-pressed="true"] svg path{fill:currentColor}
+.cpage{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:12px 16px;border-radius:14px;background:var(--soft);text-decoration:none;color:var(--ink)}
+.cpage:hover{background:var(--line)}
+.cpage b{display:block;font-size:14px;font-weight:700}
+.cpage small{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+.cpage svg{flex:0 0 auto;color:var(--ink-3)}
 .clink{display:inline-block;margin:12px 0 0;font-size:13px;font-weight:700;color:var(--link);text-decoration:none}
 .clink:hover{text-decoration:underline}
 .rep{font-size:12px;color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
@@ -376,7 +375,6 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   </div>
 
   <footer class="foot" id="foot"></footer>
-  <nav class="cnav" aria-label="나라별 뉴스"><details><summary>나라별 뉴스 페이지 모두 보기</summary><div id="cnav"></div></details></nav>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -707,6 +705,7 @@ function renderCountry(a2){
     <div class="chead"><h2 class="cname">${esc(c.ko)}</h2><div class="cacts">
       <button type="button" class="cbtn" data-pin aria-pressed="${pins.includes(a2)}"><svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2.5 2.3 4.8 5.2.7-3.8 3.6.9 5.2-4.6-2.5-4.6 2.5.9-5.2L2.5 8l5.2-.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>관심</button>
       <button type="button" class="cbtn" data-share>공유</button></div></div>
+    <a class="cpage" href="/c/${a2.toLowerCase()}/"><span><b>${esc(c.ko)} 뉴스 페이지</b><small>헤드라인 20개, 현지 1면, 지난 7일 순위를 한 페이지에서</small></span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     <p class="cstat">${[esc(c.region),...bits].map(x=>`<span>${x}</span>`).join("")}</p>
     ${cs.length>1?`<div class="mix"><div class="bar">${cs.map(k=>`<span style="width:${100*c.cats[k]/total}%;background:${CAT_COLOR[k]}"></span>`).join("")}</div>
       <div class="keys">${cs.map(k=>`<span><i style="background:${CAT_COLOR[k]}"></i>${CAT[k]} ${Math.round(100*c.cats[k]/total)}%</span>`).join("")}</div></div>`:""}
@@ -719,8 +718,7 @@ function renderCountry(a2){
     <ul class="news" style="margin-top:${hasLocal?8:16}px">${(showLocal?c.local:items).map(i=>`<li>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
       <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span class="ok">언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat">${CAT[i.c]}</span><button type="button" class="rep" data-rep="${esc(i.u)}"${reported.has(i.u)?" disabled":""}>${reported.has(i.u)?"신고했어요":"잘못 분류"}</button>`:""}</div>
-    </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>
-    <a class="clink" href="/c/${a2.toLowerCase()}/">${esc(c.ko)} 뉴스 페이지 열기</a>`;
+    </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>`;
 }
 const reported=new Set(ls.get("wim-rep",[]));
 side.addEventListener("click",e=>{
@@ -827,8 +825,7 @@ econEl.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)ret
   renderEcon()});
 renderEcon();
 if(location.hash==="#buzz") setTimeout(()=>econEl.scrollIntoView({block:"start"}),300);
-const cnav=document.getElementById("cnav");
-if(cnav&&!cnav.children.length) cnav.innerHTML=(data.ranking||[]).map(a=>`<a href="/c/${a.toLowerCase()}/">${esc(C[a].ko)} 뉴스</a>`).join("");
+
 fromHash(); if(!state.sel) render();
 })();
 // ── 알림(웹 푸시): 종 버튼 → 알림 설정 창 ──

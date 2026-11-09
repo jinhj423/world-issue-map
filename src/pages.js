@@ -171,13 +171,12 @@ ${urls.map(([u, f, p]) => `<url><loc>${esc(u)}</loc><lastmod>${lm}</lastmod><cha
 }
 export const robots = (origin) => `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${origin}/sitemap.xml\n`;
 
-// 메인 화면: 공유 미리보기 문구를 오늘 1위로 바꾸고, 나라별 페이지 링크(검색엔진용)를 채운다.
+// 메인 화면: 공유 미리보기 문구를 오늘 1위로 바꾼다.
 export function injectHome(res, origin, d) {
   const r = d.ranking || [], C = d.countries;
   const c1 = C[r[0]], it = c1 && (c1.items || [])[0];
   const ogT = c1 ? `오늘 세계에서 가장 시끄러운 나라: ${c1.ko}` : "세계 이슈 지도";
   const ogD = it ? `${it.t}. ${Object.values(C).filter((c) => c.n).length}개국 뉴스를 지도와 순위로 봐요.` : "56개국 뉴스를 한국어 헤드라인으로.";
-  const links = r.map((a2) => `<a href="/c/${a2.toLowerCase()}/">${esc(C[a2].ko)} 뉴스</a>`).join("");
   const setAttr = (v) => ({ element(e) { e.setAttribute("content", v); } });
   return new HTMLRewriter()
     .on('meta[property="og:title"]', setAttr(ogT))
@@ -186,6 +185,5 @@ export function injectHome(res, origin, d) {
     .on("head", { element(e) {
       e.append(`<link rel="canonical" href="${origin}/"><meta property="og:url" content="${origin}/"><meta property="og:image" content="${origin}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">`, { html: true });
     } })
-    .on("#cnav", { element(e) { e.setInnerContent(links, { html: true }); } })
     .transform(new Response(res.body, { status: res.status, headers: (() => { const h = new Headers(res.headers); h.set("cache-control", "no-cache"); return h; })() }));
 }
