@@ -175,7 +175,7 @@ def _jaccard(a: set, b: set) -> float:
     return len(a & b) / len(a | b)
 
 
-def cluster_items(items: list[dict], threshold: float = 0.45) -> list[dict]:
+def cluster_items(items: list[dict], threshold: float = 0.45, min_shared: int = 0) -> list[dict]:
     """같은 사건을 다룬 비슷한 제목은 하나로 합치고, 합쳐진 수를 k(군집 크기)에 더한다.
     sc = 그 사건을 다룬 서로 다른 언론사 수. 2 이상이면 교차 확인된 사건으로 본다."""
     kept: list[list] = []  # [토큰집합, 대표기사, 언론사집합]
@@ -183,7 +183,7 @@ def cluster_items(items: list[dict], threshold: float = 0.45) -> list[dict]:
         toks = set(tokens(it["t"]))
         src = (it.get("s") or "").strip()
         for ent in kept:
-            if _jaccard(toks, ent[0]) >= threshold:
+            if _jaccard(toks, ent[0]) >= threshold or (min_shared and len(toks & ent[0]) >= min_shared):
                 ent[1]["k"] = ent[1].get("k", 1) + it.get("k", 1)
                 if src:
                     ent[2].add(src)
@@ -306,6 +306,35 @@ def build_dataset(raw: dict[str, dict], history: dict, now: datetime, source_not
         "global_keywords": global_kw,
         "countries": out,
     }
+
+
+TOPIC_STOP = {"속보", "종합", "단독", "오늘", "내일", "어제", "올해", "시장", "투자", "가격", "전망", "대비", "기업", "정부", "한국", "미국", "중국"}
+
+
+def build_topic(items: list[dict], now: datetime, limit: int = 40) -> dict:
+    """경제·화제처럼 나라와 상관없는 묶음: 같은 사건을 합치고, 많이 다뤄지고 최근인 순으로."""
+    seen_u: set[str] = set()
+    rows = []
+    for it in items:
+        t = clean_title(it.get("t", ""), it.get("s"))
+        if not t or it.get("u") in seen_u:
+            continue
+        seen_u.add(it.get("u"))
+        rows.append({**it, "t": t, "c": classify(t), "k": it.get("k", 1)})
+    rows.sort(key=lambda x: x.get("p") or "", reverse=True)
+    rows = cluster_items(rows, threshold=0.4, min_shared=4)
+    rows = [r for r in rows if recency_weight(r.get("p"), now) >= 1.0]  # 최근 24시간만
+
+    def score(x: dict) -> float:
+        try:
+            age = (now - datetime.fromisoformat(x["p"])).total_seconds() / 3600 if x.get("p") else 12
+        except ValueError:
+            age = 12
+        fresh = 1.0 if age <= 3 else 0.8 if age <= 8 else 0.55
+        return x["k"] * max(1, x.get("sc", 1)) * fresh
+    rows.sort(key=score, reverse=True)
+    kw = extract_keywords([r["t"] for r in rows], TOPIC_STOP, k=10)
+    return {"items": rows[:limit], "kw": kw}
 
 
 def update_history(history: dict, dataset: dict, now: datetime, keep_days: int = 21) -> dict:

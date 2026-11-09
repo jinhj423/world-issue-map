@@ -106,6 +106,47 @@ def fetch_country(c: dict, do_local: bool = True) -> tuple[str, dict]:
     return c["a2"], res
 
 
+GN = "https://news.google.com/rss"
+KO = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
+
+
+def gsearch(q: str) -> str:
+    return f"{GN}/search?" + urllib.parse.urlencode({"q": q, **KO})
+
+
+# 나라 이름이 제목에 없는 큰 뉴스(경제·증시, 인물 화제)를 따로 모은다
+TOPIC_FEEDS = {
+    "econ": [
+        f"{GN}/headlines/section/topic/BUSINESS?" + urllib.parse.urlencode(KO),
+        gsearch("(증시 OR 코스피 OR 코스닥 OR 나스닥 OR 다우 OR S&P500 OR 환율 OR 금리 OR 국채) when:1d"),
+        gsearch("(주가 OR 주식 OR 실적 OR 시가총액 OR 공모주 OR 상장 OR 반도체 OR 비트코인) when:1d"),
+    ],
+    "buzz": [
+        f"{GN}?" + urllib.parse.urlencode(KO),
+        f"{GN}/headlines/section/topic/TECHNOLOGY?" + urllib.parse.urlencode(KO),
+        f"{GN}/headlines/section/topic/WORLD?" + urllib.parse.urlencode(KO),
+        f"{GN}/headlines/section/topic/ENTERTAINMENT?" + urllib.parse.urlencode(KO),
+    ],
+}
+
+
+def fetch_topics(now: datetime) -> dict:
+    out = {}
+    for name, urls in TOPIC_FEEDS.items():
+        items: list[dict] = []
+        for u in urls:
+            body = get(u)
+            if not body:
+                continue
+            try:
+                items += parse_rss(body, 80)
+            except ET.ParseError:
+                pass
+        out[name] = newsmap.build_topic(items, now)
+        print(f"  {name}: {len(items)}건 → {len(out[name]['items'])}개 사건")
+    return out
+
+
 def update_archive(ds: dict, now: datetime) -> None:
     """지난 7일 보기용: 한국 날짜마다 그날 마지막 수집의 상위 5개 나라와 대표 헤드라인을 남긴다."""
     path = DATA / "archive.json"
@@ -158,6 +199,11 @@ def main() -> None:
     hist_path = DATA / "history.json"
     history = json.loads(hist_path.read_text("utf-8")) if hist_path.exists() else {}
     ds = newsmap.build_dataset(raw, history, now, "Google News RSS (한국어판 + 현지판)")
+    if not args.dry:
+        try:
+            ds.update(fetch_topics(now))
+        except Exception as e:  # noqa: BLE001 — 주제 묶음이 실패해도 나라 데이터는 올린다
+            print("주제 묶음 실패:", e.__class__.__name__, file=sys.stderr)
 
     got = sum(1 for d in ds["countries"].values() if d["n"])
     if not args.dry and got < len(countries) * 0.3:
