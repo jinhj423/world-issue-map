@@ -227,7 +227,7 @@ async function pushApi(request, env, url) {
 // 알림 회차(10분마다). 종류마다 하루 한도가 있고, 한 회차에 종류마다 한 건까지만 만든다.
 // - surge  급상승 나라: 순위 5위 안 + 평소의 2.5배 이상 + 기사 12건 이상, 같은 나라 24시간 1번, 하루 2번
 // - econ   경제·증시 큰 뉴스: 언론 6곳 이상이 다룬 3시간 안 사건, 하루 3번
-// - buzz   지금 화제: 언론 8곳 이상이 다룬 3시간 안 사건, 하루 2번
+// - buzz   지금 화제: 언론 6곳 이상이 다룬 3시간 안 사건, 하루 2번
 // - pins   관심 나라: 그 나라가 3위 안에 들거나 평소의 2배 이상, 나라마다 하루 1번
 // - morning 아침 8시 요약: 하루 1번
 // 밤 23~07시는 '밤 조용히'를 켠 기기에 보내지 않는다(아침 요약 제외).
@@ -271,7 +271,7 @@ async function pushTick(env, site) {
   const sentRow = await db.prepare("SELECT v FROM kv WHERE k='topic_sent'").first();
   let sent = []; try { sent = JSON.parse(sentRow?.v || "[]").filter((x) => now - x.at < 86400); } catch (e) {}
   const sentSets = sent.map((x) => toks(x.t));
-  for (const [kind, minSc, label, path] of [["econ", 6, "경제·증시", "/econ/"], ["buzz", 8, "지금 화제", "/#buzz"]]) {
+  for (const [kind, minSc, label, path] of [["econ", 6, "경제·증시", "/econ/"], ["buzz", 6, "지금 화제", "/#buzz"]]) {
     if (await count(kind) >= CAP[kind]) continue;
     const it = ((d[kind] || {}).items || []).find((x) => (x.sc || 1) >= minSc && hoursAgo(x.p) <= 3 && !sentSets.some((s) => sameStory(toks(x.t), s)));
     if (!it) continue;
