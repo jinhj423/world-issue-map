@@ -37,7 +37,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 </head><body><div class="wrap">
 <header class="top"><a class="brand" href="/">${LOGO}세계 이슈 지도</a><a class="go" href="/">지도 열기</a></header>
 <main>${body}</main>
-<footer><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
+<footer><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -110,6 +110,29 @@ ${week}
   });
 }
 
+export function econPage(origin, d) {
+  const e = d.econ || { items: [], kw: [] }, CAT = d.categories || {};
+  const items = (e.items || []).slice(0, 30);
+  const list = items.map((i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a>
+<div class="meta"><span>${esc(i.s)}</span>${i.p ? `<span>${hm(i.p)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}${i.k > 1 ? `<span>관련 ${i.k}건</span>` : ""}</div></li>`).join("");
+  const econCountries = (d.ranking || []).map((a2) => [a2, d.countries[a2]])
+    .map(([a2, c]) => [a2, c, (c.items || []).filter((i) => i.c === "economy")])
+    .filter(([, , xs]) => xs.length).sort((a, b) => b[2].length - a[2].length).slice(0, 8);
+  const body = `
+<p class="crumb"><a href="/">세계 이슈 지도</a> / 경제·증시</p>
+<h1>오늘의 경제·증시 뉴스</h1>
+<p class="lead">증시, 환율, 금리, 기업 실적처럼 나라 이름이 없는 경제 뉴스까지 모았어요. 여러 언론이 함께 다룬 소식이 위로 와요. ${hm(d.updated_at)} 기준이에요.</p>
+${(e.kw || []).length ? `<section class="card"><h2>지금 경제 키워드</h2><ul class="kw">${e.kw.map((k) => `<li>${esc(k)}</li>`).join("")}</ul></section>` : ""}
+<section class="card"><h2>많이 다뤄진 경제 뉴스</h2><p class="sub">최근 24시간, 같은 사건은 하나로 묶었어요.</p><ol class="list">${list || "<li>아직 모인 기사가 없어요.</li>"}</ol></section>
+${econCountries.length ? `<section class="card"><h2>나라별 경제 뉴스</h2><ul class="chips">${econCountries.map(([a2, c, xs]) => `<li><a href="/c/${a2.toLowerCase()}/">${esc(c.ko)}<span class="n">${xs.length}</span></a></li>`).join("")}</ul></section>` : ""}
+<div class="acts"><a class="btn pri" href="/">지도에서 보기</a><button type="button" class="btn sec" data-share>공유하기</button></div>`;
+  return shell({
+    origin, path: "/econ/", title: "오늘 경제 뉴스, 증시·환율·금리 주요 헤드라인 | 세계 이슈 지도",
+    desc: items[0] ? `오늘 가장 많이 다뤄진 경제 소식: ${items[0].t}` : "증시·환율·금리·기업 실적 뉴스를 한곳에 모아 봅니다.",
+    ogTitle: "오늘의 경제·증시 뉴스", body,
+  });
+}
+
 export function aboutPage(origin) {
   const body = `
 <p class="crumb"><a href="/">세계 이슈 지도</a> / 소개</p>
@@ -121,7 +144,7 @@ export function aboutPage(origin) {
 <p>기사 본문은 저장하지 않고 제목과 원문 링크만 보여 줘요. 원문은 각 언론사에 있어요.</p></section>
 <section class="card prose"><h2>개인정보</h2>
 <ul><li>방문자 수를 세려고 브라우저마다 무작위 번호 하나를 만들어 저장해요. 이름, 이메일, IP 주소는 저장하지 않아요.</li>
-<li>알림을 켜면 브라우저가 주는 알림 주소만 저장해요. 알림을 끄면 지워요.</li>
+<li>알림을 켜면 브라우저가 주는 알림 주소와 고른 알림 종류(관심 나라 포함)만 저장해요. 알림을 끄면 지워요.</li>
 <li>"잘못 분류" 신고는 신고한 기사 링크와 위의 무작위 번호만 남겨요. 같은 기사에 신고가 3건 모이면 그 나라 목록에서 빠져요.</li>
 <li>화면 설정(다크 모드, 관심 나라)은 이 기기에만 저장돼요.</li></ul></section>
 <section class="card prose"><h2>문의</h2>
@@ -131,7 +154,7 @@ export function aboutPage(origin) {
 
 export function sitemap(origin, d) {
   const lm = d && d.updated_at ? d.updated_at.slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/about/", "monthly", "0.3"]];
+  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/econ/", "hourly", "0.9"], [origin + "/about/", "monthly", "0.3"]];
   if (d) for (const a2 of Object.keys(d.countries)) urls.push([`${origin}/c/${a2.toLowerCase()}/`, "hourly", "0.8"]);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

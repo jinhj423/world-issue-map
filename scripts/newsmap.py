@@ -182,14 +182,17 @@ def cluster_items(items: list[dict], threshold: float = 0.45, min_shared: int = 
     for it in items:
         toks = set(tokens(it["t"]))
         src = (it.get("s") or "").strip()
+        more = set(it.pop("ss", None) or [])  # 구글 묶음 안 다른 언론사
         for ent in kept:
             if _jaccard(toks, ent[0]) >= threshold or (min_shared and len(toks & ent[0]) >= min_shared):
                 ent[1]["k"] = ent[1].get("k", 1) + it.get("k", 1)
+                ent[1]["pw"] = max(ent[1].get("pw", 1), it.get("pw", 1))
                 if src:
                     ent[2].add(src)
+                ent[2] |= more
                 break
         else:
-            kept.append([toks, it, {src} if src else set()])
+            kept.append([toks, it, ({src} if src else set()) | more])
     out = []
     for _, it, srcs in kept:
         if len(srcs) > 1:
@@ -308,7 +311,9 @@ def build_dataset(raw: dict[str, dict], history: dict, now: datetime, source_not
     }
 
 
-TOPIC_STOP = {"속보", "종합", "단독", "오늘", "내일", "어제", "올해", "시장", "투자", "가격", "전망", "대비", "기업", "정부", "한국", "미국", "중국"}
+TOPIC_STOP = {"속보", "종합", "단독", "오늘", "내일", "어제", "올해", "시장", "투자", "가격", "전망", "대비", "기업", "정부",
+              "한국", "미국", "중국", "이유", "상승", "하락", "급등", "급락", "목표주", "목표가", "마감", "발표", "확대", "추진",
+              "인정", "공개", "주가", "논란", "강화", "최대", "역대", "기록"}
 
 
 def build_topic(items: list[dict], now: datetime, limit: int = 40) -> dict:
@@ -331,8 +336,10 @@ def build_topic(items: list[dict], now: datetime, limit: int = 40) -> dict:
         except ValueError:
             age = 12
         fresh = 1.0 if age <= 3 else 0.8 if age <= 8 else 0.55
-        return x["k"] * max(1, x.get("sc", 1)) * fresh
+        return min(x["k"], 12) * max(1, x.get("sc", 1)) * fresh * x.get("pw", 1)
     rows.sort(key=score, reverse=True)
+    for r in rows:
+        r.pop("pw", None)
     kw = extract_keywords([r["t"] for r in rows], TOPIC_STOP, k=10)
     return {"items": rows[:limit], "kw": kw}
 

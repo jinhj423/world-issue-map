@@ -4,7 +4,7 @@
 //   GitHub 자체 예약은 수 시간씩 밀려서, 정확한 Cloudflare 예약으로 대신 깨운다.
 //   필요한 비밀값: GH_TOKEN (GitHub fine-grained token, 이 저장소 Actions: Read and write)
 // - 검색 유입용 페이지(/c/<나라>/, /about/, /sitemap.xml)는 최신 news.json으로 여기서 그린다(재배포 불필요).
-import { countryPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
+import { countryPage, econPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
 
 const REPO = "jinhj423/world-issue-map";
 const WORKFLOW = "update-news.yml";
@@ -25,6 +25,7 @@ async function ensureTables(db) {
     db.prepare("CREATE TABLE IF NOT EXISTS push_log (k TEXT PRIMARY KEY, at INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS push_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, endpoint TEXT NOT NULL, payload TEXT NOT NULL)"),
   ]);
+  try { await db.prepare("ALTER TABLE push_subs ADD COLUMN prefs TEXT").run(); } catch (e) { /* 이미 있음 */ }
   tablesReady = true;
 }
 const kstNow = () => new Date(Date.now() + 9 * 3600e3);
@@ -167,6 +168,17 @@ async function sendPush(db, keys, sub, payload, site) {
   return r.ok ? "ok" : "err" + r.status;
 }
 
+// 알림 종류(기기마다): 기본값은 급상승·경제·관심 나라 켬, 화제·아침 요약 끔, 밤 조용히 켬
+const PUSH_DEFAULT = { surge: true, econ: true, buzz: false, pins: true, morning: false, quiet: true, list: [] };
+function cleanPrefs(p) {
+  const d = { ...PUSH_DEFAULT, list: [] };
+  if (!p || typeof p !== "object") return d;
+  for (const k of ["surge", "econ", "buzz", "pins", "morning", "quiet"]) if (typeof p[k] === "boolean") d[k] = p[k];
+  if (Array.isArray(p.list)) d.list = p.list.filter((x) => /^[A-Z]{2}$/.test(x)).slice(0, 5);
+  return d;
+}
+const readPrefs = (row) => { try { return cleanPrefs(JSON.parse(row.prefs || "null")); } catch (e) { return cleanPrefs(null); } };
+
 async function pushApi(request, env, url) {
   if (!env.DB) return json({ error: "no db" }, 503);
   await ensureTables(env.DB);
@@ -177,14 +189,31 @@ async function pushApi(request, env, url) {
     try { b = await request.json(); } catch (e) {}
     const s = b.sub || {}, k = s.keys || {};
     if (!/^https:\/\//.test(s.endpoint || "") || !k.p256dh || !k.auth || s.endpoint.length > 800) return json({ error: "bad" }, 400);
-    await db.prepare("INSERT OR REPLACE INTO push_subs (endpoint, p256dh, auth, created) VALUES (?, ?, ?, ?)")
-      .bind(s.endpoint, k.p256dh, k.auth, Math.floor(Date.now() / 1000)).run();
+    await db.prepare("INSERT OR REPLACE INTO push_subs (endpoint, p256dh, auth, created, prefs) VALUES (?, ?, ?, ?, ?)")
+      .bind(s.endpoint, k.p256dh, k.auth, Math.floor(Date.now() / 1000), JSON.stringify(cleanPrefs(b.prefs))).run();
     if (b.test) {
       const r = await sendPush(db, await vapidKeys(db), { endpoint: s.endpoint, p256dh: k.p256dh, auth: k.auth },
-        JSON.stringify({ title: "알림이 켜졌어요", body: "큰 이슈가 생기면 하루 최대 2번 알려 드릴게요.", url: "/", tag: "hello" }), url.origin);
+        JSON.stringify({ title: b.test === "again" ? "테스트 알림이에요" : "알림이 켜졌어요", body: "고른 종류의 큰 소식이 생기면 이렇게 알려 드릴게요.", url: "/", tag: "hello" }), url.origin);
       return json({ ok: true, test: r });
     }
     return json({ ok: true });
+  }
+  if (url.pathname === "/api/push/prefs") {
+    let b = {};
+    if (request.method === "POST") { try { b = await request.json(); } catch (e) {} }
+    const ep = String(b.endpoint || url.searchParams.get("e") || "");
+    const row = ep && await db.prepare("SELECT endpoint, p256dh, auth, prefs FROM push_subs WHERE endpoint=?").bind(ep).first();
+    if (!row) return json({ error: "no sub" }, 404);
+    if (request.method === "POST") {
+      const p = cleanPrefs(b.prefs);
+      await db.prepare("UPDATE push_subs SET prefs=? WHERE endpoint=?").bind(JSON.stringify(p), ep).run();
+      if (b.test) {
+        const r = await sendPush(db, await vapidKeys(db), row, JSON.stringify({ title: "테스트 알림이에요", body: "알림이 잘 와요. 고른 종류의 큰 소식만 알려 드릴게요.", url: "/", tag: "hello" }), url.origin);
+        return json({ ok: true, prefs: p, test: r });
+      }
+      return json({ ok: true, prefs: p });
+    }
+    return json({ prefs: readPrefs(row) });
   }
   if (url.pathname === "/api/push/sub" && request.method === "DELETE") {
     let b = {};
@@ -195,44 +224,93 @@ async function pushApi(request, env, url) {
   return json({ error: "not found" }, 404);
 }
 
-// 급상승 알림: 순위 5위 안 + 평소의 2.5배 이상 + 기사 12건 이상인 나라.
-// 하루 최대 2번, 같은 나라는 24시간에 한 번, 밤 23~07시는 보내지 않는다.
+// 알림 회차(10분마다). 종류마다 하루 한도가 있고, 한 회차에 종류마다 한 건까지만 만든다.
+// - surge  급상승 나라: 순위 5위 안 + 평소의 2.5배 이상 + 기사 12건 이상, 같은 나라 24시간 1번, 하루 2번
+// - econ   경제·증시 큰 뉴스: 언론 6곳 이상이 다룬 3시간 안 사건, 하루 3번
+// - buzz   지금 화제: 언론 8곳 이상이 다룬 3시간 안 사건, 하루 2번
+// - pins   관심 나라: 그 나라가 3위 안에 들거나 평소의 2배 이상, 나라마다 하루 1번
+// - morning 아침 8시 요약: 하루 1번
+// 밤 23~07시는 '밤 조용히'를 켠 기기에 보내지 않는다(아침 요약 제외).
 // 무료 요금제 외부 요청 한도(회당 50) 안에서 한 번에 40곳씩 보내고 나머지는 다음 회차로 넘긴다.
-const SURGE = 2.5, SURGE_N = 12, DAY_CAP = 2;
+const SURGE = 2.5, SURGE_N = 12;
+const CAP = { surge: 2, econ: 3, buzz: 2 };
+const TOK_RE = /[가-힣A-Za-z0-9]{2,}/g;
+const toks = (t) => new Set((String(t).match(TOK_RE) || []).map((x) => x.toLowerCase()));
+function sameStory(a, b) { let n = 0; for (const x of a) if (b.has(x)) n++; return n >= 4 || n / (a.size + b.size - n || 1) >= 0.4; }
+const hoursAgo = (p) => (p ? (Date.now() - new Date(p).getTime()) / 36e5 : 99);
+
 async function pushTick(env, site) {
   if (!env.DB) return;
   await ensureTables(env.DB);
   const db = env.DB, now = Math.floor(Date.now() / 1000);
-  let budget = 40;
-  // 1) 지난 회차에 못 보낸 것부터
-  budget -= await drainQueue(db, budget, site);
-  const h = kstNow().getUTCHours();
-  if (h >= 23 || h < 7 || budget <= 0) return;
-  const day = kstDay();
-  const sent = await db.prepare("SELECT COUNT(*) AS n FROM push_log WHERE k LIKE ?").bind(`day:${day}:%`).first();
-  if ((sent?.n || 0) >= DAY_CAP) return;
+  let budget = 40 - await drainQueue(db, 40, site);
+  if (budget <= 0) return;
+  const subs = ((await db.prepare("SELECT endpoint, prefs FROM push_subs").all()).results || []).map((r) => ({ e: r.endpoint, p: readPrefs(r) }));
+  if (!subs.length) return;
   const d = await getNews(env);
   if (!d) return;
-  const cand = (d.ranking || []).slice(0, 5).map((a2) => [a2, d.countries[a2]])
-    .filter(([, c]) => c && c.surge >= SURGE && c.n >= SURGE_N);
-  for (const [a2, c] of cand) {
-    const last = await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`c:${a2}`).first();
-    if (last && now - last.at < 86400) continue;
-    const it = (c.items || [])[0];
-    if (!it) continue;
-    const payload = JSON.stringify({
-      title: `지금 급상승: ${c.ko}`,
-      body: `평소의 ${Math.round(c.surge * 10) / 10}배 보도. ${it.t}`,
-      url: `/c/${a2.toLowerCase()}/`, tag: `surge-${a2}`,
-    });
-    await db.batch([
-      db.prepare("INSERT OR REPLACE INTO push_log (k, at) VALUES (?, ?)").bind(`c:${a2}`, now),
-      db.prepare("INSERT OR REPLACE INTO push_log (k, at) VALUES (?, ?)").bind(`day:${day}:${a2}`, now),
-      db.prepare("INSERT INTO push_queue (endpoint, payload) SELECT endpoint, ? FROM push_subs").bind(payload),
-    ]);
-    await drainQueue(db, budget, site);
-    return; // 한 회차에 한 나라만
+  const h = kstNow().getUTCHours(), night = h >= 23 || h < 7, day = kstDay();
+  const count = async (kind) => (await db.prepare("SELECT COUNT(*) AS n FROM push_log WHERE k LIKE ?").bind(`day:${day}:${kind}:%`).first())?.n || 0;
+  const mark = (k) => db.prepare("INSERT OR REPLACE INTO push_log (k, at) VALUES (?, ?)").bind(k, now);
+  const events = []; // {kind, payload, who(sub)->bool, logs:[]}
+  const C = d.countries || {};
+
+  // 급상승 나라
+  if (await count("surge") < CAP.surge) {
+    for (const a2 of (d.ranking || []).slice(0, 5)) {
+      const c = C[a2];
+      if (!c || !(c.surge >= SURGE) || c.n < SURGE_N || !(c.items || [])[0]) continue;
+      const last = await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`c:${a2}`).first();
+      if (last && now - last.at < 86400) continue;
+      events.push({ kind: "surge", logs: [`c:${a2}`, `day:${day}:surge:${a2}`],
+        payload: { title: `지금 급상승: ${c.ko}`, body: `평소의 ${Math.round(c.surge * 10) / 10}배 보도. ${c.items[0].t}`, url: `/c/${a2.toLowerCase()}/`, tag: `surge-${a2}` } });
+      break;
+    }
   }
+  // 경제·증시, 지금 화제: 이미 보낸 사건(24시간)과 같은 이야기면 건너뛴다
+  const sentRow = await db.prepare("SELECT v FROM kv WHERE k='topic_sent'").first();
+  let sent = []; try { sent = JSON.parse(sentRow?.v || "[]").filter((x) => now - x.at < 86400); } catch (e) {}
+  const sentSets = sent.map((x) => toks(x.t));
+  for (const [kind, minSc, label, path] of [["econ", 6, "경제·증시", "/econ/"], ["buzz", 8, "지금 화제", "/#buzz"]]) {
+    if (await count(kind) >= CAP[kind]) continue;
+    const it = ((d[kind] || {}).items || []).find((x) => (x.sc || 1) >= minSc && hoursAgo(x.p) <= 3 && !sentSets.some((s) => sameStory(toks(x.t), s)));
+    if (!it) continue;
+    sent.push({ t: it.t, at: now }); sentSets.push(toks(it.t));
+    events.push({ kind, logs: [`day:${day}:${kind}:${now}`],
+      payload: { title: `${label}: 언론 ${it.sc}곳이 다룬 소식`, body: it.t, url: path, tag: `${kind}-${now}` } });
+  }
+  // 관심 나라
+  const pinned = new Set(subs.filter((s) => s.p.pins).flatMap((s) => s.p.list));
+  for (const a2 of pinned) {
+    const c = C[a2], rank = (d.ranking || []).indexOf(a2) + 1;
+    if (!c || !(c.items || [])[0] || !((rank && rank <= 3) || c.surge >= 2)) continue;
+    if (await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`pin:${day}:${a2}`).first()) continue;
+    events.push({ kind: "pins", a2, logs: [`pin:${day}:${a2}`],
+      payload: { title: `관심 나라 ${c.ko}: ${rank && rank <= 3 ? `오늘 ${rank}위` : "평소보다 보도 급증"}`, body: c.items[0].t, url: `/c/${a2.toLowerCase()}/`, tag: `pin-${a2}` } });
+    break;
+  }
+  // 아침 요약
+  if (h === 8 && !(await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`morning:${day}`).first())) {
+    const top = (d.ranking || []).slice(0, 3).map((a) => C[a]?.ko).filter(Boolean);
+    const e1 = ((d.econ || {}).items || [])[0];
+    events.push({ kind: "morning", logs: [`morning:${day}`],
+      payload: { title: `오늘 아침 세계: ${top.join(", ")}`, body: e1 ? `경제: ${e1.t}` : `${top[0]} 소식이 가장 많아요.`, url: "/", tag: `morning-${day}` } });
+  }
+  if (!events.length) return;
+  const stmts = [];
+  for (const ev of events) {
+    for (const k of ev.logs) stmts.push(mark(k));
+    const pl = JSON.stringify(ev.payload);
+    for (const s of subs) {
+      if (!s.p[ev.kind]) continue;
+      if (ev.kind === "pins" && !s.p.list.includes(ev.a2)) continue;
+      if (night && s.p.quiet && ev.kind !== "morning") continue;
+      stmts.push(db.prepare("INSERT INTO push_queue (endpoint, payload) VALUES (?, ?)").bind(s.e, pl));
+    }
+  }
+  stmts.push(db.prepare("INSERT OR REPLACE INTO kv (k, v) VALUES ('topic_sent', ?)").bind(JSON.stringify(sent.slice(-40))));
+  for (let i = 0; i < stmts.length; i += 90) await db.batch(stmts.slice(i, i + 90));
+  await drainQueue(db, budget, site);
 }
 async function drainQueue(db, n, site) {
   if (n <= 0) return 0;
@@ -316,6 +394,12 @@ export default {
     if (p === "/about" || p === "/about/") {
       if (p === "/about") return Response.redirect(url.origin + "/about/", 301);
       return html(aboutPage(url.origin), 3600);
+    }
+    if (p === "/econ" || p === "/econ/") {
+      if (p === "/econ") return Response.redirect(url.origin + "/econ/", 301);
+      const d = await getNews(env);
+      if (!d) return new Response("잠시 뒤 다시 열어 주세요", { status: 503 });
+      return html(econPage(url.origin, d));
     }
     const m = p.match(/^\/c\/([a-z]{2})\/?$/);
     if (m) {

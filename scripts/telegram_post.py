@@ -49,7 +49,13 @@ def main() -> None:
         used.add(it["u"])
         extra = f", 언론 {it['sc']}곳" if (it.get("sc") or 0) >= 2 else ""
         lines.append(f"{i}. <b>{html.escape(c['ko'])}</b>: <a href=\"{html.escape(it['u'])}\">{html.escape(it['t'])}</a> ({html.escape(it.get('s') or '')}{extra})")
-    lines += ["", f"지도로 보기: {SITE}/"]
+    econ = (ds.get("econ") or {}).get("items") or []
+    if econ:
+        lines += ["", "<b>경제·증시</b>"]
+        for it in econ[:3]:
+            extra = f" (언론 {it['sc']}곳)" if (it.get("sc") or 0) >= 2 else ""
+            lines.append(f"· <a href=\"{html.escape(it['u'])}\">{html.escape(it['t'])}</a>{extra}")
+    lines += ["", f"지도로 보기: {SITE}/", f"경제 뉴스: {SITE}/econ/"]
     body = urllib.parse.urlencode({
         "chat_id": chat, "text": "\n".join(lines), "parse_mode": "HTML", "disable_web_page_preview": "true",
     }).encode()

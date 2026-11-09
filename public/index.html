@@ -234,6 +234,35 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .week .ctag{margin:0 8px 0 0}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--inv-bg);color:var(--inv-fg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:calc(100vw - 32px);text-align:center}
 .toast.on{opacity:1}
+.ehead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.ehead h2{margin:0}
+.ekw{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.ekw button{background:var(--soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.ekw button[aria-pressed="true"]{background:var(--accent-fill);color:var(--on-fill)}
+.elist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px}
+.elist li{padding:12px 0;border-top:1px solid var(--line);min-width:0}
+.elist a{text-decoration:none;font-size:14.5px;font-weight:700;line-height:1.55;display:block}
+.elist a:hover{text-decoration:underline;text-underline-offset:3px}
+.elist .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:12px;font-weight:500;color:var(--ink-3)}
+.elist .ok{color:var(--link);font-weight:700}
+.efoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px}
+.efoot .more{margin-top:0;flex:0 1 auto;padding:12px 20px}
+.opts{list-style:none;margin:16px 0 0;padding:0}
+.opts li{margin:0;padding:12px 0;border-top:1px solid var(--line)}
+.opts li:first-child{border-top:0}
+.opts label{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.opts input{flex:0 0 auto;width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent-fill)}
+.opts b{display:block;font-size:15px;color:var(--ink)}
+.opts small{display:block;font-size:13px;color:var(--ink-3);line-height:1.5;margin-top:4px}
+.alstat{font-size:14px;font-weight:600;color:var(--ink-2);margin:0}
+.alstat.on{color:var(--link)}
+.dbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
+.dbtns form{margin:0;margin-left:auto}
+.dbtns .pri{background:var(--accent-fill);color:var(--on-fill);border-radius:12px;padding:8px 20px;font-weight:700}
+.dbtns .sec{background:var(--soft);color:var(--ink);border-radius:12px;padding:8px 16px;font-weight:700}
+.dbtns .close{margin-top:0}
+@media (max-width:980px){.elist{grid-template-columns:1fr}.elist li:first-child{border-top:0}}
+@media (min-width:981px){.elist li:nth-child(-n+2){border-top:0}}
 
 .install{position:fixed;left:16px;right:16px;bottom:20px;max-width:430px;margin:0 auto;background:var(--card);border-radius:16px;box-shadow:var(--shadow-pop);padding:16px 16px;display:flex;align-items:center;gap:12px;z-index:9}
 .install .ico{flex:0 0 40px;width:40px;height:40px}
@@ -286,7 +315,7 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   .mark{padding:4px 8px}
   .zoom{display:none}
   .card{padding:20px 20px 16px}
-  .nav{display:grid;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);grid-template-columns:repeat(3,1fr);padding:8px 0 calc(12px + env(safe-area-inset-bottom));z-index:5}
+  .nav{display:grid;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);grid-template-columns:repeat(4,1fr);padding:8px 0 calc(12px + env(safe-area-inset-bottom));z-index:5}
   .nav button{text-align:center;font-size:11px;font-weight:700;color:var(--ink-3)}
   .nav button.on{color:var(--ink)}
   .nav button svg{display:block;margin:0 auto 4px}
@@ -335,6 +364,8 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
 
     <section class="card side" id="side" aria-live="polite"></section>
 
+    <section class="card wide" id="secEcon" aria-live="polite"></section>
+
     <section class="card wide" id="secWords">
       <h2>오늘 자주 나온 말</h2>
       <p class="sub">여러 나라 뉴스에 같이 등장한 단어예요. 누르면 그 단어가 나온 나라만 남아요.</p>
@@ -350,8 +381,27 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
 <nav class="nav" aria-label="바로가기">
   <button type="button" data-go="secToday" class="on"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5V17h-5v-4.5H8V17H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>오늘</button>
   <button type="button" data-go="secMap"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="m3 5 4.5-2L12 5l5-2v12l-5 2-4.5-2L3 17zm4.5-2v12M12 5v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>지도</button>
+  <button type="button" data-go="secEcon"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15.5 7.5 11l3 3L17 7.5M12.5 7.5H17V12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>경제</button>
   <button type="button" data-go="secWords"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>단어</button>
 </nav>
+
+<dialog id="alerts" aria-labelledby="alT">
+  <h2 id="alT">알림 설정</h2>
+  <p class="alstat" id="alStat">이 기기는 알림이 꺼져 있어요.</p>
+  <ul class="opts" id="alOpts">
+    <li><label><input type="checkbox" data-k="surge"><span><b>급상승 나라</b><small>평소보다 2.5배 넘게 보도된 나라가 5위 안에 들면 알려요. 하루 최대 2번.</small></span></label></li>
+    <li><label><input type="checkbox" data-k="econ"><span><b>경제·증시 큰 뉴스</b><small>언론 6곳 이상이 함께 다룬 경제 소식이 나오면 알려요. 하루 최대 3번.</small></span></label></li>
+    <li><label><input type="checkbox" data-k="buzz"><span><b>지금 화제</b><small>나라와 상관없이 언론 8곳 이상이 다룬 인물·사건 소식. 하루 최대 2번.</small></span></label></li>
+    <li><label><input type="checkbox" data-k="pins"><span><b>관심 나라 소식</b><small id="alPins">관심 나라가 3위 안에 들거나 보도가 2배로 늘면 알려요. 나라마다 하루 1번.</small></span></label></li>
+    <li><label><input type="checkbox" data-k="morning"><span><b>아침 8시 요약</b><small>오늘 가장 시끄러운 나라 3곳과 경제 뉴스 1건을 하루 한 번 보내요.</small></span></label></li>
+    <li><label><input type="checkbox" data-k="quiet"><span><b>밤에는 조용히</b><small>밤 11시부터 아침 7시까지는 보내지 않아요.</small></span></label></li>
+  </ul>
+  <div class="dbtns">
+    <button type="button" class="pri" id="alMain">알림 켜기</button>
+    <button type="button" class="sec" id="alTest" hidden>테스트 알림</button>
+    <form method="dialog"><button class="close">닫기</button></form>
+  </div>
+</dialog>
 
 <dialog id="about">
   <h2>순위는 이렇게 매겨요</h2>
@@ -383,7 +433,7 @@ try{
   if(!world) world=await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")).json();
 }catch(e){document.getElementById("loading").textContent="데이터를 불러오지 못했어요. 새로고침해 주세요.";return}
 document.getElementById("loading").remove();
-const C=data.countries, CAT=data.categories;
+const C=data.countries, CAT=data.categories; window.__C__=C;
 const byId={}; for(const [a2,c] of Object.entries(C)) if(c.id) byId[c.id]=a2;
 const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null,sort:"hot"};
 try{const v=localStorage.getItem("wim-sort");if(v==="new"||v==="week")state.sort=v}catch(e){}
@@ -682,7 +732,8 @@ side.addEventListener("click",e=>{
   else if(t.dataset.sort){state.sort=t.dataset.sort;shown=BASE;try{localStorage.setItem("wim-sort",state.sort)}catch(e){}render()}
   else if("pin" in t.dataset){const a=state.sel;if(!a)return;
     pins=pins.includes(a)?pins.filter(x=>x!==a):[a,...pins].slice(0,5);ls.set("wim-pins",pins);
-    toast(pins.includes(a)?`${C[a].ko}${eul(C[a].ko)} 관심 나라로 고정했어요. 순위 맨 위에 보여요.`:"관심 나라에서 뺐어요.");render()}
+    toast(pins.includes(a)?`${C[a].ko}${eul(C[a].ko)} 관심 나라로 고정했어요. 순위 맨 위에 보여요.`:"관심 나라에서 뺐어요.");render();
+    if(window.wnmPinsChanged) window.wnmPinsChanged()}
   else if("share" in t.dataset){const a=state.sel;if(!a)return;
     const u=location.origin+"/c/"+a.toLowerCase()+"/",ti=`${C[a].ko} 오늘의 주요 뉴스`;
     (async()=>{try{if(navigator.share){await navigator.share({title:ti,url:u});return}await navigator.clipboard.writeText(u);toast("링크를 복사했어요")}catch(x){}})()}
@@ -711,6 +762,9 @@ const navBtns=[...nav.querySelectorAll("button")];
 new IntersectionObserver(es=>{
   es.forEach(x=>{if(x.isIntersecting)navBtns.forEach(b=>b.classList.toggle("on",b.dataset.go===x.target.id))});
 },{rootMargin:"-40% 0px -55% 0px"}).observe(document.getElementById("secWords"));
+new IntersectionObserver(es=>{
+  es.forEach(x=>{if(x.isIntersecting)navBtns.forEach(b=>b.classList.toggle("on",b.dataset.go==="secEcon"))});
+},{rootMargin:"-40% 0px -55% 0px"}).observe(document.getElementById("secEcon"));
 new IntersectionObserver(es=>{
   es.forEach(x=>{if(x.isIntersecting)navBtns.forEach(b=>b.classList.toggle("on",b.dataset.go==="secMap"))});
 },{rootMargin:"-40% 0px -55% 0px"}).observe(document.getElementById("secMap"));
@@ -747,42 +801,102 @@ document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)}</p><p>
     el.hidden=false;
   }catch(e){}
 })();
+// ── 경제·증시 / 지금 화제 ──
+const econEl=document.getElementById("secEcon");
+const est={tab:location.hash==="#buzz"?"buzz":"econ",kw:null,shown:8};
+function renderEcon(){
+  const d=data[est.tab]||{items:[],kw:[]};
+  let rows=(d.items||[]); if(est.kw) rows=rows.filter(i=>i.t.includes(est.kw));
+  econEl.innerHTML=`
+    <div class="ehead"><h2>${est.tab==="econ"?"경제·증시 뉴스":"지금 화제"}</h2>
+      <div class="sorttab" role="group" aria-label="묶음"><button type="button" data-etab="econ" aria-pressed="${est.tab==="econ"}">경제·증시</button><button type="button" data-etab="buzz" aria-pressed="${est.tab==="buzz"}">지금 화제</button></div></div>
+    <p class="sub">${est.tab==="econ"?"증시, 환율, 금리, 기업 실적처럼 나라 이름이 없는 경제 뉴스까지 모았어요.":"나라와 상관없이 지금 많이 다뤄지는 인물·사건 소식이에요."} 여러 언론이 함께 다룬 소식이 위로 와요.</p>
+    ${(d.kw||[]).length?`<div class="ekw" role="group" aria-label="키워드">${d.kw.slice(0,10).map(k=>`<button type="button" data-ekw="${esc(k)}" aria-pressed="${est.kw===k}">${esc(k)}</button>`).join("")}</div>`:""}
+    <ul class="elist">${rows.slice(0,est.shown).map(i=>`<li><a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>
+      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${i.sc>1?`<span class="ok">언론 ${i.sc}곳</span>`:""}</div></li>`).join("")
+      ||`<li class="empty">${est.kw?`‘${esc(est.kw)}’가 들어간 뉴스가 없어요.`:"다음 수집(10분 안)부터 보여요."}</li>`}</ul>
+    <div class="efoot">${rows.length>est.shown?`<button type="button" class="more" data-emore>${Math.min(STEP,rows.length-est.shown)}개 더 보기</button>`:""}
+      ${est.tab==="econ"?`<a class="clink" href="/econ/" style="margin:0">경제 뉴스 페이지 열기</a>`:""}</div>`;
+}
+econEl.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.etab){est.tab=b.dataset.etab;est.kw=null;est.shown=8}
+  else if(b.dataset.ekw!==undefined){est.kw=est.kw===b.dataset.ekw?null:b.dataset.ekw;est.shown=8}
+  else if("emore" in b.dataset){est.shown+=STEP}
+  renderEcon()});
+renderEcon();
+if(location.hash==="#buzz") setTimeout(()=>econEl.scrollIntoView({block:"start"}),300);
 const cnav=document.getElementById("cnav");
 if(cnav&&!cnav.children.length) cnav.innerHTML=(data.ranking||[]).map(a=>`<a href="/c/${a.toLowerCase()}/">${esc(C[a].ko)} 뉴스</a>`).join("");
 fromHash(); if(!state.sel) render();
 })();
-// ── 급상승 알림(웹 푸시): 하루 최대 2번, 밤에는 보내지 않음 ──
+// ── 알림(웹 푸시): 종 버튼 → 알림 설정 창 ──
 (function(){
-  const btn=document.getElementById("bellBtn");
-  if(!btn||!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)) return;
+  const btn=document.getElementById("bellBtn"), dlg=document.getElementById("alerts");
+  if(!btn||!dlg) return;
+  const ok=("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
-  const toast=m=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
   btn.hidden=false;
+  const $=id=>document.getElementById(id), stat=$("alStat"), main=$("alMain"), test=$("alTest"), opts=$("alOpts");
+  const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
+  const DEF={surge:true,econ:true,buzz:false,pins:true,morning:false,quiet:true};
+  const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+  const prefs=()=>({...DEF,...lsGet("wim-push",{}),list:lsGet("wim-pins",[]).slice(0,5)});
   const u8=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");const b=atob(s+"===".slice((s.length+3)%4));return Uint8Array.from(b,c=>c.charCodeAt(0))};
-  const set=on=>{btn.setAttribute("aria-pressed",on);btn.setAttribute("aria-label",on?"급상승 알림 끄기":"급상승 알림 받기")};
   const reg=()=>navigator.serviceWorker.ready;
-  reg().then(r=>r.pushManager.getSubscription()).then(s=>set(!!s)).catch(()=>{});
-  btn.onclick=async()=>{
-    if(ios&&!standalone){toast("아이폰은 홈 화면에 앱으로 설치한 뒤 알림을 켤 수 있어요.");return}
-    btn.disabled=true;
+  let sub=null;
+  const post=(u,b)=>fetch(u,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)});
+  function paint(){
+    const p=prefs();
+    opts.querySelectorAll("input").forEach(i=>{i.checked=!!p[i.dataset.k]});
+    const names=p.list.map(a=>{try{return (window.__C__||{})[a]?.ko||a}catch(e){return a}});
+    const last=names[names.length-1]||"",lc=last.charCodeAt(last.length-1),ig=lc>=0xAC00&&lc<=0xD7A3&&(lc-0xAC00)%28?"이":"가";
+    $("alPins").textContent=p.list.length?`${names.join(", ")}${ig} 3위 안에 들거나 보도가 2배로 늘면 알려요. 나라마다 하루 1번.`:"나라 화면에서 '관심'을 누른 나라가 3위 안에 들거나 보도가 2배로 늘면 알려요. 지금은 관심 나라가 없어요.";
+    btn.setAttribute("aria-pressed",!!sub);btn.setAttribute("aria-label",sub?"알림 설정 (켜짐)":"알림 설정");
+    if(!ok){stat.textContent="이 브라우저는 알림을 지원하지 않아요.";main.hidden=true;test.hidden=true;return}
+    if(ios&&!standalone){stat.textContent="아이폰은 홈 화면에 앱으로 설치한 뒤 알림을 켤 수 있어요.";main.hidden=true;test.hidden=true;return}
+    stat.textContent=sub?"이 기기는 알림이 켜져 있어요. 바꾼 설정은 바로 저장돼요.":"이 기기는 알림이 꺼져 있어요. 받을 종류를 고르고 켜 주세요.";
+    stat.classList.toggle("on",!!sub);
+    main.textContent=sub?"알림 끄기":"알림 켜기"; main.className=sub?"sec":"pri"; test.hidden=!sub;
+  }
+  async function load(){
+    if(!ok) return paint();
+    try{sub=await (await reg()).pushManager.getSubscription()}catch(e){sub=null}
+    if(sub){try{const r=await fetch("api/push/prefs?e="+encodeURIComponent(sub.endpoint));
+      if(r.ok){const {prefs:sp}=await r.json();const {list,...rest}=sp;localStorage.setItem("wim-push",JSON.stringify(rest))}
+      else if(r.status===404){await post("api/push/sub",{sub:sub.toJSON(),prefs:prefs()})}}catch(e){}}
+    paint();
+  }
+  const save=()=>sub&&post("api/push/prefs",{endpoint:sub.endpoint,prefs:prefs()}).catch(()=>{});
+  window.wnmPinsChanged=()=>{save()};
+  opts.addEventListener("change",e=>{const i=e.target;if(!i.dataset.k)return;
+    const cur=lsGet("wim-push",{});cur[i.dataset.k]=i.checked;try{localStorage.setItem("wim-push",JSON.stringify(cur))}catch(x){}
+    paint();save()});
+  btn.onclick=()=>{try{dlg.showModal()}catch(e){dlg.setAttribute("open","")}load()};
+  main.onclick=async()=>{
+    main.disabled=true;
     try{
-      const r=await reg(), cur=await r.pushManager.getSubscription();
-      if(cur){
-        await fetch("api/push/sub",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:cur.endpoint})}).catch(()=>{});
-        await cur.unsubscribe(); set(false); toast("알림을 껐어요.");
+      const r=await reg();
+      if(sub){
+        await fetch("api/push/sub",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})}).catch(()=>{});
+        await sub.unsubscribe(); sub=null; toast("알림을 껐어요.");
       }else{
         const perm=await Notification.requestPermission();
-        if(perm!=="granted"){toast("브라우저에서 알림이 꺼져 있어요. 사이트 설정에서 알림을 허용해 주세요.");return}
+        if(perm!=="granted"){toast("브라우저에서 알림이 막혀 있어요. 사이트 설정에서 알림을 허용해 주세요.");return}
         const {key}=await (await fetch("api/push/key")).json();
-        const sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
-        const res=await fetch("api/push/sub",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sub:sub.toJSON(),test:true})});
+        sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
+        const res=await post("api/push/sub",{sub:sub.toJSON(),prefs:prefs(),test:true});
         if(!res.ok) throw new Error("save");
-        set(true); toast("알림을 켰어요. 큰 이슈가 생기면 하루 최대 2번 알려 드려요.");
+        toast("알림을 켰어요. 확인용 알림을 하나 보냈어요.");
       }
     }catch(e){toast("알림을 켜지 못했어요. 잠시 뒤 다시 해 주세요.")}
-    finally{btn.disabled=false}
+    finally{main.disabled=false;paint()}
   };
+  test.onclick=async()=>{if(!sub)return;test.disabled=true;
+    try{const r=await post("api/push/prefs",{endpoint:sub.endpoint,prefs:prefs(),test:true});toast(r.ok?"테스트 알림을 보냈어요.":"보내지 못했어요.")}catch(e){toast("보내지 못했어요.")}
+    finally{test.disabled=false}};
+  if(ok) reg().then(r=>r.pushManager.getSubscription()).then(s=>{sub=s;paint()}).catch(()=>{});
+  else paint();
 })();
 </script>
 <script>

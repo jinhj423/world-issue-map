@@ -32,6 +32,7 @@ ROOT = newsmap.ROOT
 DATA = ROOT / "public" / "data"
 UA = "Mozilla/5.0 (compatible; WorldIssueMap/1.0; +https://github.com/)"
 LI_RE = re.compile(r"<li\b", re.I)
+FONT_RE = re.compile(r"<font[^>]*>([^<]{1,60})</font>", re.I)
 
 
 def search_url(c: dict) -> str:
@@ -78,8 +79,14 @@ def parse_rss(xml_bytes: bytes, limit: int = 60) -> list[dict]:
             p = None
         desc = item.findtext("description") or ""
         # 구글 뉴스는 같은 사건의 관련 기사들을 <ol><li>로 묶어 준다 → 군집 크기 = 사건의 크기
-        k = max(1, len(LI_RE.findall(html.unescape(desc))))
-        out.append({"t": newsmap.clean_title(title, source), "s": source, "u": link, "p": p, "k": k})
+        d = html.unescape(desc)
+        k = max(1, len(LI_RE.findall(d)))
+        # 묶음 안 기사들의 언론사 이름 → 서로 다른 언론사 수(교차 확인)에 쓴다
+        ss = sorted({x.strip() for x in FONT_RE.findall(d) if x.strip()} - {source})
+        row = {"t": newsmap.clean_title(title, source), "s": source, "u": link, "p": p, "k": k}
+        if ss:
+            row["ss"] = ss
+        out.append(row)
         if len(out) >= limit:
             break
     return out
@@ -139,9 +146,12 @@ def fetch_topics(now: datetime) -> dict:
             if not body:
                 continue
             try:
-                items += parse_rss(body, 80)
+                rows = parse_rss(body, 80)
             except ET.ParseError:
-                pass
+                continue
+            for i, r in enumerate(rows):  # 구글이 위에 둔 기사일수록 큰 뉴스
+                r["pw"] = 1.5 if i < 10 else 1.2 if i < 25 else 1.0
+            items += rows
         out[name] = newsmap.build_topic(items, now)
         print(f"  {name}: {len(items)}건 → {len(out[name]['items'])}개 사건")
     return out
