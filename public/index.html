@@ -429,7 +429,7 @@ const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ── 데이터 ──
 let data=window.__NEWS__, world=window.__WORLD__;
 try{
-  if(!data) data=await (await fetch("data/news.json",{cache:"no-cache"})).json();
+  if(!data){let r=await fetch("data/lite.json",{cache:"no-cache"});if(!r.ok) r=await fetch("data/news.json",{cache:"no-cache"});data=await r.json()}
   if(!world) world=await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")).json();
 }catch(e){document.getElementById("loading").textContent="데이터를 불러오지 못했어요. 새로고침해 주세요.";return}
 document.getElementById("loading").remove();
@@ -466,14 +466,15 @@ function when(p){
 
 const hm=p=>{if(!p)return"";const t=new Date(p);return `${t.getMonth()+1}.${t.getDate()} ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`};
 // ── 값 ──
-const catW=(c,cat)=>c.items.filter(i=>i.c===cat).reduce((s,i)=>s+i.k*CAT_W[i.c],0);
+const catW=(c,cat)=>(c.cats&&c.cats[cat]||0)*CAT_W[cat];
 const catMax={}; for(const k of CAT_ORDER) catMax[k]=Math.max(1,...Object.values(C).map(c=>catW(c,k)));
 function value(a2){
   const c=C[a2]; if(!c||!c.n) return 0;
   if(state.cat==="all") return c.heat;
   const w=catW(c,state.cat); return w?Math.round(100*Math.log1p(w)/Math.log1p(catMax[state.cat])):0;
 }
-const kwHit=a2=>!state.kw||(C[a2]&&(C[a2].kw.includes(state.kw)||C[a2].items.some(i=>i.t.includes(state.kw))));
+const kwC={}; for(const k of (data.global_keywords||[])) kwC[k.kw]=new Set(k.countries);
+const kwHit=a2=>!state.kw||(C[a2]&&((kwC[state.kw]&&kwC[state.kw].has(a2))||C[a2].kw.includes(state.kw)||C[a2].items.some(i=>i.t.includes(state.kw))));
 const ranked=()=>{let l=Object.keys(C).filter(a=>value(a)>0).sort((a,b)=>value(b)-value(a)||C[b].n-C[a].n);return state.kw?l.filter(kwHit):l};
 let dom=[0,100],top3=[],ST=[],RED="",LAND="";
 function refresh(){
@@ -574,7 +575,7 @@ bind(paths,a2Of); bind(pts,d=>d[0]);
 
 // ── 분야 칩 ──
 const chips=document.getElementById("chips");
-const catsPresent=CAT_ORDER.filter(k=>k!=="etc"&&Object.values(C).some(c=>c.items.some(i=>i.c===k)));
+const catsPresent=CAT_ORDER.filter(k=>k!=="etc"&&Object.values(C).some(c=>c.cats&&c.cats[k]));
 chips.innerHTML=[`<button type="button" data-cat="all" aria-pressed="true">전체</button>`]
   .concat(catsPresent.map(k=>`<button type="button" data-cat="${k}" aria-pressed="false">${CAT[k]}</button>`)).join("");
 chips.onclick=e=>{const b=e.target.closest("button");if(!b)return;state.cat=b.dataset.cat;shown=BASE;
@@ -693,15 +694,21 @@ function renderWeek(){
         return `<li><span class="r">${i+1}</span><span><button type="button" class="ctag" data-a2="${x.a2}">${esc(c.ko)}</button>${x.u?`<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>`:""}</span></li>`}).join("")}</ol></li>`}).join("")
       ||`<li class="empty">아직 쌓인 기록이 없어요.</li>`}</ul>`;
 }
+const fullP={};
+function loadFull(a2){
+  const c=C[a2]; if(!data.lite||c.full) return Promise.resolve();
+  return fullP[a2]||(fullP[a2]=fetch(`data/c/${a2}.json`,{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(x=>{if(x){c.items=x.items;c.local=x.local;c.full=true}}).catch(()=>{delete fullP[a2]}));
+}
 function renderCountry(a2){
   const c=C[a2];
+  if(data.lite&&!c.full){loadFull(a2).then(()=>{if(state.sel===a2)render()})}
   const total=Object.values(c.cats).reduce((s,x)=>s+x,0)||1;
   const cs=CAT_ORDER.filter(k=>c.cats[k]);
   const rk=ranked().indexOf(a2)+1;
   const bits=[rk?`오늘 ${rk}위`:null,`기사 ${c.n}건`,
     c.surge==null?null:(c.surge>1.3?`<span class="up">평소보다 ${Math.round((c.surge-1)*100)}% 많음</span>`:c.surge<0.8?"평소보다 조용한 편":"평소와 비슷해요")].filter(Boolean);
   let items=state.cat==="all"?c.items:c.items.filter(i=>i.c===state.cat);
-  const hasLocal=c.local&&c.local.length, showLocal=state.tab==="local"&&hasLocal;
+  const hasLocal=(c.local&&c.local.length)||(!c.full&&c.nl>0), showLocal=state.tab==="local"&&hasLocal;
   if(state.ckw&&!showLocal) items=items.filter(i=>i.t.includes(state.ckw));
   side.innerHTML=`
     <button type="button" class="back" data-back><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
@@ -721,7 +728,7 @@ function renderCountry(a2){
     <ul class="news" style="margin-top:${hasLocal?8:16}px">${(showLocal?c.local:items).map(i=>`<li>
       <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
       <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${!showLocal&&i.k>1?`<span>관련 ${i.k}건</span>`:""}${!showLocal&&i.sc>1?`<span class="ok">언론 ${i.sc}곳</span>`:""}${!showLocal?`<span class="cat">${CAT[i.c]}</span><button type="button" class="rep" data-rep="${esc(i.u)}"${reported.has(i.u)?" disabled":""}>${reported.has(i.u)?"신고했어요":"잘못 분류"}</button>`:""}</div>
-    </li>`).join("")||`<li class="empty">${state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>`;
+    </li>`).join("")||`<li class="empty">${data.lite&&!c.full?"불러오는 중이에요.":state.ckw?`‘${esc(state.ckw)}’가 들어간 뉴스가 없어요.`:state.cat==="all"?"수집된 뉴스가 없어요.":`${CAT[state.cat]} 분야 뉴스가 없어요.`}</li>`}</ul>`;
 }
 const reported=new Set(ls.get("wim-rep",[]));
 side.addEventListener("click",e=>{

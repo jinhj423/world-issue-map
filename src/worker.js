@@ -109,6 +109,27 @@ async function getNews(env) {
   f.obj = d; f.objKey = key; f.out = hidden.size ? JSON.stringify(d) : f.body;
   return d;
 }
+// 첫 화면용 가벼운 데이터: 나라마다 대표 6건 + 최신 6건 + 분야별 대표 1건만, 현지 1면은 빼고(나라를 누를 때 /data/c/XX.json으로 받음)
+function liteOf(d) {
+  const out = { ...d, countries: {}, lite: true };
+  for (const [a2, c] of Object.entries(d.countries || {})) {
+    const items = c.items || [];
+    const pick = new Set(items.slice(0, 6));
+    [...items].sort((x, y) => (y.p || "").localeCompare(x.p || "")).slice(0, 6).forEach((x) => pick.add(x));
+    const seenCat = new Set();
+    for (const x of items) if (!seenCat.has(x.c)) { seenCat.add(x.c); pick.add(x); }
+    out.countries[a2] = { ...c, items: items.filter((x) => pick.has(x)), local: [], nl: (c.local || []).length, ni: items.length };
+  }
+  for (const k of ["econ", "buzz"]) if (d[k]) out[k] = { ...d[k], items: (d[k].items || []).slice(0, 24) };
+  return JSON.stringify(out);
+}
+async function getLite(env) {
+  const d = await getNews(env);
+  if (!d) return null;
+  const f = memo["news.json"];
+  if (!f.lite || f.liteKey !== f.objKey) { f.lite = liteOf(d); f.liteKey = f.objKey; }
+  return f.lite;
+}
 const dataResp = (body, src) => new Response(body, {
   headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-data-source": src },
 });
@@ -340,6 +361,16 @@ export default {
       const d = await getNews(env);
       const f = memo["news.json"];
       return d ? dataResp(f.out || f.body, f.src) : json({ error: "no data" }, 503);
+    }
+    if (p === "/data/lite.json") {
+      const body = await getLite(env);
+      return body ? dataResp(body, memo["news.json"].src) : json({ error: "no data" }, 503);
+    }
+    const dc = p.match(/^\/data\/c\/([A-Z]{2})\.json$/);
+    if (dc) {
+      const d = await getNews(env);
+      const c = d && d.countries[dc[1]];
+      return c ? dataResp(JSON.stringify({ at: d.updated_at, items: c.items || [], local: c.local || [] }), "api") : json({ error: "no" }, 404);
     }
     if (p === "/data/archive.json") {
       const f = await dataFile("archive.json", env, 300e3);
