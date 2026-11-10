@@ -20,4 +20,5 @@ jobs:
             printf "%-20s " "$p"; curl -s -o /dev/null -w "%{http_code} %{size_download}B\n" "$SITE$p"
           done
           echo "## 메인 공유 제목"; curl -s "$SITE/" | grep -o '<meta property="og:title" content="[^"]*"'
+          echo "## 데이터 크기(압축 전송)"; curl -s --compressed -o /dev/null -D - -w "전송 %{size_download}B\n" "$SITE/data/news.json" | grep -i "content-encoding\|전송"
           echo "## 데이터 출처·시각"; curl -sI "$SITE/data/news.json" | grep -i x-data-source; curl -s "$SITE/data/news.json" | head -c 60; echo

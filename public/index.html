@@ -546,8 +546,11 @@ function sizeSide(){
 layout();paint();sizeSide();
 new ResizeObserver(()=>{layout();sizeSide()}).observe(stage);
 
-const zoom=d3.zoom().scaleExtent([1,8]).on("zoom",e=>{T=e.transform;g.attr("transform",T);marks()});
-svg.call(zoom).on("dblclick.zoom",null);
+// 터치: 한 손가락은 페이지 스크롤(지도 고정), 두 손가락일 때만 확대·축소·이동
+const zoom=d3.zoom().scaleExtent([1,8])
+  .filter(e=>e.type.startsWith("touch")?e.touches&&e.touches.length>1:(!e.ctrlKey||e.type==="wheel")&&!e.button)
+  .on("zoom",e=>{T=e.transform;g.attr("transform",T);marks()});
+svg.call(zoom).on("dblclick.zoom",null).style("touch-action","pan-y");
 document.getElementById("zin").onclick=()=>svg.transition().call(zoom.scaleBy,1.7);
 document.getElementById("zout").onclick=()=>svg.transition().call(zoom.scaleBy,1/1.7);
 
