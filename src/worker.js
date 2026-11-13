@@ -10,7 +10,8 @@ const REPO = "jinhj423/world-issue-map";
 const WORKFLOW = "update-news.yml";
 
 // 방문자 수: 브라우저마다 무작위 번호(vid)만 받는다. 이름·IP 등은 저장하지 않는다.
-// visits(day, vid) = 하루 한 줄 → 오늘 방문자 / visitors(vid) = 처음 본 날 → 누적 방문자
+// visits(day, vid) = 하루 한 줄 → 오늘 방문자, 누적 방문 = 날마다 센 방문자의 합(같은 사람도 날이 다르면 다시 셈)
+// visitors(vid) = 처음 본 날 → 날짜별 '처음 온 사람' 점검용
 let tablesReady = false;
 async function ensureTables(db) {
   if (tablesReady) return;
@@ -49,7 +50,7 @@ async function visit(request, env) {
   ]);
   const [t, a, w] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE day = ?").bind(day),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM visitors"),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM visits"),
     env.DB.prepare("SELECT n FROM views WHERE day = ?").bind(day),
   ]);
   return json({ today: t.results[0].n, total: a.results[0].n, views: (w.results[0] || {}).n || 0 });
@@ -390,7 +391,7 @@ export default {
         await ensureTables(env.DB);
         const [t, a, s, h] = await env.DB.batch([
           env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE day = ?").bind(kstDay()),
-          env.DB.prepare("SELECT COUNT(*) AS n FROM visitors"),
+          env.DB.prepare("SELECT COUNT(*) AS n FROM visits"),
           env.DB.prepare("SELECT COUNT(*) AS n FROM push_subs"),
           // 날짜별: 방문자 수, 그날 처음 온 사람 수, 조회수 (최근 14일)
           env.DB.prepare(`SELECT v.day, COUNT(*) AS visitors,
