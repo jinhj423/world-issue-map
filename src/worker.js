@@ -17,6 +17,8 @@ async function ensureTables(db) {
   await db.batch([
     db.prepare("CREATE TABLE IF NOT EXISTS visits (day TEXT NOT NULL, vid TEXT NOT NULL, PRIMARY KEY (day, vid))"),
     db.prepare("CREATE TABLE IF NOT EXISTS visitors (vid TEXT PRIMARY KEY, first_day TEXT NOT NULL)"),
+    // 조회수: 하루 페이지 열람 수(같은 사람이 여러 번 열어도 셈)
+    db.prepare("CREATE TABLE IF NOT EXISTS views (day TEXT PRIMARY KEY, n INTEGER NOT NULL)"),
     // 잘못 분류 신고: 같은 브라우저는 한 기사에 한 번
     db.prepare("CREATE TABLE IF NOT EXISTS reports (u TEXT NOT NULL, vid TEXT NOT NULL, a2 TEXT NOT NULL, t TEXT, at INTEGER NOT NULL, PRIMARY KEY (u, a2, vid))"),
     // 웹 푸시
@@ -43,12 +45,14 @@ async function visit(request, env) {
   await env.DB.batch([
     env.DB.prepare("INSERT OR IGNORE INTO visits (day, vid) VALUES (?, ?)").bind(day, vid),
     env.DB.prepare("INSERT OR IGNORE INTO visitors (vid, first_day) VALUES (?, ?)").bind(vid, day),
+    env.DB.prepare("INSERT INTO views (day, n) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET n = n + 1").bind(day),
   ]);
-  const [t, a] = await env.DB.batch([
+  const [t, a, w] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE day = ?").bind(day),
     env.DB.prepare("SELECT COUNT(*) AS n FROM visitors"),
+    env.DB.prepare("SELECT n FROM views WHERE day = ?").bind(day),
   ]);
-  return json({ today: t.results[0].n, total: a.results[0].n });
+  return json({ today: t.results[0].n, total: a.results[0].n, views: (w.results[0] || {}).n || 0 });
 }
 
 // ── 데이터: 수집 커밋마다 사이트를 재배포하지 않도록, data 브랜치의 최신 파일을 직접 읽는다 ──
@@ -377,19 +381,24 @@ export default {
       return f ? dataResp(f.body, f.src) : json({ days: {} });
     }
     if (p === "/api/visit" && request.method === "POST") {
-      try { return await visit(request, env); } catch (e) { return json({ error: "fail" }, 500); }
+      try { return await visit(request, env); } catch (e) { console.log("방문 집계 실패:", String(e)); return json({ error: "fail" }, 500); }
     }
     // 점검용(읽기만): 지금 숫자를 기록 없이 돌려준다
     if (p === "/api/visit" && request.method === "GET") {
       try {
         if (!env.DB) return json({ error: "no db" }, 503);
         await ensureTables(env.DB);
-        const [t, a, s] = await env.DB.batch([
+        const [t, a, s, h] = await env.DB.batch([
           env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE day = ?").bind(kstDay()),
           env.DB.prepare("SELECT COUNT(*) AS n FROM visitors"),
           env.DB.prepare("SELECT COUNT(*) AS n FROM push_subs"),
+          // 날짜별: 방문자 수, 그날 처음 온 사람 수, 조회수 (최근 14일)
+          env.DB.prepare(`SELECT v.day, COUNT(*) AS visitors,
+              (SELECT COUNT(*) FROM visitors f WHERE f.first_day = v.day) AS new,
+              (SELECT n FROM views w WHERE w.day = v.day) AS views
+            FROM visits v GROUP BY v.day ORDER BY v.day DESC LIMIT 14`),
         ]);
-        return json({ today: t.results[0].n, total: a.results[0].n, push: s.results[0].n, day: kstDay() });
+        return json({ today: t.results[0].n, total: a.results[0].n, push: s.results[0].n, day: kstDay(), days: h.results || [] });
       } catch (e) { return json({ error: "fail" }, 500); }
     }
     if (p === "/api/report" && request.method === "POST") {

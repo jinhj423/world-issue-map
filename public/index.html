@@ -17,6 +17,12 @@
 <meta property="og:description" content="자기 전 3분, 오늘 세계에서 무슨 일이 있었는지. 56개국 뉴스를 한국어로.">
 <meta name="twitter:card" content="summary">
 <script>(function(){var t=null;try{t=localStorage.getItem("wim-theme")}catch(e){}var m=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)");function ap(x){document.documentElement.dataset.theme=x}ap(t||(m&&m.matches?"dark":"light"));if(!t&&m&&m.addEventListener)m.addEventListener("change",function(e){ap(e.matches?"dark":"light")})})();</script>
+<script>
+// 방문 집계: 지도·뉴스를 다 받기 전에, 페이지가 열리자마자 한 번 보낸다(일찍 나가도 집계됨)
+(function(){var v=null;try{v=localStorage.getItem("wim-vid");if(!v){v=(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",v)}}catch(e){}
+if(!v){try{v=sessionStorage.getItem("wim-vid");if(!v){v="s-"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);sessionStorage.setItem("wim-vid",v)}}catch(e){v="s-"+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}}
+try{window.__VISIT__=fetch("/api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid:v,p:location.pathname}),keepalive:true}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}catch(e){window.__VISIT__=Promise.resolve(null)}})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -798,19 +804,10 @@ themeBtn.onclick=()=>{
 };
 syncTheme();
 document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)}</p><p>헤드라인을 누르면 언론사 원문으로 이동해요. 분야와 단어는 자동 분류라 가끔 어긋날 수 있어요.</p><p class="visits" id="visits" hidden></p>`;
-// 방문자 수 (브라우저마다 무작위 번호 하나, 개인정보 없음)
-(async()=>{
-  let vid=null;
-  try{vid=localStorage.getItem("wim-vid");if(!vid){vid=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",vid)}}catch(e){}
-  if(!vid) return;
-  try{
-    const r=await fetch("api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid})});
-    if(!r.ok) return;
-    const v=await r.json(); const el=document.getElementById("visits");
-    el.innerHTML=`오늘 방문 <b>${v.today.toLocaleString("ko-KR")}</b>명, 누적 <b>${v.total.toLocaleString("ko-KR")}</b>명`;
-    el.hidden=false;
-  }catch(e){}
-})();
+// 방문자 수 표시(집계는 머리의 스크립트가 이미 보냄)
+(window.__VISIT__||Promise.resolve(null)).then(v=>{if(!v)return;const el=document.getElementById("visits");
+  el.innerHTML=`오늘 방문 <b>${v.today.toLocaleString("ko-KR")}</b>명, 누적 <b>${v.total.toLocaleString("ko-KR")}</b>명`+(v.views?`, 오늘 조회 <b>${v.views.toLocaleString("ko-KR")}</b>회`:"");
+  el.hidden=false});
 // ── 경제·증시 / 지금 화제 ──
 const econEl=document.getElementById("secEcon");
 const est={tab:location.hash==="#buzz"?"buzz":"econ",kw:null,shown:8};

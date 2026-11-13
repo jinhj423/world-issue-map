@@ -30,6 +30,9 @@ function shell({ origin, path, title, desc, body, ogTitle, jsonld }) {
 <link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" href="/icons/icon-192.png">
 ${THEME}
+<script>(function(){var v=null;try{v=localStorage.getItem("wim-vid");if(!v){v=(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",v)}}catch(e){}
+if(!v){try{v=sessionStorage.getItem("wim-vid");if(!v){v="s-"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);sessionStorage.setItem("wim-vid",v)}}catch(e){v="s-"+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}}
+try{window.__VISIT__=fetch("/api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid:v,p:location.pathname}),keepalive:true}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}catch(e){window.__VISIT__=Promise.resolve(null)}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/page.css">
@@ -41,8 +44,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
-(function(){var v=null;try{v=localStorage.getItem("wim-vid");if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));localStorage.setItem("wim-vid",v)}}catch(e){}
-if(!v)return;fetch("/api/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid:v})}).then(function(r){return r.ok?r.json():null}).then(function(x){if(!x)return;var el=document.getElementById("visits");el.innerHTML="오늘 방문 <b>"+x.today.toLocaleString("ko-KR")+"</b>명, 누적 <b>"+x.total.toLocaleString("ko-KR")+"</b>명";el.hidden=false}).catch(function(){})})();
+(window.__VISIT__||Promise.resolve(null)).then(function(x){if(!x)return;var el=document.getElementById("visits");el.innerHTML="오늘 방문 <b>"+x.today.toLocaleString("ko-KR")+"</b>명, 누적 <b>"+x.total.toLocaleString("ko-KR")+"</b>명"+(x.views?", 오늘 조회 <b>"+x.views.toLocaleString("ko-KR")+"</b>회":"");el.hidden=false});
 document.addEventListener("click",async function(e){var b=e.target.closest("[data-share]");if(!b)return;var u=location.href.split("#")[0],t=document.title;
 try{if(navigator.share){await navigator.share({title:t,url:u});return}await navigator.clipboard.writeText(u);var o=document.getElementById("toast");o.textContent="링크를 복사했어요";o.classList.add("on");setTimeout(function(){o.classList.remove("on")},1800)}catch(x){}});
 </script>
