@@ -1,36 +1,56 @@
-// 월드펄스 화면. 자료: /data/pulse.json(나라별 지수), /data/detail.json(인물·장소·언론·기사 주소, 처음 고를 때 받음), /data/calendar.json(투자자판 경제 일정).
+// 월드펄스 화면(D안). 자료: /data/pulse.json(나라별 지수), /data/detail.json(인물·장소·언론·기사 주소, 처음 고를 때 받음), /data/calendar.json(투자자판 경제 일정).
 // 숫자 출처: GDELT 15분 파일을 월드펄스 수집기(pulse/collect)가 센 값. 시세·기사 제목은 쓰지 않는다.
 (() => {
   "use strict";
-  const ED = location.pathname.startsWith("/invest") ? "invest" : (document.body.dataset.ed || "general");
+  const ED = location.pathname.startsWith("/invest") ? "invest" : "general";
   document.body.dataset.ed = ED;
   const CFG = {
-    general: { key: "g", n: "n", r: "r", b: "b", s: "s", rank: "general", cats: "general_cats", all: "전체", metric: "보도 지수",
-      h1: "전 세계 언론이 지금 다루는 나라", lead: "최근 24시간 기사 수와 평소 대비 변화로 매긴 보도 지수입니다." },
-    invest: { key: "gi", n: "i", r: "ir", b: "ib", s: "si", rank: "invest", cats: "invest_cats", all: "시장 관련 전체", metric: "시장 보도 지수",
-      h1: "시장 관련 보도가 몰린 나라", lead: "경제·시장·에너지·무역 기사만 세어 매긴 지수입니다. 투자 권유가 아닙니다." },
+    general: { key: "g", n: "n", r: "r", b: "b", s: "s", h: "h", rank: "general", cats: "general_cats", all: "전체", metric: "보도 지수",
+      h1: "전 세계 언론이 지금 다루는 나라", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라", topT: "가장 많이 다룬 나라",
+      lead: "최근 24시간 기사 수와 평소 대비 변화로 매긴 0~100 점수입니다.", art: "기사" },
+    invest: { key: "gi", n: "i", r: "ir", b: "ib", s: "si", h: "hi", rank: "invest", cats: "invest_cats", all: "시장 전체", metric: "시장 보도 지수",
+      h1: "시장 관련 보도가 몰린 나라", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라", topT: "시장 보도가 가장 많은 나라",
+      lead: "경제·시장·에너지·무역 기사만 세어 매긴 0~100 점수입니다. 투자 권유가 아닙니다.", art: "시장 기사" },
   }[ED];
+  const STEPS = 7;
+  const SHOW = 12;
   const $ = (s, r = document) => r.querySelector(s);
   const params = new URLSearchParams(location.search);
-  const SHOW = 12;
-  let expanded = false;
-  let P = null, D = null, sel = (params.get("c") || "").toUpperCase() || null, cat = params.get("cat") || "all";
-  let paths = null;
+  let P = null, D = null, paths = null, expanded = false, view = "48h";
+  let sel = (params.get("c") || "").toUpperCase() || null;
+  let cat = params.get("cat") || "all";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (n) => (n == null ? "없음" : Number(n).toLocaleString("ko-KR"));
   const ratio = (r) => (r == null ? "계산 중" : `${r.toFixed(1)}배`);
   const sign = (x) => (x > 0 ? "+" : "") + x.toFixed(1);
   const josa = (w, a, b) => { const c = (w || "").charCodeAt((w || "").length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
-  const clock = (iso) => (iso ? `${iso.slice(5, 7)}.${iso.slice(8, 10)} ${iso.slice(11, 16)}` : "알 수 없음");
+  const clock = (iso) => (iso ? `${+iso.slice(5, 7)}월 ${+iso.slice(8, 10)}일 ${iso.slice(11, 16)}` : "알 수 없음");
+  const DOW = "일월화수목금토";
+  const dow = (d) => DOW[new Date(`${d}T12:00:00+09:00`).getUTCDay()];
   const name = (iso) => (P.meta[iso] || {}).ko || iso;
   const safeUrl = (u) => (/^https?:\/\//.test(u) ? u : "#");
+  const flag = (iso) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18" loading="lazy">`;
+  const upDown = (r) => (r == null ? "" : r >= 1.1 ? "up" : r <= 0.9 ? "down" : "");
+  const cname = (iso) => `<span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(name(iso))}</a></span>`;
 
   async function getJSON(u) {
     const r = await fetch(u, { cache: "no-cache" });
     if (!r.ok) throw new Error(`${u} ${r.status}`);
     return r.json();
   }
+
+  // 선 그래프(경로). area면 0부터, 아니면 최솟값~최댓값으로 모양만 보여 준다.
+  function line(vals, w, h, { area = false, pad = 3, cls = "spk" } = {}) {
+    const n = vals.length;
+    if (n < 2) return "";
+    const max = Math.max(1, ...vals), min = area ? 0 : Math.min(...vals);
+    const ys = vals.map((v) => h - pad - ((v - min) / Math.max(1, max - min)) * (h - pad * 2));
+    const d = ys.map((y, i) => `${i ? "L" : "M"}${((i / (n - 1)) * w).toFixed(1)},${y.toFixed(1)}`).join("");
+    return { ys, svg: `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${area ? `<path class="${cls}-ar" d="${d}L${w},${h}L0,${h}Z"/>` : ""}<path class="${cls}" d="${d}"/></svg>` };
+  }
+  const spark = (vals) => (vals && vals.length > 1 ? line(vals, 64, 24).svg : "");
 
   function setURL() {
     const q = new URLSearchParams();
@@ -50,34 +70,47 @@
     return Object.keys(P.countries).filter((i) => ((P.countries[i].c || {})[cat] || 0) >= 5)
       .sort((a, b) => P.countries[b].c[cat] - P.countries[a].c[cat]).slice(0, 80);
   }
-  // 지도 색 단계: 값이 있는 나라들 사이의 순위(분위)로 8단계 — 큰 나라 몇 곳에 색이 몰리지 않게
+  function surgeList() {
+    if (ED === "general") return P.rank.surge || [];
+    return Object.keys(P.countries).filter((i) => P.countries[i].ir != null && P.countries[i].ir >= 1.6 && P.countries[i].i >= 50)
+      .sort((a, b) => P.countries[b].ir - P.countries[a].ir).slice(0, 15);
+  }
+  // 지도 색: 값이 있는 나라들 사이의 순위(분위)로 7단계 — 큰 나라 몇 곳에 색이 몰리지 않게
   let LV = {};
   function computeLevels() {
     LV = {};
     const min = cat === "all" ? (ED === "invest" ? 10 : 20) : 5;
     const xs = Object.keys(P.countries).filter((i) => (cat === "all" ? P.countries[i][CFG.n] : (P.countries[i].c || {})[cat] || 0) >= min)
       .sort((a, b) => value(a) - value(b));
-    xs.forEach((iso, k) => { LV[iso] = Math.min(7, Math.floor((8 * k) / Math.max(1, xs.length))); });
+    xs.forEach((iso, k) => { LV[iso] = Math.min(STEPS - 1, Math.floor((STEPS * k) / Math.max(1, xs.length))); });
   }
-  const level = (iso) => (iso in LV ? LV[iso] : -1);
+
+  // 요약 숫자 네 칸
+  function renderKpis() {
+    const top = (P.rank[CFG.rank] || [])[0], sg = surgeList()[0];
+    const cats = P[CFG.cats].map((k) => [k, P.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
+    const who = (iso) => `<button type="button" class="kv" data-iso="${iso}">${flag(iso)}<span>${esc(name(iso))}</span></button>`;
+    const txt = (t) => `<span class="kv"><span>${esc(t)}</span></span>`;
+    const tc = top && P.countries[top], sc = sg && P.countries[sg];
+    const tiles = [
+      ["24시간 전 세계 기사", txt(fmt(P.global.n)), ED === "invest" ? `그중 시장·금리 분야 ${fmt(P.global.c.markets)}건` : "GDELT가 모은 영어와 65개 언어 기사"],
+      [CFG.topT, top ? who(top) : txt("없음"), tc ? `${fmt(tc[CFG.n])}건, 평소의 ${ratio(tc[CFG.r])}` : "자료를 모으는 중입니다"],
+      ["평소보다 가장 크게 늘어난 나라", sg ? who(sg) : txt("아직 없음"), sc ? `평소의 ${ratio(sc[CFG.r])}, ${fmt(sc[CFG.n])}건` : P.baseline_days < 3 ? "평소 수준을 계산하는 중입니다" : "평소의 1.6배를 넘은 곳이 없습니다"],
+      ["가장 많이 다룬 분야", txt(cats[0] ? P.cats[cats[0][0]] : "없음"), cats[1] ? `${fmt(cats[0][1])}건, 2위 ${P.cats[cats[1][0]]}` : ""],
+    ];
+    $("#kpis").innerHTML = tiles.map(([l, v, s]) => `<div class="kpi"><span class="kl">${esc(l)}</span>${v}<span class="ks">${esc(s)}</span></div>`).join("");
+  }
 
   // 분야 단추
   function renderChips() {
     const keys = ["all", ...P[CFG.cats]];
     $("#chips").innerHTML = keys.map((k) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${k === cat}">${esc(k === "all" ? CFG.all : P.cats[k])}</button>`).join("");
-    $("#chips").onclick = (e) => {
-      const b = e.target.closest("[data-cat]");
-      if (!b) return;
-      cat = b.dataset.cat;
-      setURL();
-      renderAll(false);
-    };
   }
 
   function renderLegend() {
     const what = cat === "all" ? CFG.metric : `${P.cats[cat]} 기사 수`;
-    const base = P.baseline_days >= 7 ? "" : ` 평소 수준은 ${P.baseline_days}일치로 계산 중입니다.`;
-    $("#legend").innerHTML = `<span>${esc(what)}</span><span>하위</span><span class="ramp" aria-hidden="true">${"<i></i>".repeat(8)}</span><span>상위</span><span class="sw-none" aria-hidden="true"></span><span>기사 적음</span><span class="muted">${esc(base)}</span>`;
+    const base = P.baseline_days >= 7 ? "색은 나라끼리 순위입니다" : `평소 수준은 ${P.baseline_days}일치로 계산 중입니다`;
+    $("#legend").innerHTML = `<span class="lg">${esc(what)}</span><span class="lg">낮음<span class="ramp" aria-hidden="true">${Array.from({ length: STEPS }, (_, i) => `<i class="m${i}"></i>`).join("")}</span>높음</span><span class="lg"><i class="ndsw" aria-hidden="true"></i>기사 적음</span><span class="base">${esc(base)}</span>`;
   }
 
   // 지도
@@ -89,127 +122,190 @@
       const byId = {};
       for (const [iso, m] of Object.entries(P.meta)) if (m.id) byId[m.id] = iso;
       for (const f of feats) f.iso = byId[f.id] || (f.properties.name === "Kosovo" ? "XK" : null);
-      const W = 960, H = 470;
-      const proj = d3.geoEqualEarth().fitExtent([[4, 4], [W - 4, H - 4]], { type: "FeatureCollection", features: feats });
+      const W = 1000, H = 500;
+      const proj = d3.geoEqualEarth().fitExtent([[6, 6], [W - 6, H - 6]], { type: "FeatureCollection", features: feats });
       const path = d3.geoPath(proj);
       box.innerHTML = "";
       const svg = d3.select(box).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-        .attr("aria-label", "나라별 지수 지도. 아래 순위표에서 같은 내용을 볼 수 있습니다.");
+        .attr("aria-label", "나라별 지수 지도. 오른쪽 순위에서 같은 내용을 볼 수 있습니다.");
       const g = svg.append("g");
-      paths = g.selectAll("path").data(feats).join("path").attr("d", path).attr("class", "c none")
-        .on("click", (e, f) => { if (f.iso && P.countries[f.iso]) select(f.iso, true); })
+      paths = g.selectAll("path").data(feats).join("path").attr("d", path).attr("class", "cty nd")
+        .on("click", (e, f) => { if (f.iso && P.countries[f.iso]) select(f.iso, false); })
         .on("mousemove", (e, f) => tip(e, f.iso, f.properties.name))
-        .on("mouseleave", () => ($("#tip").hidden = true));
+        .on("mouseleave", () => { $("#tip").hidden = true; });
       const z = d3.zoom().scaleExtent([1, 8]).translateExtent([[0, 0], [W, H]])
         .filter((e) => (e.type.startsWith("touch") ? e.touches && e.touches.length > 1 : e.type === "wheel" ? e.ctrlKey || e.metaKey : !e.button))
         .on("zoom", (e) => g.attr("transform", e.transform));
       svg.call(z).on("dblclick.zoom", null);
       paintMap();
     } catch (err) {
-      box.innerHTML = `<p class="state err">지도를 그리지 못했습니다. 순위표는 그대로 쓸 수 있습니다.</p>`;
+      box.innerHTML = `<p class="state err">지도를 그리지 못했습니다. 순위는 그대로 쓸 수 있습니다.</p>`;
     }
   }
   function paintMap() {
     if (!paths) return;
-    paths.attr("class", (f) => {
-      const lv = f.iso ? level(f.iso) : -1;
-      return `c ${lv < 0 ? "none" : `l${lv}`}${f.iso && f.iso === sel ? " sel" : ""}`;
-    });
+    paths.attr("class", (f) => `cty ${f.iso && f.iso in LV ? `m${LV[f.iso]}` : "nd"}${f.iso && f.iso === sel ? " sel" : ""}`);
     paths.filter((f) => f.iso === sel).raise();
   }
   function tip(e, iso, en) {
     const t = $("#tip");
     const c = iso && P.countries[iso];
-    const v = c ? value(iso) : null;
-    t.textContent = `${iso ? name(iso) : en} ${c ? `${cat === "all" ? CFG.metric : P.cats[cat]} ${fmt(v)}` : "기사 적음"}`;
+    t.textContent = c ? `${name(iso)}  ${cat === "all" ? CFG.metric : P.cats[cat]} ${fmt(value(iso))}` : `${iso ? name(iso) : en}  기사 적음`;
     t.hidden = false;
     const x = Math.min(e.clientX + 14, innerWidth - t.offsetWidth - 8);
-    t.style.transform = `translate(${x}px, ${e.clientY + 14}px)`;
+    t.style.transform = `translate(${x}px, ${e.clientY + 16}px)`;
   }
 
-  // 순위표
+  // 순위
   function renderRank() {
     const ord = order();
-    $("#th-v").textContent = cat === "all" ? "지수" : "분야 기사";
-    $("#th-r").textContent = cat === "all" ? "평소 대비" : "비중";
-    const body = $("#rank-body");
+    const ol = $("#rank");
+    ol.classList.toggle("cat", cat !== "all");
+    $("#h-rank").textContent = cat === "all" ? CFG.rankT : `${P.cats[cat]} 기사가 많은 나라`;
+    $("#rank-hint").textContent = cat === "all" ? "지수, 평소 대비" : "기사, 그 나라 기사 중 비중";
+    const more = $("#more");
     if (!ord.length) {
-      body.innerHTML = `<tr><td colspan="5" class="muted">${cat === "all" ? "첫 자료를 모으는 중입니다. GDELT 파일은 15분마다 나옵니다." : "이 분야 기사가 아직 적습니다."}</td></tr>`;
+      ol.innerHTML = `<li class="state">${cat === "all" ? "첫 자료를 모으는 중입니다. GDELT 파일은 15분마다 나옵니다." : "이 분야 기사가 아직 적습니다."}</li>`;
+      more.hidden = true;
       return;
     }
-    const more = $("#more");
     more.hidden = ord.length <= SHOW;
     more.textContent = expanded ? "순위 접기" : `순위 더 보기 (${ord.length}곳)`;
     more.setAttribute("aria-expanded", expanded);
-    more.onclick = () => { expanded = !expanded; renderRank(); };
     const selAt = ord.indexOf(sel);
-    const shown = expanded ? ord : ord.slice(0, Math.max(SHOW, selAt + 1));
-    body.innerHTML = shown.map((iso, k) => {
+    const row = (iso, k) => {
       const c = P.countries[iso];
       const v = cat === "all" ? c[CFG.key] : fmt(c.c[cat]);
-      const r = cat === "all" ? ratio(c[CFG.r]) : `${Math.round((100 * c.c[cat]) / Math.max(1, c.n))}%`;
-      return `<tr data-iso="${iso}" tabindex="0" aria-selected="${iso === sel}"><td class="num">${k + 1}</td><td>${esc(name(iso))}</td><td class="num">${v}</td><td class="num">${fmt(c[CFG.n])}</td><td class="num">${r}</td></tr>`;
-    }).join("");
+      const rt = cat === "all" ? `<span class="rt ${upDown(c[CFG.r])}">${ratio(c[CFG.r])}</span>` : `<span class="rt">${Math.round((100 * c.c[cat]) / Math.max(1, c.n))}%</span>`;
+      return `<li data-iso="${iso}" aria-selected="${iso === sel}"><span class="rn">${k + 1}</span>${cname(iso)}<span class="sp">${spark(c[CFG.h])}</span><span class="ix">${v}</span>${rt}</li>`;
+    };
+    // 접힌 상태에서 고른 나라가 12위 밖이면 그 줄만 아래에 덧붙인다
+    ol.innerHTML = (expanded ? ord : ord.slice(0, SHOW)).map(row).join("")
+      + (!expanded && selAt >= SHOW ? `<li class="gap" aria-hidden="true"></li>${row(sel, selAt)}` : "");
   }
-  function bindRank() {
-    const body = $("#rank-body");
-    body.onclick = (e) => {
-      const tr = e.target.closest("tr[data-iso]");
-      if (tr) { e.preventDefault(); select(tr.dataset.iso, true); }
-    };
-    body.onkeydown = (e) => {
-      const tr = e.target.closest("tr[data-iso]");
-      if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(tr.dataset.iso, true); }
-    };
+
+  // 목록 줄을 누르면 그 나라를 고른다. 이름 링크는 새 탭(Ctrl·⌘·Shift)으로 열 때만 그대로 둔다.
+  function bindPick(el, scroll) {
+    el.addEventListener("click", (e) => {
+      const li = e.target.closest("[data-iso]");
+      if (!li || !el.contains(li)) return;
+      if (e.target.closest("a") && (e.metaKey || e.ctrlKey || e.shiftKey)) return;
+      e.preventDefault();
+      select(li.dataset.iso, scroll);
+    });
   }
 
   function select(iso, scroll) {
     sel = iso;
     setURL();
-    for (const tr of document.querySelectorAll("#rank-body tr[data-iso]")) tr.setAttribute("aria-selected", tr.dataset.iso === sel);
+    for (const li of document.querySelectorAll("#rank li[data-iso]")) li.setAttribute("aria-selected", li.dataset.iso === sel);
+    if (!expanded || !document.querySelector(`#rank li[data-iso="${iso}"]`)) renderRank();
     paintMap();
     renderDetail();
-    if (scroll && innerWidth < 960) $("#detail").scrollIntoView({ block: "start" });
+    if (scroll || innerWidth < 1100) $("#detail").scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
   }
 
   // 나라 자세히
-  function bars7(vals) {
-    const w = 336, h = 120, max = Math.max(1, ...vals), bw = 24, gap = (w - bw * 7) / 6;
-    return `<svg class="bars7" viewBox="0 0 ${w} ${h}" role="img" aria-label="최근 7일 날짜별 기사 수: ${vals.map((v, i) => `${P.days[i].slice(5)} ${v}건`).join(", ")}. 마지막 날은 기준 시각까지입니다.">${vals.map((v, i) => {
-      const bh = Math.round((v / max) * (h - 28)), x = Math.round(i * (bw + gap));
-      return `<rect class="${i === vals.length - 1 ? "b-now" : "b"}" x="${x}" y="${h - 20 - bh}" width="${bw}" height="${bh}"></rect><text class="ax" x="${x + bw / 2}" y="${h - 4}" text-anchor="middle">${P.days[i].slice(8)}</text>`;
-    }).join("")}</svg>`;
+  function hourLabel(i, n) {
+    const hs = P.global && P.global.h;
+    if (hs && hs.length === n && /^\d{10}$/.test(hs[i])) {
+      const s = hs[i];
+      const t = new Date(Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8), +s.slice(8, 10)) + 9 * 3600e3);
+      return `${t.getUTCDate()}일 ${String(t.getUTCHours()).padStart(2, "0")}시대`;
+    }
+    return `${n - i}시간 전`;
+  }
+  function chartHTML(c) {
+    if (view === "7d") {
+      const vals = c[CFG.s] || [];
+      if (!vals.length) return { html: `<div class="empty">날짜별 기사 수가 아직 없습니다</div>`, axis: "" };
+      const W = 700, H = 150, max = Math.max(1, ...vals), gap = 18, bw = (W - gap * 6) / 7;
+      const bars = vals.map((v, i) => {
+        const bh = Math.max(2, (v / max) * (H - 8)), x = i * (bw + gap), y = H - bh, r = Math.min(4, bh / 2);
+        return `<path class="bar7${i === vals.length - 1 ? " now" : ""}" d="M${x},${H}V${y + r}Q${x},${y} ${x + r},${y}H${x + bw - r}Q${x + bw},${y} ${x + bw},${y + r}V${H}Z"><title>${P.days[i]} ${fmt(v)}건</title></path>`;
+      }).join("");
+      const pts = vals.map((v, i) => ({ x: ((i * (bw + gap) + bw / 2) / W) * 100, y: ((H - Math.max(2, (v / max) * (H - 8))) / H) * 100,
+        t: `${+P.days[i].slice(5, 7)}.${P.days[i].slice(8)}(${dow(P.days[i])}) ${fmt(v)}건${i === vals.length - 1 ? `, ${P.asof.slice(11, 16)}까지` : ""}` }));
+      return { html: `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="최근 7일 날짜별 ${CFG.art} 수">${bars}<line class="gl" x1="0" x2="${W}" y1="${H}" y2="${H}"/></svg>`, pts,
+        axis: `<div class="axis axis7">${P.days.map((d, i) => `<span>${i === P.days.length - 1 ? "오늘" : `${+d.slice(8)}일`}</span>`).join("")}</div>` };
+    }
+    const vals = c[CFG.h];
+    if (!vals || vals.length < 2) return { html: `<div class="empty">기사가 적어 시간별 흐름은 그리지 않습니다</div>`, axis: "" };
+    const W = 700, H = 150, n = vals.length, L = line(vals, W, H, { area: true, pad: 6, cls: "big" });
+    const pts = vals.map((v, i) => ({ x: (i / (n - 1)) * 100, y: (L.ys[i] / H) * 100, t: `${hourLabel(i, n)} ${fmt(v)}건` }));
+    return { html: L.svg.replace("<svg ", `<svg role="img" aria-label="최근 48시간 시간별 ${CFG.art} 수, 가장 많은 시간 ${fmt(Math.max(...vals))}건" `).replace(' aria-hidden="true"', "")
+      + "", pts, axis: `<div class="axis"><span>48시간 전</span><span>24시간 전</span><span>${P.asof.slice(11, 16)}</span></div>` };
+  }
+  // 그래프 위에 손가락·마우스를 올리면 가까운 점의 값을 보여 준다
+  function hover(box, pts) {
+    if (!pts || !pts.length) return;
+    const ln = document.createElement("div"), dot = document.createElement("div"), tp = document.createElement("div");
+    ln.className = "hline"; dot.className = "hdot"; tp.className = "htip";
+    for (const el of [ln, dot, tp]) { el.hidden = true; box.appendChild(el); }
+    const step = pts.length > 1 ? pts[1].x - pts[0].x : 100;
+    box.onpointermove = (e) => {
+      const r = box.getBoundingClientRect();
+      const fx = ((e.clientX - r.left) / r.width) * 100;
+      const i = Math.max(0, Math.min(pts.length - 1, Math.round((fx - pts[0].x) / step)));
+      const p = pts[i];
+      ln.style.left = `${p.x}%`; dot.style.left = `${p.x}%`; dot.style.top = `${p.y}%`;
+      tp.textContent = p.t; tp.style.left = `${p.x}%`;
+      tp.style.transform = `translate(${p.x < 18 ? "0" : p.x > 82 ? "-100%" : "-50%"}, -100%)`;
+      ln.hidden = dot.hidden = tp.hidden = false;
+    };
+    box.onpointerleave = () => { ln.hidden = dot.hidden = tp.hidden = true; };
+  }
+  function renderChart(c) {
+    const ch = chartHTML(c);
+    const box = $("#chart");
+    box.innerHTML = ch.html;
+    $("#chart-axis").innerHTML = ch.axis;
+    hover(box, ch.pts);
   }
   function renderDetail() {
     const box = $("#detail");
-    if (!sel || !P.countries[sel]) sel = order()[0] || null;
-    if (!sel) { box.innerHTML = `<h2 id="h-detail">나라를 고르면 자세히 보여 줍니다</h2><p class="muted">아직 고를 수 있는 나라가 없습니다.</p>`; return; }
+    if (!sel || !P.countries[sel]) sel = order()[0] || (P.rank[CFG.rank] || [])[0] || null;
+    if (!sel) { box.innerHTML = `<h2 id="h-detail" class="subh">나라를 고르면 자세히 보여 줍니다</h2><p class="hint">아직 고를 수 있는 나라가 없습니다.</p>`; return; }
     const c = P.countries[sel], nm = name(sel);
     const rk = (P.rank[CFG.rank] || []).indexOf(sel);
     const cats = P[CFG.cats].map((k) => [k, (c.c || {})[k] || 0]).sort((a, b) => b[1] - a[1]);
     const maxC = Math.max(1, ...cats.map((x) => x[1]));
-    const top = cats[0];
-    const n = c[CFG.n];
+    const top = cats[0], n = c[CFG.n];
     const sent = [
       `${clock(P.asof)}까지 24시간 동안 ${ED === "invest" ? "시장 관련 " : ""}기사 ${fmt(n)}건이 ${josa(nm, "을", "를")} 다뤘습니다.`,
-      c[CFG.r] != null ? `평소라면 약 ${fmt(c[CFG.b])}건이 나올 시간이라 ${ratio(c[CFG.r])}입니다.` : "평소 수준은 3일치 자료가 모이면 계산합니다.",
+      c[CFG.r] != null ? `평소라면 약 ${fmt(c[CFG.b])}건이 나올 시간이라 평소의 ${ratio(c[CFG.r])}입니다.` : "평소 수준은 3일치 자료가 모이면 계산합니다.",
       top && top[1] ? `가장 많이 다룬 분야는 ${P.cats[top[0]]}(${fmt(top[1])}건)입니다.` : "",
     ].filter(Boolean).join(" ");
     box.innerHTML = `
-      <div class="d-head"><h2 id="h-detail">${esc(nm)}</h2><a href="/c/${sel.toLowerCase()}/">${esc(nm)} 페이지</a></div>
-      <p class="d-sent">${esc(sent)}</p>
-      <dl class="figs">
-        <div><dt># ${esc(CFG.metric)}</dt><dd class="figure">${c[CFG.key]}</dd><dd class="sub">${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</dd></div>
-        <div><dt># 24시간 ${ED === "invest" ? "시장 관련 " : ""}기사</dt><dd class="figure">${fmt(n)}</dd><dd class="sub">${c[CFG.b] == null ? "평소 수준 계산 중" : `평소 약 ${fmt(c[CFG.b])}건`}</dd></div>
-        <div><dt># 평소 대비</dt><dd class="figure">${ratio(c[CFG.r])}</dd><dd class="sub">전체 기사 중 몫으로 비교</dd></div>
-        <div><dt># 논조</dt><dd class="figure">${c.t == null ? "없음" : c.t.toFixed(1)}</dd><dd class="sub">${c.dt == null ? "평소 값 계산 중" : `평소보다 ${sign(c.dt)}`}</dd></div>
-      </dl>
-      <div class="d-grid">
-        <div><h3>최근 7일 기사 수</h3>${bars7(c[CFG.s] || [])}<p class="note">마지막 막대는 오늘 기준 시각까지입니다.</p></div>
-        <div><h3>분야별 기사 수</h3><table class="cats"><tbody>${cats.map(([k, v]) => `<tr><th scope="row">${esc(P.cats[k])}</th><td class="num">${fmt(v)}</td><td class="barcell"><span class="hbar" style="--v:${(v / maxC).toFixed(3)}"></span></td></tr>`).join("")}</tbody></table><p class="note">한 기사가 여러 분야에 들 수 있습니다.</p></div>
+      <div class="det">
+        <div>
+          <div class="dh">${flag(sel).replace('loading="lazy"', "")}<h2 id="h-detail">${esc(nm)}</h2><span class="badge">${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</span><a class="page" href="/c/${sel.toLowerCase()}/">${esc(nm)} 페이지</a></div>
+          <p class="dsent">${esc(sent)}</p>
+          <div class="dnum">
+            <div><span class="dv">${c[CFG.key]}</span><span class="dl">${esc(CFG.metric)}</span></div>
+            <div><span class="dv">${fmt(n)}</span><span class="dl">24시간 ${esc(CFG.art)}</span></div>
+            <div><span class="dv">${ratio(c[CFG.r])}</span><span class="dl">${c[CFG.b] == null ? "평소 대비" : `평소 약 ${fmt(c[CFG.b])}건 대비`}</span></div>
+            <div><span class="dv">${c.t == null ? "없음" : c.t.toFixed(1)}</span><span class="dl">논조${c.dt == null ? "" : Math.abs(c.dt) < 0.05 ? ", 평소와 같음" : `, 평소보다 ${sign(c.dt)}`}</span></div>
+          </div>
+          <div class="chart-h"><h3 class="subh">${view === "7d" ? "날짜별" : "시간별"} ${esc(CFG.art)} 수</h3><div class="seg" role="group" aria-label="기간"><button type="button" data-view="48h" aria-pressed="${view === "48h"}">48시간</button><button type="button" data-view="7d" aria-pressed="${view === "7d"}">7일</button></div></div>
+          <div class="chart" id="chart"></div><div id="chart-axis"></div>
+        </div>
+        <div>
+          <h3 class="subh">분야별 기사</h3>
+          <ul class="cats">${cats.map(([k, v]) => `<li><span>${esc(P.cats[k])}</span><span class="cb" aria-hidden="true"><i style="width:${((v / maxC) * 100).toFixed(1)}%"></i></span><span class="cv">${fmt(v)}</span></li>`).join("")}</ul>
+          <p class="note">한 기사가 여러 분야에 들 수 있습니다. 논조는 GDELT가 단어로 계산한 평균이며 0보다 작으면 부정적인 단어가 많다는 뜻입니다.</p>
+        </div>
       </div>
-      <div class="lists" id="d-lists"><p class="state">인물·장소·언론을 받는 중</p></div>
-      <div class="arts-wrap" id="d-arts"></div>`;
+      <div class="extra" id="d-extra"><p class="state">인물·장소·언론을 받는 중</p></div>`;
+    $(".seg", box).onclick = (e) => {
+      const b = e.target.closest("[data-view]");
+      if (!b || b.dataset.view === view) return;
+      view = b.dataset.view;
+      for (const x of box.querySelectorAll(".seg button")) x.setAttribute("aria-pressed", x.dataset.view === view);
+      $(".chart-h .subh", box).textContent = `${view === "7d" ? "날짜별" : "시간별"} ${CFG.art} 수`;
+      renderChart(c);
+    };
+    renderChart(c);
     fillDetail();
   }
   async function fillDetail() {
@@ -217,50 +313,39 @@
     try {
       if (!D) D = await getJSON("/data/detail.json");
     } catch (err) {
-      const l = $("#d-lists");
-      if (l) l.innerHTML = `<p class="state err">인물·장소·언론 자료를 받지 못했습니다.</p>`;
+      const l = $("#d-extra");
+      if (l) l.innerHTML = `<p class="state err">인물·장소·언론 자료를 받지 못했습니다. 잠시 뒤 다른 나라를 골랐다가 다시 골라 주세요.</p>`;
       return;
     }
-    if (want !== sel) return;
+    if (want !== sel || !$("#d-extra")) return;
     const d = (D.countries || {})[sel] || { p: [], l: [], src: [], a: [] };
-    const list = (xs, unit) => (xs.length ? `<ol class="plain">${xs.map(([k, v]) => `<li><span>${esc(k)}</span><span class="num muted">${fmt(v)}${unit}</span></li>`).join("")}</ol>` : `<p class="muted">아직 없습니다.</p>`);
-    $("#d-lists").innerHTML = `<div><h3>많이 나온 인물</h3>${list(d.p, "건")}</div><div><h3>많이 나온 장소</h3>${list(d.l, "회")}</div><div><h3>많이 다룬 언론</h3>${list(d.src, "건")}</div>`;
-    $("#d-arts").innerHTML = `<h3>최근 기사</h3>${d.a.length ? `<ul class="arts">${d.a.map(([t, u, s, ks]) => `<li><span class="num muted">${esc(t)}</span><span>${esc(s)}</span><span class="tags">${ks.map((k) => `<span class="tag">${esc(P.cats[k])}</span>`).join("")}</span><a href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">원문</a></li>`).join("")}</ul>` : `<p class="muted">아직 없습니다.</p>`}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p>`;
+    const list = (xs, unit) => (xs.length ? `<ol class="plain">${xs.slice(0, 8).map(([k, v]) => `<li><span>${esc(k)}</span><span class="v">${fmt(v)}${unit}</span></li>`).join("")}</ol>` : `<p class="state">아직 없습니다.</p>`);
+    const arts = d.a.length ? `<ul class="arts">${d.a.slice(0, 10).map(([t, u, s, ks]) => `<li><span class="t">${esc(t.replace("-", "."))}</span><span class="s"><span class="src">${esc(s)}</span>${ks.length ? `<span class="tags">${ks.slice(0, 3).map((k) => `<span class="tag">${esc(P.cats[k] || k)}</span>`).join("")}</span>` : ""}</span><a href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">원문 보기</a></li>`).join("")}</ul>` : `<p class="state">아직 없습니다.</p>`;
+    $("#d-extra").innerHTML = `<div><h3 class="subh">많이 나온 인물</h3>${list(d.p, "건")}</div><div><h3 class="subh">많이 나온 장소</h3>${list(d.l, "회")}</div><div><h3 class="subh">많이 다룬 언론</h3>${list(d.src, "건")}</div><div class="artsbox"><h3 class="subh">최근 기사</h3>${arts}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p></div>`;
   }
 
   // 크게 바뀐 나라
+  function miniRows(list, cols, empty) {
+    if (!list.length) return `<li class="state">${esc(empty)}</li>`;
+    return `<li class="h" aria-hidden="true"><span>나라</span><span class="n">${cols[0]}</span><span class="x">${cols[1]}</span></li>` + list.slice(0, 10).map((iso) => {
+      const [n, x, cls] = cols[2](P.countries[iso]);
+      return `<li data-iso="${iso}">${cname(iso)}<span class="n">${n}</span><span class="x ${cls}">${x}</span></li>`;
+    }).join("");
+  }
   function renderMoves() {
-    let surge = P.rank.surge || [];
-    if (ED === "invest") {
-      surge = Object.keys(P.countries).filter((i) => P.countries[i].ir != null && P.countries[i].ir >= 1.6 && P.countries[i].i >= 50)
-        .sort((a, b) => P.countries[b].ir - P.countries[a].ir).slice(0, 15);
-    }
-    $("#surge").innerHTML = surge.length ? surge.slice(0, 12).map((iso) => {
-      const c = P.countries[iso];
-      return `<tr data-iso="${iso}" tabindex="0"><td>${esc(name(iso))}</td><td class="num">${fmt(c[CFG.n])}</td><td class="num">${ratio(c[CFG.r])}</td></tr>`;
-    }).join("") : `<tr><td colspan="3" class="muted">${P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : "기사 100건 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다."}</td></tr>`;
-    const risk = P.rank.risk || [];
-    $("#risk").innerHTML = risk.length ? risk.slice(0, 12).map((iso) => {
-      const c = P.countries[iso];
-      return `<tr data-iso="${iso}" tabindex="0"><td>${esc(name(iso))}</td><td class="num">${fmt(c.i)}</td><td class="num">${sign(c.dt)}</td></tr>`;
-    }).join("") : `<tr><td colspan="3" class="muted">${P.baseline_days < 3 ? "평소 논조를 계산할 자료가 아직 모자랍니다." : "평소보다 논조가 나빠진 나라가 없습니다."}</td></tr>`;
-    for (const id of ["#surge", "#risk"]) {
-      const t = $(id);
-      t.onclick = (e) => { const tr = e.target.closest("tr[data-iso]"); if (tr) select(tr.dataset.iso, true); };
-      t.onkeydown = (e) => { const tr = e.target.closest("tr[data-iso]"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(tr.dataset.iso, true); } };
-    }
+    $("#surge").innerHTML = miniRows(surgeList(), [CFG.art, "평소 대비", (c) => [fmt(c[CFG.n]), ratio(c[CFG.r]), "up"]],
+      P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`);
+    $("#risk").innerHTML = miniRows(P.rank.risk || [], ["시장 기사", "논조 변화", (c) => [fmt(c.i), sign(c.dt), "down"]],
+      P.baseline_days < 3 ? "평소 논조를 계산할 자료가 아직 모자랍니다." : "평소보다 논조가 나빠진 나라가 없습니다.");
   }
 
   // 분야별 48시간
-  function spark(vals) {
-    const w = 240, h = 48, max = Math.max(1, ...vals), n = vals.length;
-    const pts = vals.map((v, i) => [((i / (n - 1)) * w).toFixed(1), (h - 2 - (v / max) * (h - 4)).toFixed(1)]);
-    const line = pts.map((p) => p.join(",")).join(" ");
-    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polygon class="ar" points="0,${h} ${line} ${w},${h}"></polygon><polyline class="ln" points="${line}"></polyline></svg>`;
-  }
   function renderMultiples() {
     const gl = P.global;
-    $("#multiples").innerHTML = P[CFG.cats].map((k) => `<div class="mult"><div class="top"><span>${esc(P.cats[k])}</span><span class="v num">${fmt(gl.c[k])}</span></div>${spark(gl.hs[k])}</div>`).join("") + `<p class="note">숫자는 최근 24시간 기사 수, 선은 48시간 동안 시간별 기사 수입니다.</p>`;
+    $("#multiples").innerHTML = P[CFG.cats].map((k) => {
+      const L = line(gl.hs[k] || [], 240, 40, { area: true, cls: "mln" });
+      return `<div class="mult"><div class="t"><span>${esc(P.cats[k])}</span><b>${fmt(gl.c[k])}</b></div>${L ? L.svg : ""}</div>`;
+    }).join("");
   }
 
   // 경제 일정(투자자판)
@@ -271,39 +356,111 @@
       const cal = await getJSON("/data/calendar.json");
       const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
       const end = new Date(Date.now() + (9 + 24 * 21) * 3600e3).toISOString().slice(0, 10);
-      const items = (cal.items || []).filter((x) => x.date >= today && x.date <= end);
-      const dow = (d) => "일월화수목금토"[new Date(`${d}T12:00:00+09:00`).getUTCDay()];
-      ol.innerHTML = items.length ? items.map((x) => `<li><span class="num">${x.date.slice(5).replace("-", ".")} (${dow(x.date)})</span><span class="num muted">${esc(x.time === "—" ? "미정" : x.time)}</span><span>${esc(x.title)}</span>${x.imp >= 3 ? `<span class="imp">중요</span>` : "<span></span>"}</li>`).join("")
+      const items = (cal.items || []).filter((x) => x.date >= today && x.date <= end).slice(0, 12);
+      ol.innerHTML = items.length ? items.map((x) => `<li><span class="d">${x.date.slice(5).replace("-", ".")}(${dow(x.date)})</span><span class="tm">${esc(x.time === "—" ? "미정" : x.time)}</span><span>${esc(x.title)}</span>${x.imp >= 3 ? `<span class="imp">중요</span>` : "<span></span>"}</li>`).join("")
         : `<li class="state">앞으로 3주 안에 잡힌 공개 일정이 없습니다.</li>`;
     } catch (err) {
-      ol.innerHTML = `<li class="state err">경제 일정을 받지 못했습니다.</li>`;
+      ol.innerHTML = `<li class="state err">경제 일정을 받지 못했습니다. 잠시 뒤 새로 고쳐 주세요.</li>`;
     }
   }
 
-  function renderAll(first) {
+  // 나라 찾기
+  function initSearch() {
+    const q = $("#q"), ul = $("#sugg");
+    let items = [], at = -1;
+    const close = () => { ul.hidden = true; q.setAttribute("aria-expanded", "false"); q.removeAttribute("aria-activedescendant"); };
+    const mark = () => {
+      for (const [k, li] of [...ul.querySelectorAll("li[data-iso]")].entries()) li.setAttribute("aria-selected", k === at);
+      if (at >= 0 && items[at]) q.setAttribute("aria-activedescendant", `sg-${items[at].iso}`);
+    };
+    const pick = (iso) => {
+      close(); q.value = ""; q.blur();
+      if (P.countries[iso]) {
+        if (cat !== "all" && !order().includes(iso)) { cat = "all"; renderAll(false); }
+        select(iso, true);
+      } else location.href = `/c/${iso.toLowerCase()}/`;
+    };
+    function show() {
+      const t = q.value.trim().toLowerCase();
+      if (!t) { close(); return; }
+      const cnt = (iso) => (P.countries[iso] || {})[CFG.n] || 0;
+      items = Object.entries(P.meta).map(([iso, m]) => ({ iso, ko: m.ko || iso, en: m.en || "" }))
+        .filter((x) => x.ko.includes(t) || x.en.toLowerCase().includes(t) || x.iso.toLowerCase() === t)
+        .sort((a, b) => (b.ko.startsWith(t) - a.ko.startsWith(t)) || cnt(b.iso) - cnt(a.iso)).slice(0, 8);
+      at = items.length ? 0 : -1;
+      ul.innerHTML = items.length
+        ? items.map((x) => `<li role="option" id="sg-${x.iso}" data-iso="${x.iso}">${flag(x.iso)}<span>${esc(x.ko)}</span><span class="en">${P.countries[x.iso] ? esc(x.en) : "기사 적음"}</span></li>`).join("")
+        : `<li class="none" role="option" aria-disabled="true">맞는 나라가 없습니다. 한글이나 영어 이름으로 찾아 보세요.</li>`;
+      ul.hidden = false;
+      q.setAttribute("aria-expanded", "true");
+      mark();
+    }
+    q.addEventListener("input", show);
+    q.addEventListener("focus", () => { if (q.value.trim()) show(); });
+    q.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (ul.hidden) show();
+        if (!items.length) return;
+        e.preventDefault();
+        at = (at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+        mark();
+      } else if (e.key === "Enter") {
+        if (at >= 0 && items[at]) { e.preventDefault(); pick(items[at].iso); }
+      } else if (e.key === "Escape") {
+        if (!ul.hidden) close(); else { q.value = ""; q.blur(); }
+      }
+    });
+    ul.addEventListener("mousedown", (e) => {
+      const li = e.target.closest("li[data-iso]");
+      e.preventDefault();
+      if (li) pick(li.dataset.iso);
+    });
+    q.addEventListener("blur", () => setTimeout(close, 120));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); q.focus(); }
+    });
+  }
+
+  function renderHead() {
+    for (const a of document.querySelectorAll(".tabs a")) if (a.dataset.ed === ED) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     document.title = ED === "invest" ? "시장 관련 보도가 몰린 나라 | 월드펄스 투자자판" : "전 세계 언론이 지금 다루는 나라 | 월드펄스";
     $("#h-board").textContent = CFG.h1;
+    $("#h-map").textContent = CFG.mapT;
     $("#lead").textContent = CFG.lead;
-    for (const a of document.querySelectorAll(".eds a")) if (a.dataset.ed === ED) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-    $("#asof").textContent = `GDELT ${clock(P.asof)} 기준`;
+    const as = $("#asof");
+    const late = Date.now() - Date.parse(P.asof) > 3 * 3600e3;
+    as.textContent = `${clock(P.asof)} 기준`;
+    as.classList.toggle("stale", late);
+    as.classList.remove("bad");
+    if (late) as.title = "GDELT 파일이 평소보다 늦게 올라오고 있습니다"; else as.removeAttribute("title");
+  }
+
+  function renderAll(first) {
     if (cat !== "all" && !P[CFG.cats].includes(cat)) cat = "all";
+    renderHead();
     computeLevels();
     renderChips();
     renderLegend();
     renderRank();
     paintMap();
     renderDetail();
-    if (first) { renderMoves(); renderMultiples(); renderCal(); }
+    if (first) { renderKpis(); renderMoves(); renderMultiples(); renderCal(); }
   }
 
   function showError() {
-    $("#asof").textContent = "자료를 받지 못했습니다";
-    $("#rank-body").innerHTML = `<tr><td colspan="5"><p class="err">자료를 받지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.</p><button type="button" class="retry" id="retry">다시 받기</button></td></tr>`;
-    $("#retry").onclick = (e) => { e.target.disabled = true; start(); };
+    const as = $("#asof");
+    as.textContent = "자료를 받지 못했습니다";
+    as.classList.add("bad");
+    $("#rank").innerHTML = `<li class="state"><p class="err">자료를 받지 못했습니다. 연결을 확인한 뒤 다시 받아 주세요.</p><button type="button" class="retry" id="retry">다시 받기</button></li>`;
+    $("#retry").onclick = (e) => { e.target.disabled = true; e.target.textContent = "받는 중"; start(); };
+    for (const k of document.querySelectorAll("#kpis .kv")) k.innerHTML = "<span>없음</span>";
     const ms = $("#map-state");
     if (ms) ms.textContent = "자료가 없어 지도를 칠하지 못했습니다";
+    for (const id of ["#surge", "#risk"]) $(id).innerHTML = `<li class="state">자료를 받지 못했습니다.</li>`;
+    $("#multiples").innerHTML = `<p class="hint">자료를 받지 못했습니다.</p>`;
   }
 
+  let bound = false;
   async function start() {
     try {
       P = await getJSON("/data/pulse.json");
@@ -311,15 +468,31 @@
       showError();
       return;
     }
-    bindRank();
+    if (!bound) {
+      bound = true;
+      bindPick($("#rank"), false);
+      bindPick($("#surge"), true);
+      bindPick($("#risk"), true);
+      $("#kpis").addEventListener("click", (e) => { const b = e.target.closest("button[data-iso]"); if (b) select(b.dataset.iso, true); });
+      $("#chips").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-cat]");
+        if (!b || b.dataset.cat === cat) return;
+        cat = b.dataset.cat;
+        expanded = false;
+        setURL();
+        renderAll(false);
+      });
+      $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); });
+      initSearch();
+      setInterval(async () => {
+        try {
+          const np = await getJSON("/data/pulse.json");
+          if (np.asof !== P.asof) { P = np; D = null; renderAll(true); }
+        } catch (err) { /* 다음 차례에 다시 받는다 */ }
+      }, 5 * 60e3);
+    }
     renderAll(true);
-    await drawMap();
-    setInterval(async () => {
-      try {
-        const np = await getJSON("/data/pulse.json");
-        if (np.asof !== P.asof) { P = np; D = null; renderAll(true); }
-      } catch (err) { /* 다음 차례에 다시 받는다 */ }
-    }, 5 * 60e3);
+    if (!paths) await drawMap();
   }
   start();
 })();

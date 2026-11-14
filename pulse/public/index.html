@@ -9,11 +9,9 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="전 세계 언론이 지금 다루는 나라 | 월드펄스">
 <meta property="og:description" content="전 세계 언론 기사 수를 15분마다 세어 나라별 보도 지수와 분야, 평소 대비 변화를 보여 줍니다.">
-<meta name="theme-color" content="oklch(12.5% 0.012 150)">
+<meta name="theme-color" content="#F5F6F8">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/app.css">
 <script src="/vendor/map.js" defer></script>
@@ -21,70 +19,77 @@
 </head>
 <body data-ed="general">
 <header class="bar">
-  <a class="mark" href="/" aria-label="월드펄스 처음으로">월드펄스</a>
-  <nav class="eds" aria-label="판 선택">
+  <a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a>
+  <nav class="tabs" aria-label="판 고르기">
     <a href="/" data-ed="general">일반</a>
     <a href="/invest/" data-ed="invest">투자자</a>
   </nav>
+  <div class="search" role="search">
+    <label>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6"/><line x1="13.5" y1="13.5" x2="18" y2="18"/></svg>
+      <input id="q" type="search" placeholder="나라 찾기" autocomplete="off" spellcheck="false" aria-label="나라 찾기" role="combobox" aria-expanded="false" aria-controls="sugg" aria-autocomplete="list">
+    </label>
+    <ul class="sugg" id="sugg" role="listbox" aria-label="찾은 나라" hidden></ul>
+  </div>
   <p class="asof" id="asof" role="status">자료 받는 중</p>
   <a class="about" href="/about/">방법과 출처</a>
 </header>
 
 <main class="wrap">
-  <section class="board" aria-labelledby="h-board">
-    <div class="board-head">
-      <h1 id="h-board">전 세계 언론이 지금 다루는 나라</h1>
-      <p class="lead" id="lead">최근 24시간 기사 수와 평소 대비 변화로 매긴 보도 지수입니다.</p>
-    </div>
-    <div class="chips" id="chips" role="group" aria-label="분야 고르기"></div>
-    <div class="board-grid">
-      <figure class="map-panel">
-        <div id="map" class="map" aria-label="나라별 보도 지수 지도"><p class="state" id="map-state">지도를 그리는 중</p></div>
-        <figcaption class="legend" id="legend"></figcaption>
-      </figure>
-      <div class="rank-panel">
-        <table class="rank" id="rank">
-          <caption class="visually-hidden">나라별 순위</caption>
-          <thead><tr><th scope="col" class="num">순위</th><th scope="col">나라</th><th scope="col" class="num" id="th-v">지수</th><th scope="col" class="num">기사</th><th scope="col" class="num" id="th-r">평소 대비</th></tr></thead>
-          <tbody id="rank-body">
-            <tr class="sk"><td colspan="5">순위를 받는 중</td></tr>
-          </tbody>
-        </table>
-        <button type="button" class="more" id="more" hidden>순위 더 보기</button>
-      </div>
-    </div>
+  <h1 class="visually-hidden" id="h-board">전 세계 언론이 지금 다루는 나라</h1>
+
+  <section class="card kpis full" id="kpis" aria-label="24시간 요약">
+    <div class="kpi"><span class="kl">24시간 전 세계 기사</span><span class="kv"><span class="sk"></span></span><span class="ks">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">가장 많이 다룬 나라</span><span class="kv"><span class="sk"></span></span><span class="ks">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">평소보다 가장 크게 늘어난 나라</span><span class="kv"><span class="sk"></span></span><span class="ks">&nbsp;</span></div>
+    <div class="kpi"><span class="kl">가장 많이 다룬 분야</span><span class="kv"><span class="sk"></span></span><span class="ks">&nbsp;</span></div>
   </section>
 
-  <section class="detail" id="detail" aria-labelledby="h-detail" aria-live="polite">
-    <h2 id="h-detail">나라를 고르면 자세히 보여 줍니다</h2>
-  </section>
-
-  <section class="moves" aria-label="크게 바뀐 나라">
-    <div class="move" id="surge-box">
-      <h2>평소보다 크게 늘어난 나라</h2>
-      <table class="mini"><thead><tr><th scope="col">나라</th><th scope="col" class="num">기사</th><th scope="col" class="num">평소 대비</th></tr></thead><tbody id="surge"><tr class="sk"><td colspan="3">받는 중</td></tr></tbody></table>
+  <section class="card mapcard" aria-labelledby="h-map">
+    <div class="ch">
+      <div><h2 id="h-map">세계 보도 지수</h2><p class="hint" id="lead">최근 24시간 기사 수와 평소 대비 변화로 매긴 0~100 점수입니다.</p></div>
+      <div class="chips" id="chips" role="group" aria-label="분야 고르기"></div>
     </div>
-    <div class="move" id="risk-box">
-      <h2>논조가 평소보다 나빠진 나라</h2>
-      <table class="mini"><thead><tr><th scope="col">나라</th><th scope="col" class="num">시장 기사</th><th scope="col" class="num">논조 변화</th></tr></thead><tbody id="risk"><tr class="sk"><td colspan="3">받는 중</td></tr></tbody></table>
-    </div>
+    <div class="map" id="map"><p class="state" id="map-state">지도를 그리는 중</p></div>
+    <div class="legend" id="legend"></div>
   </section>
 
-  <section class="pulse" aria-labelledby="h-pulse">
-    <h2 id="h-pulse">분야별 48시간 기사 흐름</h2>
-    <div class="multiples" id="multiples"><p class="state">받는 중</p></div>
+  <section class="card" aria-labelledby="h-rank">
+    <div class="ch"><h2 id="h-rank">지금 많이 다루는 나라</h2><span class="hint" id="rank-hint">지수, 평소 대비</span></div>
+    <ol class="rank" id="rank"><li class="state">순위를 받는 중</li></ol>
+    <button type="button" class="more" id="more" hidden>순위 더 보기</button>
   </section>
 
-  <section class="cal" id="cal" aria-labelledby="h-cal">
-    <h2 id="h-cal">다가오는 경제 일정</h2>
-    <ol class="cal-list" id="cal-list"><li class="state">받는 중</li></ol>
-    <p class="note">한국 시간 기준입니다. 미국 연준·경제분석국·인구조사국·노동통계국과 한국은행의 공개 일정입니다.</p>
+  <section class="card full" id="detail" aria-labelledby="h-detail" aria-live="polite">
+    <h2 id="h-detail" class="subh">나라를 고르면 자세히 보여 줍니다</h2>
+  </section>
+
+  <section class="card" aria-labelledby="h-mult">
+    <div class="ch"><h2 id="h-mult">분야별 48시간 기사 흐름</h2><span class="hint">숫자는 24시간 기사 수</span></div>
+    <div class="mults" id="multiples"><p class="hint">받는 중</p></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-surge">
+    <div class="ch"><h2 id="h-surge">평소보다 크게 늘어난 나라</h2></div>
+    <ol class="mini" id="surge"><li class="state">받는 중</li></ol>
+  </section>
+
+  <section class="card inv" aria-labelledby="h-cal">
+    <div class="ch"><h2 id="h-cal">다가오는 경제 일정</h2><span class="hint">한국 시간</span></div>
+    <ol class="cal" id="cal-list"><li class="state">받는 중</li></ol>
+    <p class="note">미국 연준·경제분석국·인구조사국·노동통계국과 한국은행이 공개한 일정입니다.</p>
+  </section>
+
+  <section class="card inv" aria-labelledby="h-risk">
+    <div class="ch"><h2 id="h-risk">논조가 평소보다 나빠진 나라</h2></div>
+    <ol class="mini" id="risk"><li class="state">받는 중</li></ol>
+    <p class="note">시장 관련 기사가 50건 넘는 나라 중 평소 논조보다 낮아진 곳입니다.</p>
   </section>
 </main>
 
 <footer class="foot">
-  <p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다.</p>
-  <p>투자 권유가 아닙니다. 보도량 통계입니다. <a href="/about/">세는 방법</a></p>
+  <p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다. 국기 그림 <a href="https://github.com/lipis/flag-icons">flag-icons</a>(MIT), 지도 Natural Earth.</p>
+  <p>보도량 통계이며 투자 권유가 아닙니다. <a href="/about/">세는 방법과 출처</a></p>
 </footer>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </body>

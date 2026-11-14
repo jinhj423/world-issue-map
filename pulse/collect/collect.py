@@ -325,7 +325,13 @@ def build(st: State, out: Path):
     if not newest or not st.hours:
         print("아직 자료 없음")
         return
-    now_h = max(st.hours)
+    # 영어·번역 파일이 네 개씩 다 들어온 마지막 시간까지만 쓴다(덜 찬 시간이 끝에 붙으면 기사 수가 갑자기 줄어 보인다)
+    cnt = Counter()
+    for k in KINDS:
+        for s_ in st.done[k]:
+            cnt[(k, s_[:10])] += 1
+    full = [h for h in sorted(st.hours) if cnt[("en", h)] >= 4 and cnt[("tr", h)] >= 4]
+    now_h = full[-1] if full else max(st.hours)
     hk_end = datetime.strptime(now_h, "%Y%m%d%H").replace(tzinfo=timezone.utc)
     win = [(hk_end - timedelta(hours=i)).strftime("%Y%m%d%H") for i in range(24)]
     win48 = [(hk_end - timedelta(hours=i)).strftime("%Y%m%d%H") for i in range(47, -1, -1)]
@@ -398,7 +404,7 @@ def build(st: State, out: Path):
     gl["hs"] = {k: [(st.ghours.get(h) or [0] * (NCAT + 2))[1 + j] for h in win48] for j, k in enumerate(T.KEYS)}
     gl["hn"] = [(st.ghours.get(h) or [0])[0] for h in win48]
 
-    asof = st_dt(newest).astimezone(KST)
+    asof = (hk_end + timedelta(hours=1)).astimezone(KST)
     pulse = {
         "v": 1,
         "updated": datetime.now(KST).isoformat(timespec="minutes"),
@@ -419,7 +425,7 @@ def build(st: State, out: Path):
         for iso, ex in st.pp.get(hk, {}).items():
             for k in ("p", "l", "s"):
                 exs[iso][k].update(ex.get(k, {}))
-    cutoff = (hk_end - timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
+    cutoff = (hk_end - timedelta(hours=23)).strftime("%Y%m%d%H%M%S")
     for iso in cs:
         ex = exs.get(iso)
         links = [x for x in st.links.get(iso, []) if x[0] >= cutoff]
