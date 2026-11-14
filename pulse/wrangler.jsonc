@@ -1,0 +1,13 @@
+{
+  // 월드펄스(World Pulse) — 세계 이슈 지도와 따로 배포하는 영리용 사이트.
+  // Cloudflare Workers Builds에서 이 저장소를 연결할 때 Root directory를 "pulse"로 둔다.
+  "name": "world-pulse",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/", "/index.html", "/invest", "/invest/", "/data/*", "/c/*", "/about", "/about/", "/sitemap.xml", "/robots.txt"]
+  },
+  "observability": { "enabled": true }
+}

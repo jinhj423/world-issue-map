@@ -1,0 +1,167 @@
+/* Hallmark · shape: app screen · genre: atmospheric · theme: Terminal (deal 3/3, seed world-pulse-dark-data-5e13·d3b54abb·2026-11-14·r0)
+ * nav: top bar (static), a wordmark, two edition tabs, the data clock, one link · signature: the board, a world map and a ranked table reading one index · states: loading, empty, error, full
+ * axes: dark/mono/chromatic-green · posture: committed · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: S, a ranked map could be any news tool; the board reads only counts GDELT published and says so beside every figure, and titles are left out on purpose */
+/* Hallmark · dismissed F26 · the file render loads no app.css; the served page at 375 sets the head at text-xl and the URL render shows no stub */
+/* Hallmark · finish-review: self (no subagent in this session) · fixed: scroll box hid rows under the next section, sticky table head under the bar, dashes in titles, repeated chart notes */
+@import url("./tokens.css");
+@import url("./base.css");
+
+body { font-stretch: var(--stretch-body); font-variant-numeric: tabular-nums; }
+
+/* 위 막대 */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-lg); min-height: 56px; padding: var(--space-xs) var(--gutter); background: var(--color-paper); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.mark { font-weight: 700; font-stretch: var(--stretch-display); font-size: var(--text-lg); color: var(--color-ink); text-decoration: none; }
+.eds { display: flex; }
+.eds a { display: inline-flex; align-items: center; min-height: 40px; padding-inline: var(--space-md); color: var(--color-ink-2); text-decoration: none; border: var(--rule-hair) solid var(--color-rule); transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
+.eds a + a { border-left: 0; }
+.eds a:hover { background: var(--color-paper-3); color: var(--color-ink); }
+.eds a[aria-current="page"] { background: var(--color-accent-wash); color: var(--color-ink); box-shadow: inset 0 -2px 0 var(--color-accent); }
+.asof { margin-left: auto; color: var(--color-muted); font-size: var(--text-sm); }
+.about { color: var(--color-ink-2); font-size: var(--text-sm); text-decoration: underline dotted; }
+.about:hover { color: var(--color-accent); }
+
+.wrap { max-width: var(--container); margin-inline: auto; padding: var(--space-xl) var(--gutter) var(--space-2xl); display: grid; gap: var(--space-2xl); }
+h1 { font-size: var(--text-2xl); max-width: 24ch; }
+h2 { font-size: var(--text-lg); }
+.lead { color: var(--color-ink-2); margin-top: var(--space-xs); }
+.state, .sk td { color: var(--color-muted); }
+.note { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-xs); }
+.muted { color: var(--color-muted); }
+.err { color: var(--color-error); }
+
+/* 분야 고르기 */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-block: var(--space-lg); }
+.chip { min-height: 36px; padding-inline: var(--space-sm); background: transparent; color: var(--color-ink-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: 0; cursor: pointer; font-size: var(--text-sm); transition: background-color var(--dur-micro) steps(1), color var(--dur-micro) steps(1); }
+.chip:hover { background: var(--color-paper-3); color: var(--color-ink); }
+.chip[aria-pressed="true"] { background: var(--color-accent-wash); color: var(--color-ink); border-color: var(--color-accent); }
+.chip:active { transform: translateY(1px); }
+.chip:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* 판: 지도 + 순위 */
+.board-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-lg); align-items: start; }
+.map-panel { margin: 0; border: var(--rule-hair) solid var(--color-rule); background: var(--color-paper-2); color: var(--color-ink); }
+.map { position: relative; aspect-ratio: 2 / 1; display: grid; place-items: center; touch-action: pan-y; }
+.map svg { width: 100%; height: 100%; }
+.map .c { stroke: var(--color-paper); stroke-width: 0.5; cursor: pointer; }
+.map .c:hover { stroke: var(--color-ink-2); stroke-width: 1; }
+.map .c.sel { stroke: var(--color-accent); stroke-width: 1.5; }
+.c.none { fill: var(--color-none); }
+.l0 { fill: var(--glyph-0); } .l1 { fill: var(--glyph-1); } .l2 { fill: var(--glyph-2); } .l3 { fill: var(--glyph-3); }
+.l4 { fill: var(--glyph-4); } .l5 { fill: var(--glyph-5); } .l6 { fill: var(--glyph-6); } .l7 { fill: var(--glyph-7); }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); padding: var(--space-sm) var(--space-md); border-top: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); color: var(--color-muted); }
+.legend .ramp { display: inline-flex; }
+.legend .ramp i { width: 18px; height: 10px; }
+.legend .ramp i:nth-child(1) { background: var(--glyph-0); } .legend .ramp i:nth-child(2) { background: var(--glyph-1); }
+.legend .ramp i:nth-child(3) { background: var(--glyph-2); } .legend .ramp i:nth-child(4) { background: var(--glyph-3); }
+.legend .ramp i:nth-child(5) { background: var(--glyph-4); } .legend .ramp i:nth-child(6) { background: var(--glyph-5); }
+.legend .ramp i:nth-child(7) { background: var(--glyph-6); } .legend .ramp i:nth-child(8) { background: var(--glyph-7); }
+.legend .sw-none { width: 18px; height: 10px; background: var(--color-none); border: var(--rule-hair) solid var(--color-rule-2); }
+
+.rank-panel { border: var(--rule-hair) solid var(--color-rule); }
+.more { width: 100%; min-height: 40px; background: transparent; color: var(--color-ink-2); border: 0; border-top: var(--rule-hair) solid var(--color-rule); border-radius: 0; cursor: pointer; font-size: var(--text-sm); transition: background-color var(--dur-micro) steps(1); }
+.more:hover { background: var(--color-paper-3); color: var(--color-ink); }
+.more:active { transform: translateY(1px); }
+.more:disabled { opacity: 0.55; cursor: not-allowed; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 400; font-size: var(--text-sm); color: var(--color-muted); padding: var(--space-xs) var(--space-sm); border-bottom: var(--rule-hair) solid var(--color-rule-2); white-space: nowrap; }
+td { padding: var(--space-xs) var(--space-sm); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.num { text-align: right; white-space: nowrap; }
+tbody tr[data-iso] { cursor: pointer; }
+tbody tr[data-iso]:hover { background: var(--color-paper-3); }
+tbody tr[aria-selected="true"] { background: var(--color-accent-wash); }
+tbody tr[aria-selected="true"] td:first-child { box-shadow: inset 2px 0 0 var(--color-accent); }
+td a { color: var(--color-ink); text-decoration: none; }
+td a:hover { color: var(--color-accent); text-decoration: underline dotted; }
+
+/* 나라 자세히 */
+.detail { display: grid; gap: var(--space-xl); padding-top: var(--space-xl); border-top: var(--rule-hair) solid var(--color-rule-2); }
+.d-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-sm) var(--space-lg); }
+.d-head h2 { font-size: var(--text-2xl); }
+.d-head a { color: var(--color-ink-2); font-size: var(--text-sm); text-decoration: underline dotted; }
+.d-head a:hover { color: var(--color-accent); }
+.d-sent { color: var(--color-ink-2); max-width: 70ch; }
+.figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
+.figs > div { display: flex; flex-direction: column; gap: var(--space-2xs); padding-inline: var(--space-lg); border-left: var(--rule-hair) solid var(--color-rule); }
+.figs > div:first-child { padding-left: 0; border-left: 0; }
+.figs dt { order: 2; color: var(--color-muted); font-size: var(--text-sm); }
+.figs dd { margin: 0; }
+.figs .figure { order: 1; font-size: var(--text-3xl); font-weight: 400; font-stretch: var(--stretch-display); line-height: 1; }
+.figs .sub { order: 3; color: var(--color-muted); font-size: var(--text-sm); }
+.d-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-xl); }
+.d-grid h3, .lists h3, .arts-wrap h3 { color: var(--color-ink-2); font-weight: 500; margin-bottom: var(--space-sm); }
+.bars7 { width: 100%; max-width: 30rem; height: auto; }
+.bars7 .b { fill: var(--glyph-3); }
+.bars7 .b-now { fill: var(--color-accent); }
+.bars7 .ax { fill: var(--color-muted); font-size: var(--text-xs); font-family: var(--font-body); }
+.cats td { padding-block: var(--space-2xs); }
+.cats th[scope="row"] { color: var(--color-ink); font-size: var(--text-md); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.barcell { width: 45%; }
+.hbar { display: block; height: 10px; width: calc(var(--v) * 100%); background: var(--glyph-4); }
+.lists { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xl); }
+ol.plain, ul.plain { list-style: none; margin: 0; padding: 0; }
+.plain li { display: flex; justify-content: space-between; gap: var(--space-sm); padding-block: var(--space-2xs); border-bottom: var(--rule-hair) solid var(--color-rule); min-width: 0; }
+.plain li span:first-child { overflow-wrap: break-word; min-width: 0; }
+.arts { list-style: none; margin: 0; padding: 0; }
+.arts li { display: grid; grid-template-columns: 7.5rem minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: var(--space-sm); align-items: baseline; padding-block: var(--space-xs); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.arts li > span:nth-child(2) { overflow-wrap: break-word; }
+.arts a { color: var(--color-ink-2); text-decoration: underline dotted; }
+.arts a:hover { color: var(--color-accent); }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.tag { font-size: var(--text-xs); color: var(--color-ink-2); padding-inline: var(--space-2xs); border: var(--rule-hair) solid var(--color-rule-2); }
+
+/* 크게 바뀐 나라 */
+.moves { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-xl); }
+.moves h2, .pulse h2, .cal h2 { margin-bottom: var(--space-md); }
+body[data-ed="general"] #risk-box, body[data-ed="general"] #cal { display: none; }
+
+/* 분야별 48시간 */
+.multiples > .note { grid-column: 1 / -1; }
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--space-lg) var(--space-xl); }
+.mult { display: grid; gap: var(--space-2xs); padding-top: var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); }
+.mult .top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-sm); }
+.mult .v { font-size: var(--text-xl); font-stretch: var(--stretch-display); }
+.mult svg { width: 100%; height: 48px; }
+.mult .ln { fill: none; stroke: var(--color-accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.mult .ar { fill: var(--color-accent-wash); }
+
+/* 경제 일정 */
+.cal-list { list-style: none; margin: 0; padding: 0; }
+.cal-list li { display: grid; grid-template-columns: 7rem 4rem minmax(0, 1fr) auto; gap: var(--space-sm); align-items: baseline; padding-block: var(--space-xs); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.cal-list .imp { font-size: var(--text-xs); color: var(--color-accent-ink); background: var(--color-accent); padding-inline: var(--space-2xs); }
+
+.foot { max-width: var(--container); margin-inline: auto; padding: var(--space-xl) var(--gutter) var(--space-2xl); border-top: var(--rule-hair) solid var(--color-rule); color: var(--color-muted); font-size: var(--text-sm); display: grid; gap: var(--space-2xs); }
+.foot a { color: var(--color-ink-2); }
+
+.tip { position: fixed; z-index: var(--z-tooltip); pointer-events: none; background: var(--color-paper-3); border: var(--rule-hair) solid var(--color-rule-2); padding: var(--space-2xs) var(--space-xs); font-size: var(--text-sm); }
+.retry { margin-top: var(--space-sm); min-height: 40px; padding-inline: var(--space-md); background: var(--color-accent); color: var(--color-accent-ink); border: 0; border-radius: 0; cursor: pointer; }
+.retry:hover { background: var(--color-ink); }
+.retry:active { transform: translateY(1px); }
+.retry:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* 서버에서 그리는 페이지(나라·방법과 출처) */
+.page-main { max-width: 64rem; gap: var(--space-xl); }
+.crumb a { color: var(--color-ink-2); font-size: var(--text-sm); }
+.blk { display: grid; gap: var(--space-sm); }
+.blk p { max-width: 65ch; }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xl); }
+.page .figs { margin-block: var(--space-sm); }
+.page .figs dd.muted { order: 3; font-size: var(--text-sm); }
+
+@media (max-width: 60rem) {
+  .board-grid, .d-grid, .moves { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: var(--text-xl); }
+  .lists, .cols3 { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
+  .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-lg); }
+  .figs > div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .arts li { grid-template-columns: minmax(0, 1fr) auto; }
+  .arts li .tags { grid-column: 1 / -1; }
+  .asof { margin-left: 0; order: 3; width: 100%; }
+}
+@media (max-width: 40rem) {
+  .cal-list li { grid-template-columns: 5.5rem 3.5rem minmax(0, 1fr); }
+  .cal-list .imp { grid-column: 3; justify-self: start; }
+  .figs .figure { font-size: var(--text-2xl); }
+  td, th { padding-inline: var(--space-xs); }
+}
+.map .c.sel.l6, .map .c.sel.l7 { stroke: var(--color-accent-ink); stroke-width: 2; }
