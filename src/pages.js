@@ -40,7 +40,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 </head><body><div class="wrap">
 <header class="top"><a class="brand" href="/">${LOGO}세계 이슈 지도</a><a class="go" href="/">지도 열기</a></header>
 <main>${body}</main>
-<footer><p class="visits" id="visits" hidden></p><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a>, <a href="/weekly/">이번 주 정리</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
+<footer><p class="visits" id="visits" hidden></p><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a>, <a href="/calendar/">경제 일정</a>, <a href="/weekly/">이번 주 정리</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -175,6 +175,27 @@ ${others.length ? `<section class="card"><h2>지난 주간 정리</h2><ul class=
   return shell({ origin, path: wid ? `/weekly/${wid}/` : "/weekly/", title: `${title} | 세계 이슈 지도`, desc, body, ogTitle: title });
 }
 
+// 경제 일정: calendar.json(공식 일정 + 대형주 실적 참고 일정)
+export function calendarPage(origin, c) {
+  const now = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const rows = (c.items || []).filter((x) => x.date >= now);
+  const by = {};
+  for (const x of rows) (by[x.date] ||= []).push(x);
+  const DW = "일월화수목금토";
+  const dl = (d) => { const [y, m, dd] = d.split("-"); return `${+m}월 ${+dd}일 ${DW[new Date(Date.UTC(+y, +m - 1, +dd)).getUTCDay()]}요일${d === now ? ", 오늘" : ""}`; };
+  const top = rows.filter((x) => x.imp >= 3 && x.cat !== "earn").slice(0, 3);
+  const body = `
+<p class="crumb"><a href="/">세계 이슈 지도</a> / 경제 일정</p>
+<h1>이번 주와 다음 주 경제 일정</h1>
+<p class="lead">${top.length ? `가장 가까운 중요 일정은 ${top.map((x) => `${dl(x.date).replace(/ [가-힣]요일.*/, "")} ${esc(x.title)}`).join(", ")}이에요.` : "다가오는 중요 일정을 모았어요."} 시각은 모두 한국 시간이에요.</p>
+<div class="acts"><a class="btn pri" href="/#cal">앱에서 보기</a><button type="button" class="btn sec" data-share>공유하기</button></div>
+${Object.keys(by).sort().map((d) => `<section class="card"><h2>${dl(d)}</h2><ul class="calp">${by[d].map((x) => `<li><span class="t">${x.time === "—" ? "미정" : x.time}</span><span class="nm"><span class="ctry">${x.country === "KR" ? "한국" : "미국"}</span><b>${esc(x.title)}</b>${x.period ? `<small>${esc(x.period)}</small>` : ""}${x.cat === "earn" && x.rel ? `<small>${x.rel === "after" ? "장 마감 뒤 발표" : "장 시작 전 발표"}</small>` : ""}</span><span class="imp${x.imp < 3 ? " lo" : ""}" aria-label="중요도 ${x.imp}">${"★".repeat(x.imp)}</span></li>`).join("")}</ul></section>`).join("") || `<section class="card"><p>다가오는 일정이 없어요.</p></section>`}
+<section class="card prose"><h2>일정 출처</h2><p>미국 연준 FOMC 일정, 미 경제분석국(BEA)·인구조사국(Census) 공개 일정, 미 노동통계국(BLS)·한국은행 공식 일정표에서 옮긴 날짜예요. 실적 발표일은 Nasdaq 실적 일정의 시가총액 1,500억 달러 이상 기업이며 회사 사정으로 바뀔 수 있어요. ${esc(String(c.updated || "").replace("T", " ").slice(0, 16))} 기준.</p></section>`;
+  return shell({ origin, path: "/calendar/", title: "이번 주 경제 일정: FOMC·CPI·고용·실적 발표 | 세계 이슈 지도",
+    desc: top.length ? `다가오는 경제 일정: ${top.map((x) => `${x.date.slice(5).replace("-", ".")} ${x.title}`).join(", ")}. 한국 시간으로 정리했어요.` : "미국·한국 주요 경제 지표와 대형주 실적 발표 일정을 한국 시간으로 봅니다.",
+    ogTitle: "이번 주 경제 일정", body });
+}
+
 export function aboutPage(origin) {
   const body = `
 <p class="crumb"><a href="/">세계 이슈 지도</a> / 소개</p>
@@ -196,7 +217,7 @@ export function aboutPage(origin) {
 
 export function sitemap(origin, d, weekIds) {
   const lm = d && d.updated_at ? d.updated_at.slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/econ/", "hourly", "0.9"], [origin + "/weekly/", "daily", "0.7"], [origin + "/about/", "monthly", "0.3"]];
+  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/econ/", "hourly", "0.9"], [origin + "/calendar/", "daily", "0.8"], [origin + "/weekly/", "daily", "0.7"], [origin + "/about/", "monthly", "0.3"]];
   for (const w of weekIds || []) urls.push([`${origin}/weekly/${w}/`, "monthly", "0.5"]);
   if (d) for (const a2 of Object.keys(d.countries)) urls.push([`${origin}/c/${a2.toLowerCase()}/`, "hourly", "0.8"]);
   return `<?xml version="1.0" encoding="UTF-8"?>

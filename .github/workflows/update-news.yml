@@ -60,7 +60,7 @@ jobs:
         if: steps.fresh.outputs.skip != 'true'
         continue-on-error: true
         run: |
-          python3 - <<'PY' && python scripts/calendar_build.py --print --debug || echo "일정 건너뜀"
+          python3 - <<'PY' && python scripts/calendar_build.py --print || echo "일정 건너뜀"
           import json, sys, datetime
           try:
               u = json.load(open("public/data/calendar.json"))["updated"]

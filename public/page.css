@@ -104,6 +104,15 @@ footer a{color:var(--ink-2)}
 .wwords .bar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
 .wwords .bar i{display:block;height:100%;background:var(--bar);border-radius:4px}
 .wwords .v{text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.calp{list-style:none;margin:8px 0 0;padding:0}
+.calp li{display:grid;grid-template-columns:4em minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:15px;line-height:1.5}
+.calp li:first-child{border-top:0}
+.calp .t{color:var(--ink-3);font-size:14px;font-variant-numeric:tabular-nums}
+.calp .ctry{font-size:12px;font-weight:700;color:var(--ink-3);margin-right:6px}
+.calp b{font-weight:700}
+.calp small{color:var(--ink-3);margin-left:6px;font-size:13px}
+.calp .imp{color:var(--red-ink);font-size:13px;letter-spacing:1px}
+.calp .imp.lo{color:var(--ink-3)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (max-width:600px){

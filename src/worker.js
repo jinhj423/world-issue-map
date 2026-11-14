@@ -4,7 +4,7 @@
 //   GitHub 자체 예약은 수 시간씩 밀려서, 정확한 Cloudflare 예약으로 대신 깨운다.
 //   필요한 비밀값: GH_TOKEN (GitHub fine-grained token, 이 저장소 Actions: Read and write)
 // - 검색 유입용 페이지(/c/<나라>/, /about/, /sitemap.xml)는 최신 news.json으로 여기서 그린다(재배포 불필요).
-import { countryPage, econPage, weeklyPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
+import { countryPage, econPage, weeklyPage, calendarPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
 
 const REPO = "jinhj423/world-issue-map";
 const WORKFLOW = "update-news.yml";
@@ -220,11 +220,11 @@ async function sendPush(db, keys, sub, payload, site) {
 }
 
 // 알림 종류(기기마다): 기본값은 급상승·경제·관심 나라 켬, 화제·아침 요약 끔, 밤 조용히 켬
-const PUSH_DEFAULT = { surge: true, econ: true, buzz: false, pins: true, morning: false, quiet: true, list: [], kw: [] };
+const PUSH_DEFAULT = { surge: true, econ: true, buzz: false, pins: true, cal: true, morning: false, quiet: true, list: [], kw: [] };
 function cleanPrefs(p) {
   const d = { ...PUSH_DEFAULT, list: [], kw: [] };
   if (!p || typeof p !== "object") return d;
-  for (const k of ["surge", "econ", "buzz", "pins", "morning", "quiet"]) if (typeof p[k] === "boolean") d[k] = p[k];
+  for (const k of ["surge", "econ", "buzz", "pins", "cal", "morning", "quiet"]) if (typeof p[k] === "boolean") d[k] = p[k];
   if (Array.isArray(p.list)) d.list = p.list.filter((x) => /^[A-Z]{2}$/.test(x)).slice(0, 5);
   if (Array.isArray(p.kw)) d.kw = [...new Set(p.kw.map((x) => String(x).trim()).filter((x) => x.length >= 1 && x.length <= 20))].slice(0, 10);
   return d;
@@ -348,6 +348,28 @@ async function pushTick(env, site) {
     events.push({ kind: "morning", logs: [`morning:${day}`],
       payload: { title: `오늘 아침 세계: ${top.join(", ")}`, body: e1 ? `경제: ${e1.t}` : `${top[0]} 소식이 가장 많아요.`, url: "/", tag: `morning-${day}` } });
   }
+  // 중요 경제 일정(★★★ 지표·정책, 시각이 정해진 것): 1시간 전. 밤(23~07시) 일정은 '밤에는 조용히' 기기에 전날 22시대 한 번에.
+  const calF = await dataFile("calendar.json", env, 1800e3);
+  let cal = [];
+  try { cal = calF ? (JSON.parse(calF.body).items || []).filter((x) => x.imp >= 3 && x.cat !== "earn" && /^\d\d:\d\d$/.test(x.time)) : []; } catch (e) {}
+  const kstMs = (x) => Date.parse(`${x.date}T${x.time}:00+09:00`);
+  const calLabel = (x) => `${x.country === "KR" ? "한국" : "미국"} ${x.title}${x.period ? ` (${x.period})` : ""}`;
+  for (const x of cal) {
+    const mins = (kstMs(x) - Date.now()) / 60e3;
+    if (mins <= 50 || mins > 65) continue;
+    const hh = +x.time.slice(0, 2), atNight = hh >= 23 || hh < 7;
+    if (await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`cal:${x.id}`).first()) continue;
+    events.push({ kind: "cal", night: atNight, logs: [`cal:${x.id}`],
+      payload: { title: `1시간 뒤 발표: ${calLabel(x)}`, body: `한국 시간 ${x.time}. 결과가 나오면 경제 뉴스에서 바로 볼 수 있어요.`, url: "/#cal", tag: `cal-${x.id}` } });
+  }
+  if (h === 22) {
+    const until = Date.now() + 9 * 3600e3;
+    const tonight = cal.filter((x) => { const t = kstMs(x); const hh = +x.time.slice(0, 2); return t > Date.now() && t < until && (hh >= 23 || hh < 7); });
+    if (tonight.length && !(await db.prepare("SELECT at FROM push_log WHERE k=?").bind(`calnight:${day}`).first())) {
+      events.push({ kind: "cal", digest: true, logs: [`calnight:${day}`],
+        payload: { title: `오늘 밤·새벽 중요 일정 ${tonight.length}건`, body: tonight.map((x) => `${x.time} ${calLabel(x)}`).join(", "), url: "/#cal", tag: `calnight-${day}` } });
+    }
+  }
   // 키워드 알림: 기기마다 등록한 단어가 들어간 기사를 언론 3곳 이상이 다루면(3시간 안). 한 회차 1건, 하루 5건.
   const kwStmts = [];
   const kwSubs = subs.filter((s) => s.p.kw.length && !(night && s.p.quiet));
@@ -387,7 +409,11 @@ async function pushTick(env, site) {
     for (const s of subs) {
       if (!s.p[ev.kind]) continue;
       if (ev.kind === "pins" && !s.p.list.includes(ev.a2)) continue;
-      if (night && s.p.quiet && ev.kind !== "morning") continue;
+      if (ev.kind === "cal") {
+        if (ev.digest && !s.p.quiet) continue;          // 밤 요약은 조용히 켠 기기만
+        if (!ev.digest && ev.night && s.p.quiet) continue; // 밤 일정 1시간 전 알림은 조용히 끈 기기만
+        if (!ev.digest && night && s.p.quiet) continue;
+      } else if (night && s.p.quiet && ev.kind !== "morning") continue;
       stmts.push(db.prepare("INSERT INTO push_queue (endpoint, payload) VALUES (?, ?)").bind(s.e, pl));
     }
   }
@@ -437,6 +463,17 @@ export default {
       const d = await getNews(env);
       const c = d && d.countries[dc[1]];
       return c ? dataResp(JSON.stringify({ at: d.updated_at, items: c.items || [], local: c.local || [] }), "api") : json({ error: "no" }, 404);
+    }
+    if (p === "/data/calendar.json") {
+      const f = await dataFile("calendar.json", env, 600e3);
+      return f ? dataResp(f.body, f.src) : json({ items: [] });
+    }
+    if (p === "/calendar" || p === "/calendar/") {
+      if (p === "/calendar") return Response.redirect(url.origin + "/calendar/", 301);
+      const f = await dataFile("calendar.json", env, 600e3);
+      let c = null; try { c = f ? JSON.parse(f.body) : null; } catch (e) {}
+      if (!c) return new Response("잠시 뒤 다시 열어 주세요", { status: 503 });
+      return html(calendarPage(url.origin, c), 1800);
     }
     if (p === "/data/archive.json") {
       const f = await dataFile("archive.json", env, 300e3);

@@ -272,6 +272,22 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .elist .ok{color:var(--link);font-weight:700}
 .efoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px}
 .efoot .more{margin-top:0;flex:0 1 auto;padding:12px 20px}
+.cal{list-style:none;margin:0;padding:0}
+.cal>li{padding:12px 0;border-top:1px solid var(--line)}
+.cal>li:first-child{border-top:0;padding-top:4px}
+.cal .cd{font-size:13px;font-weight:800;color:var(--ink-2);margin:0 0 4px}
+.cal .cd.today{color:var(--link)}
+.cal ul{list-style:none;margin:0;padding:0}
+.cal ul li{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:4px 0;font-size:14px;line-height:1.5}
+.cal .t{color:var(--ink-3);font-variant-numeric:tabular-nums;font-size:13px}
+.cal .nm b{font-weight:700}
+.cal .nm small{color:var(--ink-3);margin-left:6px;font-size:12px}
+.cal .ctry{font-size:11.5px;font-weight:700;color:var(--ink-3);margin-right:6px}
+.cal .imp{color:var(--red-ink);font-size:12px;letter-spacing:1px}
+.cal .imp.lo{color:var(--ink-3)}
+.calf{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.calf button{background:var(--soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.calf button[aria-pressed="true"]{background:var(--accent-fill);color:var(--on-fill)}
 .opts{list-style:none;margin:16px 0 0;padding:0}
 .opts li{margin:0;padding:12px 0;border-top:1px solid var(--line)}
 .opts li:first-child{border-top:0}
@@ -432,6 +448,7 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
     <li class="kwli"><b>키워드 알림</b><small>등록한 단어가 들어간 기사를 언론 3곳 이상이 다루면 알려요. 하루 최대 5번, 단어는 10개까지.</small>
       <div class="kwadd"><input type="text" id="kwIn" maxlength="20" placeholder="예: 엔비디아, 금리, 삼성전자" aria-label="알림 받을 단어" enterkeyhint="done"><button type="button" class="sec" id="kwAdd">추가</button></div>
       <div class="kwlist" id="kwList"></div></li>
+    <li><label><input type="checkbox" data-k="cal"><span><b>중요 경제 일정</b><small>CPI·고용·FOMC·PCE·금통위처럼 ★★★ 일정을 1시간 전에 알려요. '밤에는 조용히'를 켜 두면 밤 일정은 전날 밤 10시에 한 번에 알려요.</small></span></label></li>
     <li><label><input type="checkbox" data-k="morning"><span><b>아침 8시 요약</b><small>오늘 가장 시끄러운 나라 3곳과 경제 뉴스 1건을 하루 한 번 보내요.</small></span></label></li>
     <li><label><input type="checkbox" data-k="quiet"><span><b>밤에는 조용히</b><small>밤 11시부터 아침 7시까지는 보내지 않아요.</small></span></label></li>
   </ul>
@@ -885,13 +902,35 @@ document.getElementById("foot").innerHTML=`<p>출처: ${esc(data.source)}</p><p>
   el.hidden=false});
 // ── 경제·증시 / 지금 화제 ──
 const econEl=document.getElementById("secEcon");
-const est={tab:location.hash==="#buzz"?"buzz":"econ",kw:null,shown:8};
+const est={tab:location.hash==="#buzz"?"buzz":location.hash==="#cal"?"cal":"econ",kw:null,shown:8,cf:"all"};
+let calD=null, calP=null;
+const etabs=()=>`<div class="sorttab" role="group" aria-label="묶음"><button type="button" data-etab="econ" aria-pressed="${est.tab==="econ"}">경제·증시</button><button type="button" data-etab="buzz" aria-pressed="${est.tab==="buzz"}">지금 화제</button><button type="button" data-etab="cal" aria-pressed="${est.tab==="cal"}">일정</button></div>`;
+function renderCal(){
+  if(!calD){
+    econEl.innerHTML=`<div class="ehead"><h2>경제 일정</h2>${etabs()}</div><p class="sub">불러오는 중이에요.</p>`;
+    if(!calP) calP=fetch("data/calendar.json",{cache:"no-cache"}).then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})).then(x=>{calD=x;if(est.tab==="cal")renderEcon()});
+    return;
+  }
+  const now=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  const F={all:()=>true,top:x=>x.imp>=3,econ:x=>x.cat!=="earn",earn:x=>x.cat==="earn"};
+  const rows=(calD.items||[]).filter(x=>x.date>=now).filter(F[est.cf]);
+  const by={}; rows.forEach(x=>(by[x.date]||(by[x.date]=[])).push(x));
+  const days=Object.keys(by).sort().slice(0,est.cf==="all"?10:14);
+  const DW="일월화수목금토", dl=d=>{const [y,m,dd]=d.split("-");return `${+m}월 ${+dd}일 ${DW[new Date(+y,+m-1,+dd).getDay()]}요일${d===now?", 오늘":""}`};
+  econEl.innerHTML=`<div class="ehead"><h2>경제 일정</h2>${etabs()}</div>
+    <p class="sub">시각은 한국 시간이에요. 미국 지표·연준 일정은 공식 발표 일정, 실적은 시가총액 큰 기업의 참고 일정이에요.</p>
+    <div class="calf" role="group" aria-label="일정 거르기">${[["all","전체"],["top","중요한 것만"],["econ","지표·정책"],["earn","실적"]].map(([k,l])=>`<button type="button" data-cf="${k}" aria-pressed="${est.cf===k}">${l}</button>`).join("")}</div>
+    <ul class="cal">${days.map(d=>`<li><p class="cd${d===now?" today":""}">${dl(d)}</p><ul>${by[d].map(x=>`<li><span class="t">${x.time==="—"?"미정":x.time}</span>
+      <span class="nm"><span class="ctry">${x.country==="KR"?"한국":"미국"}</span><b>${esc(x.title)}</b>${x.period?`<small>${esc(x.period)}</small>`:""}${x.cat==="earn"&&x.rel?`<small>${x.rel==="after"?"장 마감 뒤":"장 시작 전"}</small>`:""}</span>
+      <span class="imp${x.imp<3?" lo":""}" aria-label="중요도 ${x.imp}">${"★".repeat(x.imp)}</span></li>`).join("")}</ul></li>`).join("")||`<li class="empty">다가오는 일정이 없어요.</li>`}</ul>
+    <div class="efoot"><a class="clink" href="/calendar/" style="margin:0">경제 일정 페이지 열기</a></div>`;
+}
 function renderEcon(){
+  if(est.tab==="cal") return renderCal();
   const d=data[est.tab]||{items:[],kw:[]};
   let rows=(d.items||[]); if(est.kw) rows=rows.filter(i=>i.t.includes(est.kw));
   econEl.innerHTML=`
-    <div class="ehead"><h2>${est.tab==="econ"?"경제·증시 뉴스":"지금 화제"}</h2>
-      <div class="sorttab" role="group" aria-label="묶음"><button type="button" data-etab="econ" aria-pressed="${est.tab==="econ"}">경제·증시</button><button type="button" data-etab="buzz" aria-pressed="${est.tab==="buzz"}">지금 화제</button></div></div>
+    <div class="ehead"><h2>${est.tab==="econ"?"경제·증시 뉴스":"지금 화제"}</h2>${etabs()}</div>
     <p class="sub">${est.tab==="econ"?"증시, 환율, 금리, 기업 실적처럼 나라 이름이 없는 경제 뉴스까지 모았어요.":"나라와 상관없이 지금 많이 다뤄지는 인물·사건 소식이에요."} 여러 언론이 함께 다룬 소식이 위로 와요.</p>
     ${(d.kw||[]).length?`<div class="ekw" role="group" aria-label="키워드">${d.kw.slice(0,10).map(k=>`<button type="button" data-ekw="${esc(k)}" aria-pressed="${est.kw===k}">${esc(k)}</button>`).join("")}</div>`:""}
     <ul class="elist">${rows.slice(0,est.shown).map(i=>`<li><a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>
@@ -902,11 +941,12 @@ function renderEcon(){
 }
 econEl.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.etab){est.tab=b.dataset.etab;est.kw=null;est.shown=8}
+  else if(b.dataset.cf){est.cf=b.dataset.cf}
   else if(b.dataset.ekw!==undefined){est.kw=est.kw===b.dataset.ekw?null:b.dataset.ekw;est.shown=8}
   else if("emore" in b.dataset){est.shown+=STEP}
   renderEcon()});
 renderEcon();
-if(location.hash==="#buzz") setTimeout(()=>econEl.scrollIntoView({block:"start"}),300);
+if(location.hash==="#buzz"||location.hash==="#cal") setTimeout(()=>econEl.scrollIntoView({block:"start"}),300);
 
 // ── 검색 ──
 const qIn=document.getElementById("q");
@@ -939,7 +979,7 @@ fromHash(); if(!state.sel) render(); if(state.q) paint();
   btn.hidden=false;
   const $=id=>document.getElementById(id), stat=$("alStat"), main=$("alMain"), test=$("alTest"), opts=$("alOpts");
   const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
-  const DEF={surge:true,econ:true,buzz:false,pins:true,morning:false,quiet:true};
+  const DEF={surge:true,econ:true,buzz:false,pins:true,cal:true,morning:false,quiet:true};
   const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
   const prefs=()=>({...DEF,...lsGet("wim-push",{}),list:lsGet("wim-pins",[]).slice(0,5),kw:lsGet("wim-kw",[]).slice(0,10)});
   const u8=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");const b=atob(s+"===".slice((s.length+3)%4));return Uint8Array.from(b,c=>c.charCodeAt(0))};

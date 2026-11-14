@@ -94,6 +94,21 @@ BEA_MAP = [
 ]
 
 
+def ko_period(p: str) -> str:
+    """BEA 기간 표기를 한국어로: "October 2026" → "2026년 10월", "3rd Quarter 2026 (Advance Estimate)" → "2026년 3분기 속보치"."""
+    p = re.sub(r"\s+", " ", p).strip()
+    est = {"advance": "속보치", "second": "잠정치", "third": "확정치"}
+    tag = next((v for k, v in est.items() if re.search(k + r" estimate", p, re.I)), "")
+    m = re.search(r"(1st|2nd|3rd|4th|First|Second|Third|Fourth) Quarter(?: and Year)? (\d{4})", p, re.I)
+    if m:
+        q = {"1st": 1, "2nd": 2, "3rd": 3, "4th": 4, "first": 1, "second": 2, "third": 3, "fourth": 4}[m.group(1).lower()]
+        return f"{m.group(2)}년 {q}분기" + (f" {tag}" if tag else "")
+    m = re.search(r"([A-Z][a-z]+)(?: and Annual)? (\d{4})", p)
+    if m and m.group(1).lower() in MONTHS:
+        return f"{m.group(2)}년 {MONTHS[m.group(1).lower()]}월"
+    return ""
+
+
 def bea() -> list[dict]:
     body = get(BEA_ICS)
     out = []
@@ -112,7 +127,7 @@ def bea() -> list[dict]:
         k = dt.astimezone(KST)
         for pat, title, imp in BEA_MAP:
             if re.search(pat, summ, re.I):
-                period = summ.split(",", 1)[1].strip() if "," in summ else ""
+                period = ko_period(summ.split(",", 1)[1]) if "," in summ else ""
                 out.append(item(k.date().isoformat(), k.strftime("%H:%M"), "US", "econ", title, imp,
                                 "https://www.bea.gov/news/schedule", period=period))
                 break
