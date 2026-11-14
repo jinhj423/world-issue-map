@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 
 KST = ZoneInfo("Asia/Seoul")
 WAIT = timedelta(minutes=30)
-PROMPT = """아래 JSON 객체의 값은 위키백과 'Portal:Current events'의 영어 문장과 주제 이름입니다.
+PROMPT = """아래 JSON 객체의 값은 위키백과 'Portal:Current events'의 영어 문장, 주제 이름, 사건 문서의 첫 문단(배경)입니다.
 각 값을 한국어로 옮겨, 같은 키를 가진 JSON 객체 하나만 출력하세요. 설명·코드 블록 표시는 쓰지 마세요.
 - 문장은 '~했습니다', '~밝혔습니다'처럼 합니다체로, 원문에 없는 내용은 더하지 않습니다.
 - 사람·지명·단체 이름은 국내 언론이 흔히 쓰는 표기를 따르고, 낯선 이름은 외래어 표기법대로 씁니다.
@@ -37,7 +37,7 @@ def apply(news: dict, cache: dict) -> bool:
     changed = False
     for d in news.get("days", []):
         for it in d.get("items", []):
-            for src, dst in (("text", "ko"), ("topic", "kp")):
+            for src, dst in (("text", "ko"), ("topic", "kp"), ("bg", "bgk")):
                 v = cache.get(key(it.get(src) or "")) if it.get(src) else None
                 if v and it.get(dst) != v:
                     it[dst] = v
@@ -73,7 +73,7 @@ def main():
     todo = {}
     for d in news.get("days", []):
         for it in d.get("items", []):
-            for s in (it.get("text"), it.get("topic")):
+            for s in (it.get("text"), it.get("topic"), it.get("bg")):
                 if s and key(s) not in cache:
                     todo[key(s)] = s
     changed = apply(news, cache)
@@ -84,7 +84,7 @@ def main():
             cache.update(got)
             ko["at"] = datetime.now(KST).isoformat(timespec="minutes")
             # 위키백과 두 날짜에서 빠진 문장의 번역은 사흘 뒤 지운다(파일 크기)
-            live = {key(s) for d in news.get("days", []) for it in d.get("items", []) for s in (it.get("text"), it.get("topic")) if s}
+            live = {key(s) for d in news.get("days", []) for it in d.get("items", []) for s in (it.get("text"), it.get("topic"), it.get("bg")) if s}
             ko.setdefault("seen", {}).update({k: ko["at"][:10] for k in live})
             old = (datetime.now(KST) - timedelta(days=3)).date().isoformat()
             for k in [k for k, day in ko["seen"].items() if day < old and k not in live]:

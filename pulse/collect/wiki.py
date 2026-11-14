@@ -64,6 +64,12 @@ REF = re.compile(r"<ref[^>]*?/>|<ref[^>]*>.*?</ref>", re.S)
 TAG = re.compile(r"<[^>]+>")
 
 
+def summary_url(title: str) -> str:
+    """위키백과 문서 첫 문단(요약) REST 주소."""
+    from urllib.parse import quote
+    return "https://en.wikipedia.org/api/rest_v1/page/summary/" + quote(title.replace(" ", "_"), safe="")
+
+
 def page_url(d: date) -> str:
     return f"https://en.wikipedia.org/wiki/Portal:Current_events/{d.year}_{d.strftime('%B')}_{d.day}"
 
@@ -115,7 +121,9 @@ def parse(raw: str) -> list[dict]:
         del stack[depth - 1:]
         if srcs and text:
             topics = [t for t, _ in stack]
-            items.append({"cat": cat, "topic": topics, "text": text, "src": srcs,
+            # 배경 문서: 가장 가까운 위 단계 줄의 첫 링크(대개 그 사건을 다룬 위키백과 문서)
+            near = next((ts[0] for _, ts in reversed(stack) if ts), "")
+            items.append({"cat": cat, "topic": topics, "text": text, "src": srcs, "wt": near,
                           "links": sorted({x for _, ts in stack for x in ts} | set(targets))})
         stack.append((text, targets))
     return items

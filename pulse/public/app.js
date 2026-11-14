@@ -333,7 +333,7 @@
     return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3>
       ${aiHTML}
       ${chips ? `<div class="evs">${chips}</div><div class="evp" id="evp" hidden></div>` : ""}
-      ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${wtext(it)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}
+      ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${wtext(it)}${srcLinks(it.src)}${bgHTML(it)}</span></li>`).join("")}</ul>` : ""}
       <p class="note">${chips ? "사건 종류를 누르면 뜻과 시간별 흐름, 예시 기사가 펼쳐집니다. " : ""}${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
@@ -366,6 +366,8 @@
     box.hidden = false;
   }
 
+  // 배경: 그 사건 위키백과 문서의 첫 문단(번역이 있으면 한국어), 펼쳐 보기
+  const bgHTML = (it) => (it.bg ? `<details class="wbg"><summary>배경 보기</summary><p>${esc(it.bgk || it.bg)}</p>${it.wu ? `<a href="${esc(safeUrl(it.wu))}" rel="noopener" target="_blank">위키백과 문서: ${esc(it.wt)}</a>` : ""}</details>` : "");
   const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(l)}</a>`).join("");
   function newsFor(iso) {
     if (!N) return [];
@@ -458,12 +460,12 @@
         if (!g) groups.push((g = [it.cat, []]));
         g[1].push(it);
       }
-      box.innerHTML = groups.map(([c, xs]) => `<div class="ncat"><h3 class="subh">${esc(c)}</h3><ul class="nl">${xs.map((it) => `<li>${(it.c || []).length ? `<span class="nfs">${it.c.slice(0, 3).map((iso) => `<button type="button" class="nf" data-iso="${iso}" title="${esc(name(iso))} 보기" aria-label="${esc(name(iso))} 보기">${flag(iso)}</button>`).join("")}</span>` : ""}<span class="nt">${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${wtext(it)}${srcLinks(it.src)}</span></li>`).join("")}</ul></div>`).join("");
+      box.innerHTML = groups.map(([c, xs]) => `<div class="ncat"><h3 class="subh">${esc(c)}</h3><ul class="nl">${xs.map((it) => `<li>${(it.c || []).length ? `<span class="nfs">${it.c.slice(0, 3).map((iso) => `<button type="button" class="nf" data-iso="${iso}" title="${esc(name(iso))} 보기" aria-label="${esc(name(iso))} 보기">${flag(iso)}</button>`).join("")}</span>` : ""}<span class="nt">${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${wtext(it)}${srcLinks(it.src)}${bgHTML(it)}</span></li>`).join("")}</ul></div>`).join("");
       more.hidden = day.items.length <= LIM;
       more.textContent = newsAll ? "접기" : `모두 보기 (${day.items.length}건)`;
       more.setAttribute("aria-expanded", newsAll);
     }
-    $("#news-src").innerHTML = day ? `출처 <a href="${esc(safeUrl(day.url))}">위키백과 Portal:Current events</a>(${dd(day.date)}, 세계 표준시 날짜, 위키백과 편집자들), <a href="${esc(safeUrl((N.source || {}).license_url || "https://creativecommons.org/licenses/by-sa/4.0/"))}">CC BY-SA 4.0</a>. ${day.items.some((it) => it.ko) ? "링크와 서식을 빼고 Claude(AI)로 한국어로 옮겼습니다. 기계 번역이라 어색할 수 있어 '원문' 단추로 영어를 볼 수 있습니다." : "링크와 서식을 빼고 영어 원문 그대로 옮겼습니다."} 이 칸의 문장은 같은 라이선스를 따릅니다. 국기를 누르면 그 나라를 봅니다.` : "";
+    $("#news-src").innerHTML = day ? `출처 <a href="${esc(safeUrl(day.url))}">위키백과 Portal:Current events</a>(${dd(day.date)}, 세계 표준시 날짜, 위키백과 편집자들), <a href="${esc(safeUrl((N.source || {}).license_url || "https://creativecommons.org/licenses/by-sa/4.0/"))}">CC BY-SA 4.0</a>. ${day.items.some((it) => it.ko) ? "링크와 서식을 빼고 Claude(AI)로 한국어로 옮겼습니다. 기계 번역이라 어색할 수 있어 '원문' 단추로 영어를 볼 수 있습니다." : "링크와 서식을 빼고 영어 원문 그대로 옮겼습니다."} '배경 보기'는 그 사건을 다룬 위키백과 문서의 첫 문단입니다. 이 칸의 문장은 같은 라이선스를 따릅니다. 국기를 누르면 그 나라를 봅니다.` : "";
   }
 
   // 경제 일정(투자자판)

@@ -630,8 +630,33 @@ def news(out: Path) -> bool:
                 days.append(olds[d.isoformat()])
             continue
         items = [{"cat": W.CATS.get(it["cat"], it["cat"]), "topic": it["topic"][-1] if it["topic"] else "", "text": it["text"],
-                  "src": it["src"][:3], "c": m.find(it)} for it in W.parse(raw)]
+                  "src": it["src"][:3], "c": m.find(it), "wt": it["wt"]} for it in W.parse(raw)]
         days.append({"date": d.isoformat(), "url": W.page_url(d), "items": items})
+    # 배경: 사건 문서 첫 문단(위키백과 요약, CC BY-SA). 받은 문서는 지난 news.json에서 다시 쓰고, 새 문서만 한 번에 20개까지 받는다.
+    bgs = {it["wt"]: (it.get("bg"), it.get("wu")) for d in old.get("days", []) for it in d.get("items", []) if it.get("wt") and "bg" in it}
+    fetched = 0
+    for d in days:
+        for it in d["items"]:
+            wt = it.get("wt")
+            if not wt:
+                continue
+            if wt not in bgs and fetched < 20:
+                fetched += 1
+                try:
+                    j = json.loads(get(W.summary_url(wt), 20).decode("utf-8"))
+                    ext = re.sub(r"\s+", " ", j.get("extract") or "").strip()
+                    if len(ext) > 700:
+                        cut = ext.rfind(". ", 0, 700)
+                        ext = ext[:cut + 1] if cut > 200 else ext[:700] + "…"
+                    url = ((j.get("content_urls") or {}).get("desktop") or {}).get("page") or ""
+                    bgs[wt] = (ext if len(ext) >= 40 and j.get("type") != "disambiguation" else None, url)
+                except Exception:  # noqa: BLE001 — 문서가 없거나 받지 못하면 배경 없이 둔다
+                    bgs[wt] = (None, "")
+            if wt in bgs:
+                bg, wu = bgs[wt]
+                it["bg"] = bg or ""  # 빈 값 = 문서가 없거나 쓸 만한 첫 문단이 없음(다시 받지 않는다)
+                if bg:
+                    it["wu"] = wu
     if not days:
         return False
     data = {"updated": datetime.now(KST).isoformat(timespec="minutes"), "days": days,
