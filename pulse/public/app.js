@@ -409,6 +409,22 @@
       P.baseline_days < 3 ? "평소 논조를 계산할 자료가 아직 모자랍니다." : "평소보다 논조가 나빠진 나라가 없습니다.");
   }
 
+  // 투자 위험 신호(투자자판): rank.alert 순서, 나라마다 늘어난 위험 사건 묶음 3개까지 + AI 요약 한 줄
+  function renderAlert() {
+    if (ED !== "invest") return;
+    const ol = $("#alerts");
+    const xs = P.rank.alert || [];
+    if (!xs.length) {
+      ol.innerHTML = `<li class="state">${P.ev_days >= 3 ? "평소보다 크게 늘어난 위험 사건 보도가 없습니다." : "평소 수준을 계산할 사건 자료가 아직 모자랍니다."}</li>`;
+      return;
+    }
+    ol.innerHTML = xs.slice(0, 12).map((iso) => {
+      const c = P.countries[iso], ai = B && (B.countries || {})[iso];
+      const chips = (c.ra || []).map(([g, n, r, b]) => `<span class="evc"><b>${esc(evName(g))}</b> ${fmt(n)}건 <i class="up">${evRatio(r, b)}</i></span>`).join("");
+      return `<li data-iso="${iso}"><div class="al-h">${cname(iso)}<span class="al-n">시장 기사 ${fmt(c.i)}건</span></div><div class="evs">${chips}</div>${ai ? `<p class="al-ai"><span class="ait">AI 요약</span>${esc(ai.s)}</p>` : ""}</li>`;
+    }).join("");
+  }
+
   // 분야별 48시간
   function renderMultiples() {
     const gl = P.global;
@@ -427,6 +443,7 @@
       return;
     }
     if (sel && $("#detail .what")) renderDetail();
+    renderAlert();
   }
 
   // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
@@ -564,7 +581,7 @@
     renderRank();
     paintMap();
     renderDetail();
-    if (first) { renderKpis(); renderMoves(); renderMultiples(); renderCal(); }
+    if (first) { renderKpis(); renderMoves(); renderAlert(); renderMultiples(); renderCal(); }
   }
 
   function showError() {
@@ -602,6 +619,7 @@
       bindPick($("#rank"), false);
       bindPick($("#surge"), true);
       bindPick($("#risk"), true);
+      bindPick($("#alerts"), true);
       $("#kpis").addEventListener("click", (e) => { const b = e.target.closest("button[data-iso]"); if (b) select(b.dataset.iso, true); });
       $("#chips").addEventListener("click", (e) => {
         const b = e.target.closest("[data-cat]");

@@ -42,6 +42,10 @@ EVG = [
     ("econ", "경제 협력", ["061"], "경제 분야에서 협력했다는 기사"),
     ("milcoop", "군사 협력", ["062"], "군사 분야에서 협력했다는 기사"),
 ]
+# 투자자판 '위험 신호'에 쓰는 묶음: 무력 충돌·정치 불안·제재와 관계 악화·사이버
+RISK = {"strike", "fight", "occupy", "mass", "bomb", "kill", "milthreat", "force",
+        "riot", "protest", "crackdown", "restrict", "abduct",
+        "sanction", "cut", "seize", "cyber"}
 NAMES = {k: name for k, name, _, _ in EVG}
 DESC = {k: d for k, _, _, d in EVG}
 _CODE = {c: k for k, _, codes, _ in EVG for c in codes}

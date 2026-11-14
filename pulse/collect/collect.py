@@ -486,6 +486,15 @@ def build(st: State, out: Path):
         es.sort(key=lambda x: -x[1] * min(5, max(0.5, x[2] if x[2] is not None else 1)))
         if es:
             c["e"] = es[:5]
+        # 위험 신호(투자자판): 무력·불안·제재·사이버 묶음이 기사 10건 넘게, 평소의 2배 넘게 늘어난 것(평소엔 거의 없던 묶음은 15건부터)
+        ra = [x for x in es if x[0] in E.RISK and x[1] >= 10 and x[2] is not None and x[2] >= 2
+              and not (x[3] is not None and x[3] < 1 and x[1] < 15)]
+        if ra:
+            # 점수 = √기사 수 × 배수(5배까지): 큰 나라가 기사 수만으로 늘 위에 오지 않게
+            sc = lambda x: math.sqrt(x[1]) * min(5, x[2])  # noqa: E731
+            ra.sort(key=lambda x: -sc(x))
+            c["ra"] = ra[:3]
+            c["rs"] = round(sum(sc(x) for x in ra))
 
     def top(key, cond, n=80, rev=True):
         xs = [i for i, c in cs.items() if cond(c)]
@@ -496,6 +505,7 @@ def build(st: State, out: Path):
         "invest": top("gi", lambda c: c["i"] >= 10),
         "surge": top("r", lambda c: c["r"] is not None and c["r"] >= 1.6 and c["n"] >= 100, 20),
         "risk": top("dt", lambda c: c["dt"] is not None and c["i"] >= 50 and c["dt"] < 0, 20, rev=False),
+        "alert": top("rs", lambda c: c.get("rs"), 15),
     }
     gl = {"n": sum(st.ghours.get(h, [0])[0] for h in win)}
     gl["c"] = {k: sum((st.ghours.get(h) or [0] * (NCAT + 2))[1 + j] for h in win) for j, k in enumerate(T.KEYS)}
@@ -578,6 +588,7 @@ def build(st: State, out: Path):
     print("일반 상위:", [(i, cs[i]["g"], cs[i]["n"]) for i in rank["general"][:15]])
     print("투자자 상위:", [(i, cs[i]["gi"], cs[i]["i"]) for i in rank["invest"][:15]])
     print("급증:", [(i, cs[i]["r"]) for i in rank["surge"][:10]], "· 논조 하락:", [(i, cs[i]["dt"]) for i in rank["risk"][:10]])
+    print("위험 신호:", [(i, cs[i]["rs"], [(x[0], x[1], x[2]) for x in cs[i]["ra"]]) for i in rank["alert"][:8]])
     print(f"사건 묶음: 평소 계산일 {len(ecomp)}일 · 24시간 뿌리 사건 기사 {eg24} · 묶음 있는 나라 {sum(1 for c in cs.values() if 'e' in c)}곳")
     print("무슨 일(상위 나라):", [(i, [(e[0], e[1], e[2]) for e in cs[i].get("e", [])[:3]]) for i in rank["general"][:8]])
     print("무슨 일(급증 나라):", [(i, [(e[0], e[1], e[2]) for e in cs[i].get("e", [])[:3]]) for i in rank["surge"][:8]])
