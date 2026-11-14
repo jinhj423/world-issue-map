@@ -188,12 +188,15 @@ def main() -> None:
 
     hist_path = DATA / "history.json"
     history = json.loads(hist_path.read_text("utf-8")) if hist_path.exists() else {}
-    ds = newsmap.build_dataset(raw, history, now, "Google News RSS (한국어판 + 현지판)")
+    topics = {}
     if not args.dry:
         try:
-            ds.update(fetch_topics(now))
+            topics = fetch_topics(now)
         except Exception as e:  # noqa: BLE001 — 주제 묶음이 실패해도 나라 데이터는 올린다
             print("주제 묶음 실패:", e.__class__.__name__, file=sys.stderr)
+    extra = [it for k in ("econ", "buzz") for it in (topics.get(k) or {}).get("items", [])]
+    ds = newsmap.build_dataset(raw, history, now, "Google News RSS (한국어판 + 현지판)", extra=extra)
+    ds.update(topics)
 
     got = sum(1 for d in ds["countries"].values() if d["n"])
     if not args.dry and got < len(countries) * 0.3:

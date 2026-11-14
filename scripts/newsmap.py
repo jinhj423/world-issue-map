@@ -239,24 +239,45 @@ def surge_ratio(history: dict, a2: str, today: str, w_today: float) -> float | N
 
 
 def heat_score(w: float, w_ref: float, ratio: float | None) -> tuple[int, float, float]:
-    """이슈 지수 0~100 = 보도량 60% + 평소 대비 급증 40%.
+    """이슈 지수 0~100 = 보도량 65% + 평소 대비 급증 35%(2026-11-14 조정).
+    w = 그 나라 헤드라인 가중치 + 다른 나라·경제·화제 제목에 그 나라가 나온 횟수, w_ref = 가장 큰 나라의 w.
+    급증 몫은 보도량에 비례해 줄인다(√보도량) — 기사가 적은 나라가 급증률만으로 맨 위에 오지 않게.
     급증률을 모르면 '평소 수준(0.5)'으로 둔다."""
     vol = min(1.0, math.log1p(w) / math.log1p(max(w_ref, 1.0)))
     surge = 0.5 if ratio is None else max(0.0, min(1.0, 0.5 + math.log2(ratio) / 4))
-    return round(100 * (0.6 * vol + 0.4 * surge)), vol, surge
+    return round(100 * (0.65 * vol + 0.35 * surge * math.sqrt(vol))), vol, surge
 
 
 def load_countries() -> list[dict]:
     return json.loads((ROOT / "config" / "countries.json").read_text("utf-8"))["countries"]
 
 
+def cross_mentions(full: dict[str, list[dict]], countries: dict[str, dict], extra: list[dict]) -> dict[str, int]:
+    """다른 나라 묶음·경제·화제 헤드라인 제목에 이 나라가 나온 횟수(같은 기사는 한 번).
+    나라 검색은 결과가 60건에서 잘려 큰 나라끼리 차이가 안 나므로, 다른 뉴스 속 등장 횟수로 보탠다.
+    대한민국은 국내 언론이 거의 모든 기사에 한국을 넣어 부르므로 더하지 않는다."""
+    seen: dict[str, tuple[str, str | None]] = {}
+    for a2, items in full.items():
+        for it in items:
+            seen.setdefault(it.get("u") or it["t"], (it["t"], a2))
+    for it in extra:
+        seen.setdefault(it.get("u") or it.get("t", ""), (it.get("t", ""), None))
+    x = {a2: 0 for a2 in countries}
+    for t, src in seen.values():
+        for a2, c in countries.items():
+            if a2 != src and a2 != "KR" and c.get("aliases") and mentions_country(t, c):
+                x[a2] += 1
+    return x
+
+
 def build_dataset(raw: dict[str, dict], history: dict, now: datetime, source_note: str,
-                  filter_mentions: bool = True) -> dict:
+                  filter_mentions: bool = True, extra: list[dict] | None = None) -> dict:
     """raw: {A2: {"items": [{t,s,u,p}], "local": [...]}} → 사이트가 읽는 news.json"""
     countries = {c["a2"]: c for c in load_countries()}
     today = now.astimezone(KST).date().isoformat()
     out: dict[str, dict] = {}
     weights: dict[str, float] = {}
+    full: dict[str, list[dict]] = {}
 
     for a2, c in countries.items():
         r = raw.get(a2) or {}
@@ -274,6 +295,7 @@ def build_dataset(raw: dict[str, dict], history: dict, now: datetime, source_not
                                   x["k"] * CAT_WEIGHT[x["c"]], x.get("p") or ""), reverse=True)
         w = country_weight(items, now)
         weights[a2] = w
+        full[a2] = items
         cats: dict[str, float] = {}
         for it in items:
             cats[it["c"]] = cats.get(it["c"], 0) + it["k"]
@@ -288,12 +310,14 @@ def build_dataset(raw: dict[str, dict], history: dict, now: datetime, source_not
             "local": (r.get("local") or [])[:10],
         }
 
-    # 기준값: 상위 3개국 보도량 평균 — 한 나라(미국)가 혼자 튀어도 나머지가 다 하얘지지 않게
-    top = sorted(weights.values(), reverse=True)[:3]
-    w_ref = sum(top) / len(top) if top else 1.0
+    # 보도량 = 자기 헤드라인 가중치 + 다른 뉴스 속 등장 횟수, 기준값은 가장 큰 나라(로그 눈금이라 나머지도 색이 남음)
+    x = cross_mentions(full, countries, extra or [])
+    tot = {a2: weights[a2] + x[a2] for a2 in out}
+    w_ref = max(tot.values()) if tot else 1.0
     for a2, d in out.items():
-        ratio = surge_ratio(history, a2, today, d["w"])
-        d["heat"], vol, surge = heat_score(d["w"], w_ref, ratio)
+        d["x"] = x[a2]
+        ratio = surge_ratio(history, a2, today, d["w"])  # 급증률은 기록과 같은 기준(자기 헤드라인 가중치)
+        d["heat"], vol, surge = heat_score(tot[a2], w_ref, ratio)
         d["surge"] = None if ratio is None else round(ratio, 2)
         if d["n"] == 0:
             d["heat"] = 0
