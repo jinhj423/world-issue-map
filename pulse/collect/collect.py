@@ -567,8 +567,8 @@ def build(st: State, out: Path):
     bin_ = {}
     for iso in targets:
         xs, seen = [], set()
-        for hk in win:
-            for t, _src in st.tt.get(hk, {}).get(iso, [])[:4]:
+        for hk in sorted(st.tt, reverse=True):  # 기준 시각 뒤의 덜 찬 시간 제목도 쓴다(가장 최근 보도)
+            for t, _src in st.tt[hk].get(iso, [])[:4]:
                 k = t.lower()[:50]
                 if k not in seen:
                     seen.add(k)
