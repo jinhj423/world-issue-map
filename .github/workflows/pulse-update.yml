@@ -1,6 +1,6 @@
 name: 월드펄스 수집
 
-# 월드펄스(pulse/) 자료: GDELT 15분 파일 + 미국 공공기관 경제 일정 → pulse-data 브랜치(커밋 1개, 덮어쓰기).
+# 월드펄스(pulse/) 자료: GDELT 15분 파일(GKG·사건) + 위키백과 주요 사건 + 미국 공공기관 경제 일정 → pulse-data 브랜치(커밋 1개, 덮어쓰기).
 # 깨우는 길: 세계 이슈 지도 수집(뉴스 수집, 10분마다)이 끝날 때마다 따라 돈다 — 새 비밀값·예약이 필요 없다.
 # GDELT 파일은 15분마다 나오고 약 1시간 늦게 올라오므로, 새 파일이 없으면 아무것도 올리지 않고 끝난다.
 on:
@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p pulse-out
           if git fetch -q --depth=1 origin pulse-data 2>/dev/null; then
-            for f in state.json pulse.json detail.json calendar.json; do
+            for f in state.json pulse.json detail.json calendar.json news.json; do
               git show "origin/pulse-data:$f" > "pulse-out/$f" 2>/dev/null || rm -f "pulse-out/$f"
             done
           fi
@@ -43,6 +43,7 @@ jobs:
           d=$(mktemp -d)
           cp pulse-out/state.json pulse-out/pulse.json pulse-out/detail.json "$d"/
           [ -f pulse-out/calendar.json ] && cp pulse-out/calendar.json "$d"/
+          [ -f pulse-out/news.json ] && cp pulse-out/news.json "$d"/
           cd "$d"
           git init -q -b pulse-data
           git config user.name "pulse-bot"

@@ -1,5 +1,6 @@
-// 월드펄스 화면(D안). 자료: /data/pulse.json(나라별 지수), /data/detail.json(인물·장소·언론·기사 주소, 처음 고를 때 받음), /data/calendar.json(투자자판 경제 일정).
-// 숫자 출처: GDELT 15분 파일을 월드펄스 수집기(pulse/collect)가 센 값. 시세·기사 제목은 쓰지 않는다.
+// 월드펄스 화면(D안). 자료: /data/pulse.json(나라별 지수·사건 묶음), /data/detail.json(인물·장소·언론·기사 주소, 처음 고를 때 받음),
+// /data/news.json(위키백과 주요 사건, CC BY-SA 4.0), /data/calendar.json(투자자판 경제 일정).
+// 숫자 출처: GDELT 15분 파일(GKG·사건)을 월드펄스 수집기(pulse/collect)가 센 값. 시세·기사 제목은 쓰지 않는다.
 (() => {
   "use strict";
   const ED = location.pathname.startsWith("/invest") ? "invest" : "general";
@@ -16,7 +17,7 @@
   const SHOW = 12;
   const $ = (s, r = document) => r.querySelector(s);
   const params = new URLSearchParams(location.search);
-  let P = null, D = null, paths = null, expanded = false, view = "48h";
+  let P = null, D = null, N = null, paths = null, expanded = false, view = "48h", newsDay = null, newsAll = false;
   let sel = (params.get("c") || "").toUpperCase() || null;
   let cat = params.get("cat") || "all";
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -34,6 +35,16 @@
   const flag = (iso) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18" loading="lazy">`;
   const upDown = (r) => (r == null ? "" : r >= 1.1 ? "up" : r <= 0.9 ? "down" : "");
   const cname = (iso) => `<span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(name(iso))}</a></span>`;
+  const evName = (g) => (P.evk || {})[g] || g;
+  const evRatio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
+  // '왜 늘었나' 한 줄: 기사 10건 넘고 평소의 1.5배를 넘은 사건 묶음 중 기사 수 × 배수(5배까지)가 가장 큰 것
+  function why(iso) {
+    let best = null;
+    const sc = (e) => e[1] * Math.min(5, e[2]);
+    for (const e of (P.countries[iso] || {}).e || []) if (e[1] >= 10 && e[2] != null && e[2] >= 1.5 && (!best || sc(e) > sc(best))) best = e;
+    return best ? `${evName(best[0])} 늘어남` : "";
+  }
+  const dd = (d) => `${+d.slice(5, 7)}.${d.slice(8, 10)}`;
 
   async function getJSON(u) {
     const r = await fetch(u, { cache: "no-cache" });
@@ -95,7 +106,7 @@
     const tiles = [
       ["24시간 전 세계 기사", txt(fmt(P.global.n)), ED === "invest" ? `그중 시장·금리 분야 ${fmt(P.global.c.markets)}건` : "GDELT가 모은 영어와 65개 언어 기사"],
       [CFG.topT, top ? who(top) : txt("없음"), tc ? `${fmt(tc[CFG.n])}건, 평소의 ${ratio(tc[CFG.r])}` : "자료를 모으는 중입니다"],
-      ["평소보다 가장 크게 늘어난 나라", sg ? who(sg) : txt("아직 없음"), sc ? `평소의 ${ratio(sc[CFG.r])}, ${fmt(sc[CFG.n])}건` : P.baseline_days < 3 ? "평소 수준을 계산하는 중입니다" : "평소의 1.6배를 넘은 곳이 없습니다"],
+      ["평소보다 가장 크게 늘어난 나라", sg ? who(sg) : txt("아직 없음"), sc ? `평소의 ${ratio(sc[CFG.r])}, ${why(sg) || `${fmt(sc[CFG.n])}건`}` : P.baseline_days < 3 ? "평소 수준을 계산하는 중입니다" : "평소의 1.6배를 넘은 곳이 없습니다"],
       ["가장 많이 다룬 분야", txt(cats[0] ? P.cats[cats[0][0]] : "없음"), cats[1] ? `${fmt(cats[0][1])}건, 2위 ${P.cats[cats[1][0]]}` : ""],
     ];
     $("#kpis").innerHTML = tiles.map(([l, v, s]) => `<div class="kpi"><span class="kl">${esc(l)}</span>${v}<span class="ks">${esc(s)}</span></div>`).join("");
@@ -150,7 +161,8 @@
   function tip(e, iso, en) {
     const t = $("#tip");
     const c = iso && P.countries[iso];
-    t.textContent = c ? `${name(iso)}  ${cat === "all" ? CFG.metric : P.cats[cat]} ${fmt(value(iso))}` : `${iso ? name(iso) : en}  기사 적음`;
+    const w = c && why(iso);
+    t.textContent = c ? `${name(iso)}  ${cat === "all" ? CFG.metric : P.cats[cat]} ${fmt(value(iso))}${w ? `, ${w}` : ""}` : `${iso ? name(iso) : en}  기사 적음`;
     t.hidden = false;
     const x = Math.min(e.clientX + 14, innerWidth - t.offsetWidth - 8);
     t.style.transform = `translate(${x}px, ${e.clientY + 16}px)`;
@@ -281,6 +293,7 @@
         <div>
           <div class="dh">${flag(sel).replace('loading="lazy"', "")}<h2 id="h-detail">${esc(nm)}</h2><span class="badge">${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</span><a class="page" href="/c/${sel.toLowerCase()}/">${esc(nm)} 페이지</a></div>
           <p class="dsent">${esc(sent)}</p>
+          ${whatHTML(sel)}
           <div class="dnum">
             <div><span class="dv">${c[CFG.key]}</span><span class="dl">${esc(CFG.metric)}</span></div>
             <div><span class="dv">${fmt(n)}</span><span class="dl">24시간 ${esc(CFG.art)}</span></div>
@@ -308,6 +321,25 @@
     renderChart(c);
     fillDetail();
   }
+  // 무슨 일이 있었나: GDELT 사건 묶음(예시 기사는 detail.json을 받은 뒤 링크로 바뀐다) + 위키백과 주요 사건 중 이 나라
+  function whatHTML(iso) {
+    const es = (P.countries[iso] || {}).e || [];
+    const chips = es.map(([g, n, r, b]) => `<span class="evc" data-g="${g}"><b>${esc(evName(g))}</b> ${fmt(n)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${evRatio(r, b)}</i>` : ""}</span>`).join("");
+    const wl = newsFor(iso).slice(0, 3);
+    if (!chips && !wl.length) return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
+    return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3>
+      ${chips ? `<div class="evs">${chips}</div>` : ""}
+      ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.text)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}
+      <p class="note">${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(영어 원문)입니다.` : ""}</p></div>`;
+  }
+  const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(l)}</a>`).join("");
+  function newsFor(iso) {
+    if (!N) return [];
+    const out = [];
+    for (const d of N.days || []) for (const it of d.items) if ((it.c || []).includes(iso)) out.push([d.date, it]);
+    return out;
+  }
+
   async function fillDetail() {
     const want = sel;
     try {
@@ -319,22 +351,27 @@
     }
     if (want !== sel || !$("#d-extra")) return;
     const d = (D.countries || {})[sel] || { p: [], l: [], src: [], a: [] };
+    for (const el of document.querySelectorAll("#detail .evc[data-g]")) {
+      const x = (d.ev || {})[el.dataset.g];
+      if (x) el.outerHTML = `<a class="evc" href="${esc(safeUrl(x[0]))}" rel="nofollow noopener" target="_blank" title="예시 기사: ${esc(x[1])}">${el.innerHTML}</a>`;
+    }
     const list = (xs, unit) => (xs.length ? `<ol class="plain">${xs.slice(0, 8).map(([k, v]) => `<li><span>${esc(k)}</span><span class="v">${fmt(v)}${unit}</span></li>`).join("")}</ol>` : `<p class="state">아직 없습니다.</p>`);
     const arts = d.a.length ? `<ul class="arts">${d.a.slice(0, 10).map(([t, u, s, ks]) => `<li><span class="t">${esc(t.replace("-", "."))}</span><span class="s"><span class="src">${esc(s)}</span>${ks.length ? `<span class="tags">${ks.slice(0, 3).map((k) => `<span class="tag">${esc(P.cats[k] || k)}</span>`).join("")}</span>` : ""}</span><a href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">원문 보기</a></li>`).join("")}</ul>` : `<p class="state">아직 없습니다.</p>`;
     $("#d-extra").innerHTML = `<div><h3 class="subh">많이 나온 인물</h3>${list(d.p, "건")}</div><div><h3 class="subh">많이 나온 장소</h3>${list(d.l, "회")}</div><div><h3 class="subh">많이 다룬 언론</h3>${list(d.src, "건")}</div><div class="artsbox"><h3 class="subh">최근 기사</h3>${arts}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p></div>`;
   }
 
   // 크게 바뀐 나라
-  function miniRows(list, cols, empty) {
+  function miniRows(list, cols, empty, withWhy) {
     if (!list.length) return `<li class="state">${esc(empty)}</li>`;
     return `<li class="h" aria-hidden="true"><span>나라</span><span class="n">${cols[0]}</span><span class="x">${cols[1]}</span></li>` + list.slice(0, 10).map((iso) => {
       const [n, x, cls] = cols[2](P.countries[iso]);
-      return `<li data-iso="${iso}">${cname(iso)}<span class="n">${n}</span><span class="x ${cls}">${x}</span></li>`;
+      const w = withWhy && why(iso);
+      return `<li data-iso="${iso}"><span class="nmw">${cname(iso)}${w ? `<span class="why">${esc(w)}</span>` : ""}</span><span class="n">${n}</span><span class="x ${cls}">${x}</span></li>`;
     }).join("");
   }
   function renderMoves() {
     $("#surge").innerHTML = miniRows(surgeList(), [CFG.art, "평소 대비", (c) => [fmt(c[CFG.n]), ratio(c[CFG.r]), "up"]],
-      P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`);
+      P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`, true);
     $("#risk").innerHTML = miniRows(P.rank.risk || [], ["시장 기사", "논조 변화", (c) => [fmt(c.i), sign(c.dt), "down"]],
       P.baseline_days < 3 ? "평소 논조를 계산할 자료가 아직 모자랍니다." : "평소보다 논조가 나빠진 나라가 없습니다.");
   }
@@ -346,6 +383,45 @@
       const L = line(gl.hs[k] || [], 240, 40, { area: true, cls: "mln" });
       return `<div class="mult"><div class="t"><span>${esc(P.cats[k])}</span><b>${fmt(gl.c[k])}</b></div>${L ? L.svg : ""}</div>`;
     }).join("");
+  }
+
+  // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
+  async function loadNews() {
+    try {
+      N = await getJSON("/data/news.json");
+    } catch (err) {
+      N = null;
+      $("#news-list").innerHTML = `<p class="hint err">주요 사건을 받지 못했습니다. 잠시 뒤 새로 고쳐 주세요.</p>`;
+      return;
+    }
+    const days = N.days || [];
+    if (!newsDay || !days.some((d) => d.date === newsDay)) newsDay = (days.find((d) => d.items.length >= 4) || days.reduce((a, d) => (d.items.length > (a ? a.items.length : -1) ? d : a), null) || {}).date;
+    renderNews();
+    if (sel && $("#detail .what")) renderDetail();
+  }
+  function renderNews() {
+    const days = (N && N.days) || [];
+    const day = days.find((d) => d.date === newsDay);
+    $("#news-days").innerHTML = days.map((d) => `<button type="button" data-day="${d.date}" aria-pressed="${d.date === newsDay}">${dd(d.date)}</button>`).join("");
+    const box = $("#news-list"), more = $("#news-more");
+    if (!day || !day.items.length) {
+      box.innerHTML = `<p class="hint">이날 정리된 사건이 아직 없습니다. 위키백과 편집자들이 하루 동안 채워 갑니다.</p>`;
+      more.hidden = true;
+    } else {
+      const LIM = 10;
+      const shown = newsAll ? day.items : day.items.slice(0, LIM);
+      const groups = [];
+      for (const it of shown) {
+        let g = groups.find((x) => x[0] === it.cat);
+        if (!g) groups.push((g = [it.cat, []]));
+        g[1].push(it);
+      }
+      box.innerHTML = groups.map(([c, xs]) => `<div class="ncat"><h3 class="subh">${esc(c)}</h3><ul class="nl">${xs.map((it) => `<li>${(it.c || []).length ? `<span class="nfs">${it.c.slice(0, 3).map((iso) => `<button type="button" class="nf" data-iso="${iso}" title="${esc(name(iso))} 보기" aria-label="${esc(name(iso))} 보기">${flag(iso)}</button>`).join("")}</span>` : ""}<span class="nt">${it.topic ? `<span class="topic">${esc(it.topic)}</span>` : ""}${esc(it.text)}${srcLinks(it.src)}</span></li>`).join("")}</ul></div>`).join("");
+      more.hidden = day.items.length <= LIM;
+      more.textContent = newsAll ? "접기" : `모두 보기 (${day.items.length}건)`;
+      more.setAttribute("aria-expanded", newsAll);
+    }
+    $("#news-src").innerHTML = day ? `출처 <a href="${esc(safeUrl(day.url))}">위키백과 Portal:Current events</a>(${dd(day.date)}, 세계 표준시 날짜, 위키백과 편집자들), <a href="${esc(safeUrl((N.source || {}).license_url || "https://creativecommons.org/licenses/by-sa/4.0/"))}">CC BY-SA 4.0</a>. 링크와 서식을 빼고 영어 원문 그대로 옮겼으며, 이 칸의 문장은 같은 라이선스를 따릅니다. 국기를 누르면 그 나라를 봅니다.` : "";
   }
 
   // 경제 일정(투자자판)
@@ -483,15 +559,24 @@
         renderAll(false);
       });
       $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); });
+      $("#news-days").addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && b.dataset.day !== newsDay) { newsDay = b.dataset.day; newsAll = false; renderNews(); } });
+      $("#news-more").addEventListener("click", () => { newsAll = !newsAll; renderNews(); });
+      $("#news-list").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-iso]");
+        if (!b) return;
+        if (P.countries[b.dataset.iso]) select(b.dataset.iso, true); else location.href = `/c/${b.dataset.iso.toLowerCase()}/`;
+      });
       initSearch();
       setInterval(async () => {
         try {
           const np = await getJSON("/data/pulse.json");
           if (np.asof !== P.asof) { P = np; D = null; renderAll(true); }
         } catch (err) { /* 다음 차례에 다시 받는다 */ }
+        loadNews();
       }, 5 * 60e3);
     }
     renderAll(true);
+    loadNews();
     if (!paths) await drawMap();
   }
   start();

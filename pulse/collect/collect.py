@@ -4,11 +4,14 @@
   - GDELT 2.0 GKG 15분 파일(data.gdeltproject.org/gdeltv2/): 영어 묶음 + 번역 묶음(65개 언어).
     이용 조건: 상업 이용 포함 무료, 출처 표기와 링크 필요(gdeltproject.org/about.html#termsofuse).
     API(api.gdeltproject.org)는 GitHub 서버에서 429로 막혀 원자료 파일을 쓴다. 파일은 약 1시간 늦게 올라온다.
+  - GDELT 2.0 사건 15분 파일(export, translation.export): 기사 문장을 기계로 분류한 사건 종류(CAMEO). 같은 이용 조건.
+    나라별 '무슨 일'(교전·체포·시위·협정 등) 묶음과 평소 대비, 예시 기사 주소를 만든다(events.py).
+  - 위키백과 Portal:Current events(영어, CC BY-SA 4.0): 그날 주요 사건 한 줄 요약 → news.json(wiki.py).
   - 미국 공공기관 경제 일정: ../../scripts/calendar_build.py의 연준·BEA·Census·고정 목록(BLS·한은)만. 실적 일정(나스닥)은 이용 조건을 확인하지 않아 뺀다.
 기사 제목은 언론사 글이라 공개 자료에 넣지 않는다(SHOW_TITLES). 출처 이름·주소·분야·논조만 남긴다.
 
 사용: python3 pulse/collect/collect.py <작업 폴더>
-  작업 폴더에 state.json(누적 상태)을 읽고 pulse.json·detail.json·calendar.json을 쓴다. 바뀐 게 있으면 .changed를 만든다.
+  작업 폴더에 state.json(누적 상태)을 읽고 pulse.json·detail.json·calendar.json·news.json을 쓴다. 바뀐 게 있으면 .changed를 만든다.
 """
 from __future__ import annotations
 
@@ -25,18 +28,23 @@ import zipfile
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent.parent / "scripts")]
 import countries as C  # noqa: E402
+import events as E  # noqa: E402
 import themes as T  # noqa: E402
+import wiki as W  # noqa: E402
 
 csv.field_size_limit(1 << 30)
 KST = ZoneInfo("Asia/Seoul")
 UA = "world-pulse/1.0 (+https://github.com/jinhj423/world-issue-map)"
 BASE = "http://data.gdeltproject.org/gdeltv2/"
-KINDS = {"en": "gkg.csv.zip", "tr": "translation.gkg.csv.zip"}
+KINDS = {"en": "gkg.csv.zip", "tr": "translation.gkg.csv.zip", "ev": "export.CSV.zip", "evt": "translation.export.CSV.zip"}
+EV_KINDS = ("ev", "evt")
+EV_DAYS = 10                  # 사건 묶음 날짜별 합(평소 수준 계산용)
 NCAT = len(T.KEYS)
 VLEN = 2 + NCAT + 1          # [기사 수, 논조 합, 분야별…, 투자자판]
 IINV = 2 + NCAT              # 투자자판 칸
@@ -115,6 +123,9 @@ class State:
         self.pp = d.get("pp", {})
         self.links = d.get("links", {})
         self.newest = d.get("newest", "")
+        self.eh, self.ed = d.get("eh", {}), d.get("ed", {})      # 사건 묶음: 시간별·날짜별 {나라: {묶음: 기사 수}}
+        self.egh, self.egd = d.get("egh", {}), d.get("egd", {})  # 사건 전체(뿌리 사건 기사 수) 시간별·날짜별
+        self.el = d.get("el", {})                                # 사건 예시 기사 {나라: {묶음: [[파일 시각, 주소, 기사 수]]}}
 
     def save(self):
         newest = max([max(v) for v in self.done.values() if v] or ["0"])
@@ -124,8 +135,10 @@ class State:
         keep = lambda d, n: {k: d[k] for k in sorted(d)[-n:]}  # noqa: E731
         self.hours, self.ghours = keep(self.hours, HOURS_KEEP), keep(self.ghours, HOURS_KEEP)
         self.pp, self.days, self.dcov = keep(self.pp, EXTRA_KEEP), keep(self.days, DAYS_KEEP), keep(self.dcov, DAYS_KEEP)
+        self.eh, self.egh, self.ed, self.egd = keep(self.eh, HOURS_KEEP), keep(self.egh, HOURS_KEEP), keep(self.ed, EV_DAYS), keep(self.egd, EV_DAYS)
         out = {"v": 1, "done": {k: sorted(v) for k, v in self.done.items()}, "hours": self.hours, "days": self.days,
-               "dcov": self.dcov, "ghours": self.ghours, "pp": self.pp, "links": self.links, "newest": self.newest}
+               "dcov": self.dcov, "ghours": self.ghours, "pp": self.pp, "links": self.links, "newest": self.newest,
+               "eh": self.eh, "ed": self.ed, "egh": self.egh, "egd": self.egd, "el": self.el}
         self.path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), "utf-8")
 
 
@@ -220,6 +233,41 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
     return n
 
 
+def process_ev(st: State, kind: str, stamp: str, blob: bytes) -> int:
+    """사건 파일 하나: 기사 첫머리 사건(IsRootEvent)만, 기사 수(NumArticles)로 무게를 매겨 사건이 일어난 나라별 묶음에 더한다."""
+    hk, dk = stamp[:10], kst_day(stamp)
+    recent = st_dt(stamp) >= datetime.now(timezone.utc) - timedelta(hours=EXTRA_KEEP + 1)
+    hv, dv = st.eh.setdefault(hk, {}), st.ed.setdefault(dk, {})
+    n = tot = 0
+    for f in rows_of(blob):
+        if len(f) < 61 or f[25] != "1":
+            continue
+        try:
+            w = int(f[33] or 0)
+        except ValueError:
+            continue
+        if w <= 0:
+            continue
+        tot += w
+        g = E.group_of(f[27], f[28])
+        iso = F2I.get(f[53] or f[37])
+        if not g or not iso:
+            continue
+        n += 1
+        for d in (hv, dv):
+            x = d.setdefault(iso, {})
+            x[g] = x.get(g, 0) + w
+        url = (f[60] or "").strip()
+        if recent and url.startswith("http") and len(url) < 400 and not NOT_ARTICLE.search(url):
+            st.el.setdefault(iso, {}).setdefault(g, []).append([stamp, url, w])
+    st.egh[hk] = st.egh.get(hk, 0) + tot
+    st.egd[dk] = st.egd.get(dk, 0) + tot
+    cov = st.dcov.setdefault(dk, {"en": 0, "tr": 0})
+    cov[kind] = cov.get(kind, 0) + 1
+    st.done[kind].add(stamp)
+    return n
+
+
 def trim_pp(st: State):
     """시간 묶음마다 나라별 인물·장소·출처를 상위 몇 개만, 기사 주소는 나라마다 최근 40개만 남긴다(상태 파일 크기)."""
     for hk, by in st.pp.items():
@@ -229,10 +277,25 @@ def trim_pp(st: State):
     for iso, lk in st.links.items():
         lk.sort(key=lambda x: x[0])
         del lk[: max(0, len(lk) - 40)]
+    # 사건 예시 기사: 나라·묶음마다 최근 26시간 안에서 기사 수가 많은 주소 3개
+    cut = (datetime.now(timezone.utc) - timedelta(hours=EXTRA_KEEP + 1)).strftime("%Y%m%d%H%M%S")
+    for iso in list(st.el):
+        for g in list(st.el[iso]):
+            seen, xs = set(), []
+            for x in sorted(st.el[iso][g], key=lambda x: -x[2]):
+                if x[0] >= cut and x[1] not in seen:
+                    seen.add(x[1])
+                    xs.append(x)
+            if xs:
+                st.el[iso][g] = xs[:3]
+            else:
+                del st.el[iso][g]
+        if not st.el[iso]:
+            del st.el[iso]
 
 
 def latest_listed(kind: str) -> str | None:
-    name = "lastupdate-translation.txt" if kind == "tr" else "lastupdate.txt"
+    name = "lastupdate-translation.txt" if kind in ("tr", "evt") else "lastupdate.txt"
     try:
         lines = get(BASE + name, 30).decode().split()
     except Exception as e:  # noqa: BLE001
@@ -278,7 +341,7 @@ def collect(st: State) -> int:
         except Exception as e:  # noqa: BLE001
             print(f"  ! {s} {kind}: {e.__class__.__name__}")
             continue
-        n = process(st, kind, s, blob, fips_names, unknown, theme_seen)
+        n = process_ev(st, kind, s, blob) if kind in EV_KINDS else process(st, kind, s, blob, fips_names, unknown, theme_seen)
         got += 1
         if got <= 3 or got % 25 == 0:
             print(f"  {kind} {s}: 기사 {n}개 ({time.time() - t0:.0f}초)")
@@ -388,6 +451,28 @@ def build(st: State, out: Path):
             "si": [st.days.get(d, {}).get(iso, [0] * VLEN)[IINV] for d in days7],
         }
 
+    # 무슨 일: 사건 묶음별 24시간 기사 수와 평소 대비(전체 사건 중 몫의 중앙값 × 지금 24시간 전체)
+    ecomp = [d for d in sorted(st.dcov) if d < today and all(st.dcov[d].get(k, 0) >= 90 for k in EV_KINDS)][-7:]
+    eg24 = sum(st.egh.get(h, 0) for h in win)
+    ev24: dict = defaultdict(Counter)
+    for hk in win:
+        for iso, x in st.eh.get(hk, {}).items():
+            ev24[iso].update(x)
+    for iso, c in cs.items():
+        es = []
+        for g, n in ev24.get(iso, {}).items():
+            if n < 5:
+                continue
+            b = None
+            if len(ecomp) >= 3 and eg24:
+                shares = [st.ed.get(d, {}).get(iso, {}).get(g, 0) / st.egd[d] for d in ecomp if st.egd.get(d)]
+                b = statistics.median(shares) * eg24 if shares else None
+            es.append([g, n, None if b is None else round(n / max(b, 1), 1), None if b is None else round(b, 1)])
+        # 기사 수가 많고 평소보다 늘어난 묶음을 앞에(배수는 0.5~5배로 눌러 반영)
+        es.sort(key=lambda x: -x[1] * min(5, max(0.5, x[2] if x[2] is not None else 1)))
+        if es:
+            c["e"] = es[:5]
+
     def top(key, cond, n=80, rev=True):
         xs = [i for i, c in cs.items() if cond(c)]
         return sorted(xs, key=lambda i: (cs[i][key] if cs[i][key] is not None else -1e9), reverse=rev)[:n]
@@ -412,6 +497,7 @@ def build(st: State, out: Path):
         "baseline_days": len(complete),
         "days": days7,
         "cats": T.NAMES, "general_cats": T.GENERAL, "invest_cats": T.INVEST,
+        "evk": E.NAMES, "ev_days": len(ecomp),
         "global": gl, "rank": rank, "countries": cs,
         "meta": {iso: {"ko": r["ko"], "id": r["id"], "en": r["en"]} for iso, r in ROWS.items()},
         "source": {"name": "GDELT Project", "url": "https://www.gdeltproject.org/"},
@@ -438,9 +524,15 @@ def build(st: State, out: Path):
                          [k for j, k in enumerate(T.KEYS) if (m >> j) & 1], tone])
             if len(arts) >= 8:
                 break
+        evl = {}
+        for g, *_ in cs[iso].get("e", []):
+            xs = [x for x in st.el.get(iso, {}).get(g, []) if x[0] >= cutoff]
+            if xs:
+                url = max(xs, key=lambda x: x[2])[1]
+                evl[g] = [url, urlparse(url).netloc.removeprefix("www.")]
         det[iso] = {
             "p": [x for x in ex["p"].most_common(12) if x[0].lower() not in NOT_PERSON][:6] if ex else [], "l": ex["l"].most_common(5) if ex else [],
-            "src": ex["s"].most_common(5) if ex else [], "a": arts,
+            "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl,
         }
     for iso in list(st.links):
         st.links[iso] = [x for x in st.links[iso] if x[0] >= cutoff]
@@ -452,6 +544,9 @@ def build(st: State, out: Path):
     print("일반 상위:", [(i, cs[i]["g"], cs[i]["n"]) for i in rank["general"][:15]])
     print("투자자 상위:", [(i, cs[i]["gi"], cs[i]["i"]) for i in rank["invest"][:15]])
     print("급증:", [(i, cs[i]["r"]) for i in rank["surge"][:10]], "· 논조 하락:", [(i, cs[i]["dt"]) for i in rank["risk"][:10]])
+    print(f"사건 묶음: 평소 계산일 {len(ecomp)}일 · 24시간 뿌리 사건 기사 {eg24} · 묶음 있는 나라 {sum(1 for c in cs.values() if 'e' in c)}곳")
+    print("무슨 일(상위 나라):", [(i, [(e[0], e[1], e[2]) for e in cs[i].get("e", [])[:3]]) for i in rank["general"][:8]])
+    print("무슨 일(급증 나라):", [(i, [(e[0], e[1], e[2]) for e in cs[i].get("e", [])[:3]]) for i in rank["surge"][:8]])
 
 
 def calendar(out: Path) -> bool:
@@ -474,6 +569,45 @@ def calendar(out: Path) -> bool:
     return True
 
 
+def news(out: Path) -> bool:
+    """위키백과 오늘·어제(UTC) 주요 사건을 news.json으로. 받지 못한 날은 지난 값을 그대로 둔다. 내용이 같으면 쓰지 않는다."""
+    p = out / "news.json"
+    try:
+        old = json.loads(p.read_text("utf-8")) if p.exists() else {}
+    except Exception:  # noqa: BLE001
+        old = {}
+    olds = {d["date"]: d for d in old.get("days", [])}
+    m = W.Matcher(ROWS)
+    now = datetime.now(timezone.utc).date()
+    days = []
+    for i in range(2):
+        d = now - timedelta(days=i)
+        try:
+            raw = get(W.raw_url(d), 30).decode("utf-8")
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                print(f"  ! 위키백과 {d}: {e.code}")
+            if d.isoformat() in olds:
+                days.append(olds[d.isoformat()])
+            continue
+        except Exception as e:  # noqa: BLE001
+            print(f"  ! 위키백과 {d}: {e.__class__.__name__}")
+            if d.isoformat() in olds:
+                days.append(olds[d.isoformat()])
+            continue
+        items = [{"cat": W.CATS.get(it["cat"], it["cat"]), "topic": it["topic"][-1] if it["topic"] else "", "text": it["text"],
+                  "src": it["src"][:3], "c": m.find(it)} for it in W.parse(raw)]
+        days.append({"date": d.isoformat(), "url": W.page_url(d), "items": items})
+    if not days or days == old.get("days"):
+        return False
+    data = {"updated": datetime.now(KST).isoformat(timespec="minutes"), "days": days,
+            "source": {"name": "Wikipedia, Portal:Current events", "license": "CC BY-SA 4.0",
+                       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"}}
+    p.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
+    print("news.json:", ", ".join(f"{d['date']} {len(d['items'])}건" for d in days))
+    return True
+
+
 def main():
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
@@ -486,6 +620,10 @@ def main():
         changed = calendar(out) or changed
     except Exception as e:  # noqa: BLE001
         print(f"  ! 경제 일정: {e.__class__.__name__}: {e}")
+    try:
+        changed = news(out) or changed
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! 위키백과 사건: {e.__class__.__name__}: {e}")
     if changed:
         st.save()
         (out / ".changed").write_text("1")

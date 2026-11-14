@@ -193,13 +193,47 @@ button.kv:hover > span { color: var(--acc); }
 .arts a { font-size: 13px; font-weight: 600; color: var(--acc); text-decoration: none; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
 .arts a:hover { background: var(--acc-wash); }
 
+/* 무슨 일이 있었나(나라 자세히) */
+.what { margin: 16px 0 4px; padding: 14px 16px; background: var(--acc-wash2); border-radius: var(--r-md); }
+.what .subh { margin-bottom: 10px; }
+.what .note { margin-top: 10px; }
+.evs { display: flex; flex-wrap: wrap; gap: 6px; }
+.evc { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); font-size: 13px; color: var(--ink2); text-decoration: none; white-space: nowrap; }
+.evc b { color: var(--ink); font-weight: 700; }
+.evc i { font-style: normal; font-weight: 600; color: var(--muted); }
+.evc i.up { color: var(--up); } .evc i.down { color: var(--down); }
+a.evc { transition: border-color 120ms, background-color 120ms; }
+a.evc:hover { border-color: var(--acc); background: var(--card); }
+.wl { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.wl li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.55; color: var(--ink2); }
+.wd { color: var(--muted); font-size: 13px; }
+.srcl { font-size: 12px; font-weight: 600; color: var(--acc); text-decoration: none; white-space: nowrap; background: var(--acc-wash); padding: 1px 6px; border-radius: 4px; }
+.srcl:hover { background: var(--m1); }
+
+/* 세계에서 있었던 일 */
+#news .ch { flex-wrap: wrap; }
+.nws { columns: 2; column-gap: 40px; }
+.ncat { break-inside: avoid; margin-bottom: 18px; }
+.ncat .subh { margin-bottom: 6px; }
+.nl { list-style: none; margin: 0; padding: 0; }
+.nl li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.55; }
+.nl li:last-child { border-bottom: 0; }
+.nfs { display: flex; flex-direction: column; gap: 4px; flex: none; padding-top: 2px; }
+.nf { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 3px; line-height: 0; }
+.nf .flag { width: 22px; height: 16px; }
+.nf:hover .flag { box-shadow: 0 0 0 2px var(--acc); }
+.nt { min-width: 0; }
+.topic { display: block; font-size: 12px; color: var(--muted); margin-bottom: 1px; }
+
 /* 바뀐 나라, 분야 흐름, 일정 */
 .mini { list-style: none; margin: 0; padding: 0; }
-.mini li { display: grid; grid-template-columns: minmax(0, 1fr) 72px 64px; align-items: center; gap: 10px; height: 40px; padding: 0 8px; border-radius: var(--r-md); cursor: pointer; font-size: 14px; transition: background-color 120ms; }
+.mini li { display: grid; grid-template-columns: minmax(0, 1fr) 72px 64px; align-items: center; gap: 10px; min-height: 40px; padding: 5px 8px; border-radius: var(--r-md); cursor: pointer; font-size: 14px; transition: background-color 120ms; }
 .mini li:hover { background: var(--acc-wash2); }
-.mini li.h { cursor: default; height: 28px; font-size: 12px; color: var(--muted); }
+.mini li.h { cursor: default; min-height: 28px; padding: 0 8px; font-size: 12px; color: var(--muted); }
 .mini li.h:hover { background: none; }
 .mini .n, .mini .x { text-align: right; white-space: nowrap; }
+.nmw { display: grid; min-width: 0; }
+.why { font-size: 12px; color: var(--muted); padding-left: 32px; }
 .mini .x { font-weight: 600; }
 .mini .x.up { color: var(--up); } .mini .x.down { color: var(--down); }
 .mults { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
@@ -278,6 +312,8 @@ body.page .about { margin-left: auto; }
   .extra, .cols3, body.page .extra { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   body.page .arts li { grid-template-columns: 76px minmax(0, 1fr) auto; }
   .mults { grid-template-columns: minmax(0, 1fr); }
+  .nws { columns: 1; }
+  .what { padding: 12px; }
   .cal li { grid-template-columns: 80px 44px minmax(0, 1fr); }
   .cal .imp { grid-column: 3; justify-self: start; }
   .prose h1 { font-size: 22px; }

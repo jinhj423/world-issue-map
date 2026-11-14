@@ -3,7 +3,7 @@
 // 비밀값·D1 없음. 공개 저장소의 raw 주소를 60초 메모해 쓴다.
 const REPO = "jinhj423/world-issue-map";
 const RAW = `https://raw.githubusercontent.com/${REPO}/pulse-data/`;
-const FILES = new Set(["pulse.json", "detail.json", "calendar.json"]);
+const FILES = new Set(["pulse.json", "detail.json", "calendar.json", "news.json"]);
 const memo = new Map();
 
 let BASE = RAW; // 로컬 시험 때만 env.DATA_BASE로 바꾼다
@@ -37,6 +37,25 @@ const ED = {
 const flag = (iso, lazy = true) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18"${lazy ? ' loading="lazy"' : ""}>`;
 const upDown = (r) => (r == null ? "" : r >= 1.1 ? "up" : r <= 0.9 ? "down" : "");
 const clockKo = (iso) => (iso ? `${+iso.slice(5, 7)}월 ${+iso.slice(8, 10)}일 ${iso.slice(11, 16)}` : "알 수 없음");
+
+const dd = (d) => `${+d.slice(5, 7)}.${d.slice(8, 10)}`;
+const safeUrl = (u) => (/^https?:\/\//.test(u) ? u : "#");
+const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(l)}</a>`).join("");
+
+// 무슨 일이 있었나: GDELT 사건 묶음(예시 기사 링크) + 위키백과 주요 사건 중 이 나라 (app.js whatHTML과 같은 모양)
+function whatHTML(p, n, iso, det) {
+  const es = (p.countries[iso] || {}).e || [];
+  const ratio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
+  const chips = es.map(([g, k, r, b]) => {
+    const inner = `<b>${esc((p.evk || {})[g] || g)}</b> ${fmt(k)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${ratio(r, b)}</i>` : ""}`;
+    const x = ((det && det.ev) || {})[g];
+    return x ? `<a class="evc" href="${esc(safeUrl(x[0]))}" rel="nofollow noopener" target="_blank" title="예시 기사: ${esc(x[1])}">${inner}</a>` : `<span class="evc">${inner}</span>`;
+  }).join("");
+  const wl = [];
+  for (const d of (n && n.days) || []) for (const it of d.items) if ((it.c || []).includes(iso)) wl.push([d.date, it]);
+  if (!chips && !wl.length) return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
+  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${chips ? `<div class="evs">${chips}</div>` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.text)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}<p class="note">${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(영어 원문, CC BY-SA 4.0)입니다.` : ""}</p></div>`;
+}
 
 // 선 그래프 경로(app.js line과 같은 계산)
 function line(vals, w, h, { area = false, pad = 3, cls = "spk", label = "" } = {}) {
@@ -117,7 +136,7 @@ function shell(req, title, desc, body, canonical, status = 200) {
 <link rel="stylesheet" href="/app.css"></head><body class="page">
 <header class="bar"><a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a><nav class="tabs" aria-label="판 고르기"><a href="/">일반</a><a href="/invest/">투자자</a></nav><a class="about" href="/about/">방법과 출처</a></header>
 <main class="wrap">${body}</main>
-<footer class="foot"><p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다. 국기 그림 <a href="https://github.com/lipis/flag-icons">flag-icons</a>(MIT), 지도 Natural Earth.</p><p>보도량 통계이며 투자 권유가 아닙니다. <a href="/about/">세는 방법과 출처</a></p></footer>
+<footer class="foot"><p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다. 사건 종류 GDELT 사건 자료, 주요 사건 문장 위키백과(CC BY-SA 4.0). 국기 그림 <a href="https://github.com/lipis/flag-icons">flag-icons</a>(MIT), 지도 Natural Earth.</p><p>보도량 통계이며 투자 권유가 아닙니다. <a href="/about/">세는 방법과 출처</a></p></footer>
 </body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=120" } });
 }
 
@@ -132,7 +151,7 @@ function bars7(days, vals, asof) {
 }
 
 async function countryPage(req, iso) {
-  const [p, d] = await Promise.all([data("pulse.json"), data("detail.json")]);
+  const [p, d, nws] = await Promise.all([data("pulse.json"), data("detail.json"), data("news.json")]);
   if (!p) return shell(req, "월드펄스", "자료를 받지 못했습니다.", `<section class="card prose"><h1>자료를 받지 못했습니다</h1><p class="lead">잠시 뒤 다시 열어 주세요.</p></section>`, "/", 503);
   const m = p.meta[iso];
   if (!m) return shell(req, "없는 나라 | 월드펄스", "월드펄스에 없는 나라 코드입니다.", `<section class="card prose"><h1>없는 나라 코드입니다</h1><p class="lead">주소를 확인하거나 <a href="/">전체 순위</a>에서 나라를 골라 주세요.</p></section>`, "/", 404);
@@ -163,6 +182,7 @@ async function countryPage(req, iso) {
 <section class="card">
   <div class="dh">${flag(iso, false)}<h1>${esc(name)}</h1><span class="badge">일반 ${gi >= 0 ? gi + 1 + "위" : "순위 밖"}</span><span class="badge plain">투자자 ${ii >= 0 ? ii + 1 + "위" : "순위 밖"}</span></div>
   <p class="dsent">${esc(sent)}</p>
+  ${whatHTML(p, nws, iso, det)}
   <div class="dnum">
     <div><span class="dv">${c.g}</span><span class="dl">보도 지수</span></div>
     <div><span class="dv">${fmt(c.n)}</span><span class="dl">24시간 기사${c.b == null ? "" : `, 평소 약 ${fmt(c.b)}건`}</span></div>
@@ -210,11 +230,15 @@ function aboutPage(req) {
 <h2>분야와 논조</h2>
 <p>분야는 GDELT가 기사에 붙인 주제 코드를 월드펄스가 묶은 것입니다. 한 기사가 여러 분야에 들 수 있습니다.</p>
 <p>논조는 GDELT가 기사 단어로 계산한 값의 평균입니다. 0보다 작으면 부정적인 단어가 많다는 뜻이고, 사건의 좋고 나쁨을 판단한 값은 아닙니다.</p>
+<h2>무슨 일이 있었나</h2>
+<p>나라마다 붙는 사건 종류(교전, 체포·기소, 시위·파업, 협정 서명 등)는 GDELT가 기사 첫머리 문장을 기계로 읽어 분류한 사건 자료를 묶은 것입니다. 숫자는 그 사건을 다룬 기사 수이고, 평소 대비는 지난 7일 동안 전체 사건 중 그 몫의 중앙값과 비교합니다. 기계 분류라 틀리게 잡히는 경우가 있습니다.</p>
+<p>"세계에서 있었던 일"은 위키백과 편집자들이 날마다 정리하는 주요 사건(Portal:Current events)을 영어 원문 그대로, 링크와 서식만 빼고 옮긴 것입니다. 이 문장들은 원문과 같은 CC BY-SA 4.0 라이선스를 따릅니다.</p>
 <h2>싣지 않는 것</h2>
 <p>기사 제목과 본문은 언론사 저작물이라 싣지 않습니다. 언론사 이름과 원문 주소만 남깁니다.</p>
 <h2>출처</h2>
 <ul class="plain">
-<li><span>보도량·분야·논조</span><a href="https://www.gdeltproject.org/">The GDELT Project</a></li>
+<li><span>보도량·분야·논조·사건 종류</span><a href="https://www.gdeltproject.org/">The GDELT Project</a></li>
+<li><span>세계에서 있었던 일</span><a href="https://en.wikipedia.org/wiki/Portal:Current_events">위키백과 Portal:Current events(CC BY-SA 4.0)</a></li>
 <li><span>경제 일정</span><span class="v">미국 연준, 경제분석국, 인구조사국, 노동통계국, 한국은행 공개 일정</span></li>
 <li><span>지도</span><span class="v">Natural Earth(퍼블릭 도메인), world-atlas</span></li>
 <li><span>국기 그림</span><a href="https://github.com/lipis/flag-icons">flag-icons(MIT)</a></li>
