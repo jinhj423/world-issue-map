@@ -617,7 +617,13 @@
     }
     if (!bound) {
       bound = true;
-      bindPick($("#rank"), false);
+      // 순위 줄을 누르면 그 나라 페이지로 간다(이름 링크는 그대로, Ctrl·⌘이면 새 탭)
+      $("#rank").addEventListener("click", (e) => {
+        const li = e.target.closest("li[data-iso]");
+        if (!li || e.target.closest("a")) return;
+        const url = `/c/${li.dataset.iso.toLowerCase()}/`;
+        if (e.metaKey || e.ctrlKey) window.open(url, "_blank", "noopener"); else location.href = url;
+      });
       bindPick($("#surge"), true);
       bindPick($("#risk"), true);
       bindPick($("#alerts"), true);
