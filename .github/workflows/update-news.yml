@@ -34,6 +34,7 @@ jobs:
             git show FETCH_HEAD:history.json > public/data/history.json
             git show FETCH_HEAD:archive.json > public/data/archive.json 2>/dev/null || true
             git show FETCH_HEAD:weeks.json > public/data/weeks.json 2>/dev/null || true
+            git show FETCH_HEAD:calendar.json > public/data/calendar.json 2>/dev/null || true
           fi
 
       - name: 최근 수집 확인 (보조 예약 실행만)
@@ -55,6 +56,20 @@ jobs:
         if: steps.fresh.outputs.skip != 'true'
         run: python scripts/fetch_news.py
 
+      - name: 경제 일정 (12시간마다)
+        if: steps.fresh.outputs.skip != 'true'
+        continue-on-error: true
+        run: |
+          python3 - <<'PY' && python scripts/calendar_build.py --print || echo "일정 건너뜀"
+          import json, sys, datetime
+          try:
+              u = json.load(open("public/data/calendar.json"))["updated"]
+              age = (datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(u)).total_seconds() / 3600
+              sys.exit(0 if age >= 12 else 1)
+          except Exception:
+              sys.exit(0)
+          PY
+
       - name: 텔레그램 채널 게시 (하루 2번, 비밀값이 있을 때만)
         if: steps.fresh.outputs.skip != 'true'
         continue-on-error: true
@@ -71,11 +86,12 @@ jobs:
           d=$(mktemp -d)
           cp public/data/news.json public/data/history.json public/data/archive.json "$d"/
           [ -f public/data/weeks.json ] && cp public/data/weeks.json "$d"/
+          [ -f public/data/calendar.json ] && cp public/data/calendar.json "$d"/
           cd "$d"
           git init -q -b data
           git config user.name "news-bot"
           git config user.email "news-bot@users.noreply.github.com"
-          git add news.json history.json archive.json $( [ -f weeks.json ] && echo weeks.json )
+          git add news.json history.json archive.json $( [ -f weeks.json ] && echo weeks.json ) $( [ -f calendar.json ] && echo calendar.json )
           git commit -q -m "data: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') 갱신 [skip ci]"
           # 기록 없이 덮어쓴다(저장소 용량이 늘지 않음)
           for i in 1 2 3; do

@@ -1,0 +1,163 @@
+{
+ "note": "BLS는 자동 접속을 막아(403) 공식 일정표(bls.gov/schedule)에서 옮겨 둔 날짜. 한국은행 금통위·연준 베이지북도 여기서 관리. 2027년 6~10월 CPI·고용 날짜는 BLS 일정표를 보고 채울 것(2026-11-14 기준 확인 못 함).",
+ "checked": "2026-11-14",
+ "bls": [
+  {
+   "date": "2026-12-04",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2026년 11월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-01-08",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2026년 12월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-02-05",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2027년 1월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-03-05",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2027년 2월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-04-02",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2027년 3월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-05-07",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2027년 4월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2027-12-03",
+   "et": "08:30",
+   "title": "미국 고용보고서(비농업 고용)",
+   "imp": 3,
+   "period": "2027년 11월",
+   "src": "https://www.bls.gov/schedule/news_release/empsit.htm"
+  },
+  {
+   "date": "2026-12-10",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2026년 11월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-01-13",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2026년 12월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-02-11",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 1월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-03-10",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 2월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-04-13",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 3월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-05-12",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 4월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-11-10",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 10월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2027-12-10",
+   "et": "08:30",
+   "title": "미국 소비자물가(CPI)",
+   "imp": 3,
+   "period": "2027년 11월",
+   "src": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  {
+   "date": "2026-12-15",
+   "et": "08:30",
+   "title": "미국 생산자물가(PPI)",
+   "imp": 2,
+   "period": "2026년 11월",
+   "src": "https://www.bls.gov/schedule/news_release/ppi.htm"
+  },
+  {
+   "date": "2027-01-14",
+   "et": "08:30",
+   "title": "미국 생산자물가(PPI)",
+   "imp": 2,
+   "period": "2026년 12월",
+   "src": "https://www.bls.gov/schedule/news_release/ppi.htm"
+  }
+ ],
+ "beige": [
+  "2026-11-25",
+  "2027-01-13"
+ ],
+ "bok": [
+  {
+   "date": "2026-11-26",
+   "time": "—"
+  }
+ ],
+ "fomc": [
+  "2026-12-09",
+  "2027-01-27",
+  "2027-03-17",
+  "2027-04-28",
+  "2027-06-09",
+  "2027-07-28",
+  "2027-09-15",
+  "2027-10-27",
+  "2027-12-08"
+ ]
+}
