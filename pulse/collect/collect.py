@@ -525,7 +525,10 @@ def build(st: State, out: Path):
             if len(arts) >= 8:
                 break
         evl = {}
-        for g, *_ in cs[iso].get("e", []):
+        # 예시 기사는 평소보다 1.5배 넘게 늘어난 묶음에만 단다(흔한 묶음의 예시는 엉뚱한 기사일 때가 많다)
+        for g, _, r, _ in cs[iso].get("e", []):
+            if r is not None and r < 1.5:
+                continue
             xs = [x for x in st.el.get(iso, {}).get(g, []) if x[0] >= cutoff]
             if xs:
                 url = max(xs, key=lambda x: x[2])[1]
