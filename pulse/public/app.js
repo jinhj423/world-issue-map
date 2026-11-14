@@ -414,6 +414,7 @@
     if (ED !== "invest") return;
     const ol = $("#alerts");
     const xs = P.rank.alert || [];
+    if (!P.rank.alert) { ol.innerHTML = `<li class="state">위험 신호를 계산하는 중입니다. 다음 자료 갱신(15분 안)부터 보입니다.</li>`; return; }
     if (!xs.length) {
       ol.innerHTML = `<li class="state">${P.ev_days >= 3 ? "평소보다 크게 늘어난 위험 사건 보도가 없습니다." : "평소 수준을 계산할 사건 자료가 아직 모자랍니다."}</li>`;
       return;
