@@ -376,6 +376,8 @@ def build(st: State, out: Path):
             "i": ni, "ib": None if bi is None else round(bi), "ir": ri, "gi": heat(ni, ref_i, ri, 10),
             "t": t, "dt": None if (t is None or tb is None) else round(t - tb, 2),
             "c": {k: a[2 + j] for j, k in enumerate(T.KEYS) if a[2 + j]},
+            "h": [st.hours.get(h, {}).get(iso, [0] * VLEN)[0] for h in win48] if a[0] >= 20 else None,
+            "hi": [st.hours.get(h, {}).get(iso, [0] * VLEN)[IINV] for h in win48] if a[IINV] >= 10 else None,
             "s": [st.days.get(d, {}).get(iso, [0] * VLEN)[0] for d in days7],
             "si": [st.days.get(d, {}).get(iso, [0] * VLEN)[IINV] for d in days7],
         }
