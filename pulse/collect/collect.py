@@ -36,6 +36,7 @@ sys.path[:0] = [str(HERE), str(HERE.parent.parent / "scripts")]
 import countries as C  # noqa: E402
 import events as E  # noqa: E402
 import themes as T  # noqa: E402
+import translate as TR  # noqa: E402
 import wiki as W  # noqa: E402
 
 csv.field_size_limit(1 << 30)
@@ -601,11 +602,20 @@ def news(out: Path) -> bool:
         items = [{"cat": W.CATS.get(it["cat"], it["cat"]), "topic": it["topic"][-1] if it["topic"] else "", "text": it["text"],
                   "src": it["src"][:3], "c": m.find(it)} for it in W.parse(raw)]
         days.append({"date": d.isoformat(), "url": W.page_url(d), "items": items})
-    if not days or days == old.get("days"):
+    if not days:
         return False
     data = {"updated": datetime.now(KST).isoformat(timespec="minutes"), "days": days,
             "source": {"name": "Wikipedia, Portal:Current events", "license": "CC BY-SA 4.0",
                        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"}}
+    # 이미 옮겨 둔 한국어(translate.py가 쌓은 ko.json)를 붙인다
+    kp = out / "ko.json"
+    if kp.exists():
+        try:
+            TR.apply(data, json.loads(kp.read_text("utf-8")).get("t", {}))
+        except Exception:  # noqa: BLE001
+            pass
+    if days == old.get("days"):
+        return False
     p.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
     print("news.json:", ", ".join(f"{d['date']} {len(d['items'])}건" for d in days))
     return True

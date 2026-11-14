@@ -54,7 +54,7 @@ function whatHTML(p, n, iso, det) {
   const wl = [];
   for (const d of (n && n.days) || []) for (const it of d.items) if ((it.c || []).includes(iso)) wl.push([d.date, it]);
   if (!chips && !wl.length) return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
-  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${chips ? `<div class="evs">${chips}</div>` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.text)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}<p class="note">${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(영어 원문, CC BY-SA 4.0)입니다.` : ""}</p></div>`;
+  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${chips ? `<div class="evs">${chips}</div>` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.ko || it.text)}${it.ko ? ` <details class="origd"><summary>원문</summary>${esc(it.text)}</details>` : ""}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}<p class="note">${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(CC BY-SA 4.0)${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "의 영어 원문"}입니다.` : ""}</p></div>`;
 }
 
 // 선 그래프 경로(app.js line과 같은 계산)
@@ -232,7 +232,7 @@ function aboutPage(req) {
 <p>논조는 GDELT가 기사 단어로 계산한 값의 평균입니다. 0보다 작으면 부정적인 단어가 많다는 뜻이고, 사건의 좋고 나쁨을 판단한 값은 아닙니다.</p>
 <h2>무슨 일이 있었나</h2>
 <p>나라마다 붙는 사건 종류(교전, 체포·기소, 시위·파업, 협정 서명 등)는 GDELT가 기사 첫머리 문장을 기계로 읽어 분류한 사건 자료를 묶은 것입니다. 숫자는 그 사건을 다룬 기사 수이고, 평소 대비는 지난 7일 동안 전체 사건 중 그 몫의 중앙값과 비교합니다. 기계 분류라 틀리게 잡히는 경우가 있습니다.</p>
-<p>"세계에서 있었던 일"은 위키백과 편집자들이 날마다 정리하는 주요 사건(Portal:Current events)을 영어 원문 그대로, 링크와 서식만 빼고 옮긴 것입니다. 이 문장들은 원문과 같은 CC BY-SA 4.0 라이선스를 따릅니다.</p>
+<p>"세계에서 있었던 일"은 위키백과 편집자들이 날마다 정리하는 주요 사건(Portal:Current events)을 링크와 서식만 빼고 Claude(AI)로 한국어로 옮긴 것입니다. 기계 번역이라 어색할 수 있어 '원문' 단추로 영어 문장을 함께 보여 줍니다. 이 문장들은 원문과 같은 CC BY-SA 4.0 라이선스를 따릅니다.</p>
 <h2>싣지 않는 것</h2>
 <p>기사 제목과 본문은 언론사 저작물이라 싣지 않습니다. 언론사 이름과 원문 주소만 남깁니다.</p>
 <h2>출처</h2>
