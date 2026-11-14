@@ -46,7 +46,7 @@ const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${
 function whatHTML(p, n, iso, det, br) {
   const es = (p.countries[iso] || {}).e || [];
   const ai = br && (br.countries || {})[iso];
-  const aiHTML = ai ? `<p class="aisum"><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}` : "";
+  const aiHTML = ai ? `<div class="aisum"><p><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.pts && ai.pts.length ? `<ul class="aipts">${ai.pts.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}</div>` : "";
   const ratio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
   const chips = es.map(([g, k, r, b]) => `<span class="evc"><b>${esc((p.evk || {})[g] || g)}</b> ${fmt(k)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${ratio(r, b)}</i>` : ""}</span>`).join("");
   // 사건 종류마다 뜻과 예시 기사(평소의 1.5배 넘게 늘어난 종류만) — 펼쳐 보기
@@ -55,7 +55,7 @@ function whatHTML(p, n, iso, det, br) {
   const wl = [];
   for (const d of (n && n.days) || []) for (const it of d.items) if ((it.c || []).includes(iso)) wl.push([d.date, it]);
   if (!ai && !chips && !wl.length) return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
-  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${aiHTML}${chips ? `<div class="evs">${chips}</div>${evAll}` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${esc(it.ko || it.text)}${it.ko ? ` <details class="origd"><summary>원문</summary>${esc(it.text)}</details>` : ""}${srcLinks(it.src)}${it.bg ? `<details class="wbg"><summary>배경 보기</summary><p>${esc(it.bgk || it.bg)}</p>${it.wu ? `<a href="${esc(safeUrl(it.wu))}" rel="noopener" target="_blank">위키백과 문서: ${esc(it.wt)}</a>` : ""}</details>` : ""}</span></li>`).join("")}</ul>` : ""}<p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${String(br.at).slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(CC BY-SA 4.0)${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "의 영어 원문"}입니다.` : ""}</p></div>`;
+  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${aiHTML}${chips ? `<div class="evs">${chips}</div>${evAll}` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${esc(it.ko || it.text)}${it.ko ? ` <details class="origd"><summary>원문</summary>${esc(it.text)}</details>` : ""}${srcLinks(it.src)}${it.bg ? `<details class="wbg"><summary>배경 보기</summary><p>${esc(it.bgk || it.bg)}</p>${it.wu ? `<a href="${esc(safeUrl(it.wu))}" rel="noopener" target="_blank">위키백과 문서: ${esc(it.wt)}</a>` : ""}</details>` : ""}</span></li>`).join("")}</ul>` : ""}<p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개와 위키백과 사건을 Claude가 읽고 새로 쓴 문장(${String(br.at).slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(CC BY-SA 4.0)${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "의 영어 원문"}입니다.` : ""}</p></div>`;
 }
 
 // 선 그래프 경로(app.js line과 같은 계산)
@@ -99,9 +99,15 @@ function kpiTiles(p, ed) {
   return tiles.map(([l, v, s]) => `<div class="kpi"><span class="kl">${esc(l)}</span>${v}<span class="ks">${esc(s)}</span></div>`).join("");
 }
 
+// AI 세계 브리핑 — 첫 화면에 서버에서 그려 둔다(검색·광고 심사가 읽는 우리 글)
+function worldRows(p, br) {
+  return br.world.items.map((it) => `<li><p>${esc(it.t)}</p>${(it.c || []).length ? `<span class="wbc">${it.c.map((iso) => `<span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc((p.meta[iso] || {}).ko || iso)}</a></span>`).join("")}</span>` : ""}</li>`).join("");
+}
+
 async function homePage(req, env, ed) {
   const res = await env.ASSETS.fetch(new Request(new URL("/", req.url), { headers: req.headers }));
-  const p = await data("pulse.json");
+  const [p, br] = await Promise.all([data("pulse.json"), data("brief.json")]);
+  const hasW = !!(p && br && br.world && (br.world.items || []).length);
   const e = ED[ed];
   const top = p && p.rank[e.rank] && p.rank[e.rank][0];
   const topName = top ? (p.meta[top] || {}).ko : null;
@@ -121,7 +127,9 @@ async function homePage(req, env, ed) {
     .on(`.tabs a[data-ed="${ed}"]`, { element(el) { el.setAttribute("aria-current", "page"); } })
     .on("#asof", { element(el) { if (p) el.setInnerContent(`${clockKo(p.asof)} 기준`); } })
     .on("#kpis", { element(el) { if (p) el.setInnerContent(kpiTiles(p, ed), { html: true }); } })
-    .on("#rank", { element(el) { if (p) el.setInnerContent(rankRows(p, ed), { html: true }); } });
+    .on("#rank", { element(el) { if (p) el.setInnerContent(rankRows(p, ed), { html: true }); } })
+    .on("#wbrief", { element(el) { if (hasW) el.removeAttribute("hidden"); } })
+    .on("#wb", { element(el) { if (hasW) el.setInnerContent(worldRows(p, br), { html: true }); } });
   const out = rw.transform(res);
   const h = new Headers(out.headers);
   h.set("cache-control", "public, max-age=60");
@@ -238,7 +246,8 @@ function aboutPage(req) {
 <h2>투자 위험 신호</h2>
 <p>투자자판의 "투자 위험 신호"는 사건 종류 중 무력 충돌(교전·공습·폭탄 공격 등), 정치 불안(시위·폭동·폭력 진압 등), 제재와 관계 악화, 사이버 공격 기사가 10건 넘고 평소의 2배를 넘게 늘어난 나라를 고른 것입니다. 늘어난 기사 수와 배수로 순서를 매깁니다. 보도량 신호이며 투자 권유가 아닙니다.</p>
 <h2>AI 요약</h2>
-<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 기사 제목 표본(최근 24시간, 최대 20개)을 Claude(AI)가 읽고, 지금 무엇이 보도되는지 새로 쓴 한두 문장입니다. 2시간마다 다시 씁니다. 기사 제목 문장은 화면에 옮기지 않으며, AI가 쓴 글이라 틀리거나 빠뜨린 내용이 있을 수 있습니다.</p>
+<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 여러 언어의 기사 제목 표본(최근 24시간, 최대 25개)과 위키백과 주요 사건, 평소보다 늘어난 사건 종류를 Claude(AI)가 함께 읽고 새로 쓴 한 줄 요약과 이슈 2~3줄입니다. 첫 화면의 "AI 세계 브리핑"은 이 나라별 요약과 위키백과 사건, 보도가 크게 늘어난 나라를 다시 읽고 오늘의 큰 흐름 5~6가지를 고른 것입니다. 둘 다 2시간마다 다시 씁니다.</p>
+<p>여러 제목에서 되풀이되는 사실만 뽑아 직접 쓴 문장이며, 기사 제목 문장은 화면에 옮기지 않습니다(한국어 제목과 15자 넘게 겹치는 문장은 자동으로 버립니다). 원인 추측·평가·전망은 쓰지 않지만, AI가 쓴 글이라 틀리거나 빠뜨린 내용이 있을 수 있습니다. 한국·북한·미국·중국·일본·러시아·우크라이나·대만·이스라엘·이란은 늘 요약합니다.</p>
 <h2>싣지 않는 것</h2>
 <p>기사 제목과 본문은 언론사 저작물이라 싣지 않습니다. 언론사 이름과 원문 주소만 남깁니다.</p>
 <h2>출처</h2>

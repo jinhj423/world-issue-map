@@ -326,7 +326,7 @@
   function whatHTML(iso) {
     const es = (P.countries[iso] || {}).e || [];
     const ai = B && (B.countries || {})[iso];
-    const aiHTML = ai ? `<p class="aisum"><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}` : "";
+    const aiHTML = ai ? `<div class="aisum"><p><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.pts && ai.pts.length ? `<ul class="aipts">${ai.pts.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}</div>` : "";
     const chips = es.map(([g, n, r, b]) => `<button type="button" class="evc" data-g="${g}" aria-expanded="false" aria-controls="evp"><b>${esc(evName(g))}</b> ${fmt(n)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${evRatio(r, b)}</i>` : ""}</button>`).join("");
     const wl = newsFor(iso).slice(0, 3);
     if (!ai && !chips && !wl.length) return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
@@ -334,7 +334,7 @@
       ${aiHTML}
       ${chips ? `<div class="evs">${chips}</div><div class="evp" id="evp" hidden></div>` : ""}
       ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${wtext(it)}${srcLinks(it.src)}${bgHTML(it)}</span></li>`).join("")}</ul>` : ""}
-      <p class="note">${chips ? "사건 종류를 누르면 뜻과 시간별 흐름, 예시 기사가 펼쳐집니다. " : ""}${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
+      <p class="note">${chips ? "사건 종류를 누르면 뜻과 시간별 흐름, 예시 기사가 펼쳐집니다. " : ""}${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개와 위키백과 사건을 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
   const wtext = (it) => `${esc(it.ko || it.text)}${it.ko ? ` <button type="button" class="orig" aria-expanded="false">원문</button><span class="en" hidden>${esc(it.text)}</span>` : ""}`;
@@ -445,6 +445,16 @@
     }
     if (sel && $("#detail .what")) renderDetail();
     renderAlert();
+    renderWorld();
+  }
+  // AI 세계 브리핑(나라별 요약·위키백과 사건·급증 나라를 다시 읽고 고른 오늘의 큰 흐름)
+  function renderWorld() {
+    const w = B && B.world, box = $("#wbrief");
+    if (!w || !(w.items || []).length) { box.hidden = true; return; }
+    const t = new Date(B.at);
+    $("#wbrief-at").textContent = `전 세계 기사 제목과 위키백과 사건을 AI가 읽고 직접 정리했습니다. ${t.getMonth() + 1}.${t.getDate()} ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")} 정리, 2시간마다 새로 씁니다.`;
+    $("#wb").innerHTML = w.items.map((it) => `<li><p>${esc(it.t)}</p>${(it.c || []).length ? `<span class="wbc">${it.c.map((iso) => cname(iso)).join("")}</span>` : ""}</li>`).join("");
+    box.hidden = false;
   }
 
   // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
@@ -502,7 +512,17 @@
     }
   }
 
-  // 나라 찾기
+  // 나라 찾기 — 공식 이름·옛 이름·흔한 줄임말도 찾는다
+  const ALIAS = {
+    KR: ["대한민국", "남한", "코리아", "korea", "south korea", "republic of korea", "rok"], KP: ["북조선", "조선민주주의인민공화국", "north korea", "dprk"],
+    US: ["미합중국", "아메리카", "usa", "america", "united states of america"], GB: ["잉글랜드", "브리튼", "대영제국", "uk", "britain", "england"],
+    TR: ["터키", "튀르키예", "turkey", "turkiye"], CN: ["중화인민공화국", "중공", "prc"], TW: ["중화민국", "roc"], JP: ["일본국", "nippon"],
+    RU: ["러시아연방", "russian federation"], ZA: ["남아공", "남아프리카"], CD: ["민주콩고", "콩고민주공화국", "drc", "dr congo"], CG: ["콩고공화국"],
+    AE: ["uae", "에미리트"], SA: ["사우디", "ksa"], MM: ["버마", "burma"], CI: ["아이보리코스트", "ivory coast"], SZ: ["스와질란드", "swaziland"],
+    CZ: ["체코공화국", "czechia"], MK: ["마케도니아", "macedonia"], TL: ["티모르레스테", "동티모르"], NL: ["홀란드", "holland"], VA: ["교황청", "바티칸시국"],
+    GE: ["그루지야"], BY: ["벨로루시", "belorussia"], IR: ["페르시아", "persia"], VN: ["베트남사회주의공화국"], LA: ["라오"], KH: ["캄보디아왕국"],
+    PS: ["팔레스타인", "가자", "gaza", "웨스트뱅크"], IL: ["이스라엘국"], DE: ["독일연방공화국"], FR: ["프랑스공화국"], NZ: ["뉴질랜드"],
+  };
   function initSearch() {
     const q = $("#q"), ul = $("#sugg");
     let items = [], at = -1;
@@ -518,13 +538,16 @@
         select(iso, true);
       } else location.href = `/c/${iso.toLowerCase()}/`;
     };
+    const nz = (s) => s.toLowerCase().replace(/[\s.·'-]/g, "");
     function show() {
-      const t = q.value.trim().toLowerCase();
+      const t = nz(q.value.trim());
       if (!t) { close(); return; }
       const cnt = (iso) => (P.countries[iso] || {})[CFG.n] || 0;
-      items = Object.entries(P.meta).map(([iso, m]) => ({ iso, ko: m.ko || iso, en: m.en || "" }))
-        .filter((x) => x.ko.includes(t) || x.en.toLowerCase().includes(t) || x.iso.toLowerCase() === t)
-        .sort((a, b) => (b.ko.startsWith(t) - a.ko.startsWith(t)) || cnt(b.iso) - cnt(a.iso)).slice(0, 8);
+      items = Object.entries(P.meta).map(([iso, m]) => {
+        const names = [m.ko || iso, m.en || "", ...(ALIAS[iso] || [])].map(nz);
+        const hit = iso.toLowerCase() === t ? 3 : names.some((x) => x === t) ? 3 : names.some((x) => x.startsWith(t)) ? 2 : names.some((x) => x.includes(t)) ? 1 : 0;
+        return { iso, ko: m.ko || iso, en: m.en || "", hit };
+      }).filter((x) => x.hit).sort((a, b) => (b.hit - a.hit) || cnt(b.iso) - cnt(a.iso)).slice(0, 8);
       at = items.length ? 0 : -1;
       ul.innerHTML = items.length
         ? items.map((x) => `<li role="option" id="sg-${x.iso}" data-iso="${x.iso}">${flag(x.iso)}<span>${esc(x.ko)}</span><span class="en">${P.countries[x.iso] ? esc(x.en) : "기사 적음"}</span></li>`).join("")

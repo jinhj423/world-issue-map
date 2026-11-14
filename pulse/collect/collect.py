@@ -562,8 +562,21 @@ def build(st: State, out: Path):
             "p": [x for x in ex["p"].most_common(12) if x[0].lower() not in NOT_PERSON][:6] if ex else [], "l": ex["l"].most_common(5) if ex else [],
             "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl, "evh": evh,
         }
-    # AI 요약 재료(briefin.json, 공개하지 않음): 순위·급증 나라마다 최근 시간부터 시간당 4개씩 제목 20개까지
-    targets = list(dict.fromkeys(rank["general"][:30] + rank["surge"][:10] + rank["invest"][:10]))
+    # AI 요약 재료(briefin.json, 공개하지 않음): 한국 독자에게 늘 필요한 나라 + 순위·급증·위험 신호 나라.
+    # 나라마다 최근 시간부터 시간당 4개씩 기사 제목 25개까지, 지난 실행의 위키백과 사건 문장, 늘어난 사건 종류.
+    always = ["KR", "KP", "US", "CN", "JP", "RU", "UA", "TW", "IL", "IR"]
+    targets = list(dict.fromkeys([i for i in always if i in cs] + rank["general"][:50] + rank["surge"][:15]
+                                 + rank["invest"][:15] + rank.get("alert", [])[:10]))
+    wiki_by: dict = defaultdict(list)
+    wiki_all = []
+    try:
+        for d in json.loads((out / "news.json").read_text("utf-8")).get("days", []):
+            for it in d.get("items", []):
+                wiki_all.append(it["text"])
+                for iso in it.get("c", []):
+                    wiki_by[iso].append(it["text"])
+    except Exception:  # noqa: BLE001 — 위키백과 자료가 없으면 제목만으로 요약한다
+        pass
     bin_ = {}
     for iso in targets:
         xs, seen = [], set()
@@ -576,8 +589,11 @@ def build(st: State, out: Path):
         if len(xs) >= 5:
             c = cs[iso]
             bin_[iso] = {"ko": ROWS[iso]["ko"], "n": c["n"], "r": c["r"],
-                         "e": [[E.NAMES[g], k] for g, k, *_ in c.get("e", [])[:3]], "t": xs[:20]}
-    (out / "briefin.json").write_text(json.dumps({"asof": pulse["asof"], "countries": bin_}, ensure_ascii=False), "utf-8")
+                         "e": [[E.NAMES[g], k, r] for g, k, r, *_ in c.get("e", [])[:4]], "t": xs[:25], "w": wiki_by[iso][:4]}
+    world = {"surge": [[i, ROWS[i]["ko"], cs[i]["r"]] for i in rank["surge"][:8]],
+             "alert": [[i, ROWS[i]["ko"], [E.NAMES[x[0]] for x in cs[i].get("ra", [])]] for i in rank.get("alert", [])[:8]],
+             "wiki": wiki_all[:30]}
+    (out / "briefin.json").write_text(json.dumps({"asof": pulse["asof"], "countries": bin_, "world": world}, ensure_ascii=False), "utf-8")
     for iso in list(st.links):
         st.links[iso] = [x for x in st.links[iso] if x[0] >= cutoff]
         if not st.links[iso]:
