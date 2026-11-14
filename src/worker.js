@@ -4,7 +4,7 @@
 //   GitHub 자체 예약은 수 시간씩 밀려서, 정확한 Cloudflare 예약으로 대신 깨운다.
 //   필요한 비밀값: GH_TOKEN (GitHub fine-grained token, 이 저장소 Actions: Read and write)
 // - 검색 유입용 페이지(/c/<나라>/, /about/, /sitemap.xml)는 최신 news.json으로 여기서 그린다(재배포 불필요).
-import { countryPage, econPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
+import { countryPage, econPage, weeklyPage, aboutPage, sitemap, robots, injectHome } from "./pages.js";
 
 const REPO = "jinhj423/world-issue-map";
 const WORKFLOW = "update-news.yml";
@@ -139,6 +139,31 @@ const dataResp = (body, src) => new Response(body, {
   headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-data-source": src },
 });
 
+// 사이트 안 검색: 전체 기사(나라·현지 1면·경제·화제)에서 제목에 단어가 들어간 것. 많이 다뤄진 순 → 최신순.
+async function search(env, q) {
+  const d = await getNews(env);
+  if (!d) return { q, n: 0, items: [], countries: [] };
+  const ql = q.toLowerCase();
+  const rows = [], seen = new Set(), byC = {};
+  const add = (it, tag, a2) => {
+    if (!it || !it.t || !it.t.toLowerCase().includes(ql)) return;
+    const k = it.u || it.t;
+    if (seen.has(k) || seen.has(it.t)) return;
+    seen.add(k); seen.add(it.t);
+    rows.push({ t: it.t, s: it.s, u: it.u, p: it.p, sc: it.sc, k: it.k, c: it.c, tag, a2 });
+    if (a2) byC[a2] = (byC[a2] || 0) + 1;
+  };
+  for (const [a2, c] of Object.entries(d.countries || {})) {
+    for (const it of c.items || []) add(it, "ko", a2);
+    for (const it of c.local || []) add(it, "local", a2);
+  }
+  for (const it of (d.econ || {}).items || []) add(it, "econ");
+  for (const it of (d.buzz || {}).items || []) add(it, "buzz");
+  rows.sort((x, y) => (Math.max(1, y.sc || 1) * Math.min(y.k || 1, 10)) - (Math.max(1, x.sc || 1) * Math.min(x.k || 1, 10)) || (y.p || "").localeCompare(x.p || ""));
+  return { q, at: d.updated_at, n: rows.length, items: rows.slice(0, 60),
+    countries: Object.entries(byC).sort((a, b) => b[1] - a[1]).map(([a2, n]) => ({ a2, ko: d.countries[a2].ko, n })) };
+}
+
 async function report(request, env) {
   if (!env.DB) return json({ error: "no db" }, 503);
   let b = {};
@@ -195,12 +220,13 @@ async function sendPush(db, keys, sub, payload, site) {
 }
 
 // 알림 종류(기기마다): 기본값은 급상승·경제·관심 나라 켬, 화제·아침 요약 끔, 밤 조용히 켬
-const PUSH_DEFAULT = { surge: true, econ: true, buzz: false, pins: true, morning: false, quiet: true, list: [] };
+const PUSH_DEFAULT = { surge: true, econ: true, buzz: false, pins: true, morning: false, quiet: true, list: [], kw: [] };
 function cleanPrefs(p) {
-  const d = { ...PUSH_DEFAULT, list: [] };
+  const d = { ...PUSH_DEFAULT, list: [], kw: [] };
   if (!p || typeof p !== "object") return d;
   for (const k of ["surge", "econ", "buzz", "pins", "morning", "quiet"]) if (typeof p[k] === "boolean") d[k] = p[k];
   if (Array.isArray(p.list)) d.list = p.list.filter((x) => /^[A-Z]{2}$/.test(x)).slice(0, 5);
+  if (Array.isArray(p.kw)) d.kw = [...new Set(p.kw.map((x) => String(x).trim()).filter((x) => x.length >= 1 && x.length <= 20))].slice(0, 10);
   return d;
 }
 const readPrefs = (row) => { try { return cleanPrefs(JSON.parse(row.prefs || "null")); } catch (e) { return cleanPrefs(null); } };
@@ -322,8 +348,39 @@ async function pushTick(env, site) {
     events.push({ kind: "morning", logs: [`morning:${day}`],
       payload: { title: `오늘 아침 세계: ${top.join(", ")}`, body: e1 ? `경제: ${e1.t}` : `${top[0]} 소식이 가장 많아요.`, url: "/", tag: `morning-${day}` } });
   }
-  if (!events.length) return;
-  const stmts = [];
+  // 키워드 알림: 기기마다 등록한 단어가 들어간 기사를 언론 3곳 이상이 다루면(3시간 안). 한 회차 1건, 하루 5건.
+  const kwStmts = [];
+  const kwSubs = subs.filter((s) => s.p.kw.length && !(night && s.p.quiet));
+  if (kwSubs.length) {
+    const pool = [];
+    for (const c of Object.values(C)) for (const it of c.items || []) pool.push(it);
+    for (const k of ["econ", "buzz"]) for (const it of (d[k] || {}).items || []) pool.push(it);
+    const cand = pool.filter((x) => (x.sc || 1) >= 3 && hoursAgo(x.p) <= 3).sort((a, b) => (b.sc || 1) - (a.sc || 1));
+    for (const sub of kwSubs) {
+      const eh = [...new Uint8Array(await crypto.subtle.digest("SHA-1", te.encode(sub.e)))].slice(0, 6).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const used = (await db.prepare("SELECT COUNT(*) AS n FROM push_log WHERE k LIKE ?").bind(`kwd:${day}:${eh}:%`).first())?.n || 0;
+      if (used >= 5) continue;
+      const row = await db.prepare("SELECT v FROM kv WHERE k=?").bind(`kwsent:${eh}`).first();
+      let sentK = []; try { sentK = JSON.parse(row?.v || "[]").filter((x) => now - x.at < 86400); } catch (e) {}
+      const sets = sentK.map((x) => toks(x.t));
+      let hit = null;
+      for (const w of sub.p.kw) {
+        const wl = w.toLowerCase();
+        const it = cand.find((x) => x.t.toLowerCase().includes(wl) && !sets.some((st) => sameStory(toks(x.t), st)));
+        if (it) { hit = { w, it }; break; }
+      }
+      if (!hit) continue;
+      sentK.push({ t: hit.it.t, at: now });
+      kwStmts.push(
+        db.prepare("INSERT OR REPLACE INTO push_log (k, at) VALUES (?, ?)").bind(`kwd:${day}:${eh}:${now}`, now),
+        db.prepare("INSERT OR REPLACE INTO kv (k, v) VALUES (?, ?)").bind(`kwsent:${eh}`, JSON.stringify(sentK.slice(-30))),
+        db.prepare("INSERT INTO push_queue (endpoint, payload) VALUES (?, ?)").bind(sub.e, JSON.stringify({
+          title: `‘${hit.w}’ 소식: 언론 ${hit.it.sc}곳 보도`, body: hit.it.t, url: `/?q=${encodeURIComponent(hit.w)}`, tag: `kw-${hit.w}` })),
+      );
+    }
+  }
+  if (!events.length && !kwStmts.length) return;
+  const stmts = [...kwStmts];
   for (const ev of events) {
     for (const k of ev.logs) stmts.push(mark(k));
     const pl = JSON.stringify(ev.payload);
@@ -353,6 +410,10 @@ async function drainQueue(db, n, site) {
   return rows.length;
 }
 
+async function weekIds(env) {
+  const f = await dataFile("weeks.json", env, 3600e3);
+  try { return f ? Object.keys(JSON.parse(f.body).weeks || {}).sort() : []; } catch (e) { return []; }
+}
 const html = (body, maxAge = 300) => new Response(body, {
   headers: { "content-type": "text/html; charset=utf-8", "cache-control": `public, max-age=${maxAge}` },
 });
@@ -412,6 +473,11 @@ export default {
       const r = await env.DB.prepare("SELECT a2, t, u, COUNT(*) AS n, MAX(at) AS last FROM reports GROUP BY u, a2 ORDER BY last DESC LIMIT 50").all();
       return json({ items: r.results || [] });
     }
+    if (p === "/api/search") {
+      const q = (url.searchParams.get("q") || "").trim().slice(0, 30);
+      if (!q) return json({ q, n: 0, items: [], countries: [] });
+      return new Response(JSON.stringify(await search(env, q)), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=60" } });
+    }
     if (p.startsWith("/api/push/")) {
       try { return await pushApi(request, env, url); } catch (e) { return json({ error: "fail" }, 500); }
     }
@@ -430,11 +496,28 @@ export default {
     if (p === "/robots.txt") return new Response(robots(url.origin), { headers: { "content-type": "text/plain; charset=utf-8" } });
     if (p === "/sitemap.xml") {
       const d = await getNews(env);
-      return new Response(sitemap(url.origin, d), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=600" } });
+      return new Response(sitemap(url.origin, d, await weekIds(env)), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=600" } });
     }
     if (p === "/about" || p === "/about/") {
       if (p === "/about") return Response.redirect(url.origin + "/about/", 301);
       return html(aboutPage(url.origin), 3600);
+    }
+    const wm = p.match(/^\/weekly(?:\/(\d{4}-W\d{2}))?\/?$/);
+    if (wm) {
+      if (!p.endsWith("/")) return Response.redirect(url.origin + p + "/", 301);
+      const d = await getNews(env);
+      const ids = await weekIds(env);
+      let w = null;
+      if (wm[1]) {
+        const f = await dataFile("weeks.json", env, 3600e3);
+        try { w = f ? JSON.parse(f.body).weeks[wm[1]] : null; } catch (e) {}
+        if (!w) return new Response("그 주의 정리가 없어요", { status: 404 });
+      } else {
+        const f = await dataFile("archive.json", env, 300e3);
+        try { w = f ? JSON.parse(f.body).live : null; } catch (e) {}
+        if (!w) return new Response("잠시 뒤 다시 열어 주세요", { status: 503 });
+      }
+      return html(weeklyPage(url.origin, w, d, ids, wm[1] || null), wm[1] ? 3600 : 600);
     }
     if (p === "/econ" || p === "/econ/") {
       if (p === "/econ") return Response.redirect(url.origin + "/econ/", 301);

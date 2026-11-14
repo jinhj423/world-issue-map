@@ -98,6 +98,24 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .hero .d{font-size:13.5px;font-weight:500;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:0 12px;margin:0}
 .hero h1{font-size:30px;font-weight:800;line-height:1.4;letter-spacing:-.02em;margin:8px 0 0;max-width:640px}
 .hero h1 em{font-style:normal;color:inherit}
+.search{display:flex;gap:8px;margin:16px 4px 0;max-width:640px}
+.search input{flex:1;min-width:0;height:44px;border-radius:12px;border:0;background:var(--card);padding:0 16px;font:inherit;font-size:15px;color:var(--ink)}
+.search input::placeholder{color:var(--ink-3)}
+.search button{flex:0 0 auto;height:44px;padding:0 20px;border-radius:12px;background:var(--inv-bg);color:var(--inv-fg);font-weight:700;font-size:14px}
+.search button:hover{opacity:.9}
+.trend{margin:12px 0 8px;padding:12px 16px;background:var(--soft);border-radius:14px}
+.trend h3{font-size:13px;font-weight:700;margin:0 0 8px;color:var(--ink-2)}
+.tbars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;align-items:end;height:76px}
+.tb{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.tb i{display:block;width:70%;max-width:28px;background:var(--map2);border-radius:4px 4px 0 0}
+.tb.now i{background:var(--accent-fill)}
+.tb:hover i{opacity:.8}
+.tb span{font-size:11px;color:var(--ink-3);margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.trend p{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+.fcs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
+.fcs button{background:var(--soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.fcs button small{color:var(--ink-3);margin-left:4px;font-weight:600}
+.ftag{display:inline-block;font-size:12.5px;font-weight:700;color:var(--ink-3);margin-bottom:4px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:16px 4px 20px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chips button{flex:0 0 auto;background:var(--card);color:var(--ink-2);font-size:14px;font-weight:600;padding:8px 16px;border-radius:19px}
@@ -261,6 +279,14 @@ html[data-theme="dark"] .theme .ic-sun{display:block}
 .opts input{flex:0 0 auto;width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent-fill)}
 .opts b{display:block;font-size:15px;color:var(--ink)}
 .opts small{display:block;font-size:13px;color:var(--ink-3);line-height:1.5;margin-top:4px}
+.kwli b{display:block;font-size:15px;color:var(--ink)}
+.kwli>small{display:block;font-size:13px;color:var(--ink-3);line-height:1.5;margin-top:4px}
+.kwadd{display:flex;gap:8px;margin-top:8px}
+.kwadd input{flex:1;min-width:0;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 12px;font:inherit;font-size:14px;color:var(--ink)}
+.kwadd .sec{background:var(--soft);color:var(--ink);border-radius:10px;padding:0 16px;font-weight:700;height:40px}
+.kwlist{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.kwlist button{display:inline-flex;align-items:center;gap:4px;background:var(--soft);border-radius:999px;padding:4px 8px 4px 12px;font-size:13px;font-weight:600;color:var(--ink)}
+.kwlist button svg{color:var(--ink-3)}
 .alstat{font-size:14px;font-weight:600;color:var(--ink-2);margin:0}
 .alstat.on{color:var(--link)}
 .dbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
@@ -350,6 +376,10 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
     <p class="d" id="date"></p>
     <h1 id="greet"></h1>
   </section>
+  <form class="search" id="searchF" role="search" action="/" method="get">
+    <input type="search" id="q" name="q" placeholder="사람·회사·단어로 뉴스 찾기 (예: 엔비디아, 금리)" enterkeyhint="search" autocomplete="off" aria-label="뉴스 검색">
+    <button type="submit">찾기</button>
+  </form>
   <nav class="chips" id="chips" aria-label="분야"></nav>
 
   <div class="grid">
@@ -399,6 +429,9 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
     <li><label><input type="checkbox" data-k="econ"><span><b>경제·증시 큰 뉴스</b><small>언론 6곳 이상이 함께 다룬 경제 소식이 나오면 알려요. 하루 최대 3번.</small></span></label></li>
     <li><label><input type="checkbox" data-k="buzz"><span><b>지금 화제</b><small>나라와 상관없이 언론 6곳 이상이 함께 다룬 인물·사건 소식. 하루 최대 2번.</small></span></label></li>
     <li><label><input type="checkbox" data-k="pins"><span><b>관심 나라 소식</b><small id="alPins">관심 나라가 3위 안에 들거나 보도가 2배로 늘면 알려요. 나라마다 하루 1번.</small></span></label></li>
+    <li class="kwli"><b>키워드 알림</b><small>등록한 단어가 들어간 기사를 언론 3곳 이상이 다루면 알려요. 하루 최대 5번, 단어는 10개까지.</small>
+      <div class="kwadd"><input type="text" id="kwIn" maxlength="20" placeholder="예: 엔비디아, 금리, 삼성전자" aria-label="알림 받을 단어" enterkeyhint="done"><button type="button" class="sec" id="kwAdd">추가</button></div>
+      <div class="kwlist" id="kwList"></div></li>
     <li><label><input type="checkbox" data-k="morning"><span><b>아침 8시 요약</b><small>오늘 가장 시끄러운 나라 3곳과 경제 뉴스 1건을 하루 한 번 보내요.</small></span></label></li>
     <li><label><input type="checkbox" data-k="quiet"><span><b>밤에는 조용히</b><small>밤 11시부터 아침 7시까지는 보내지 않아요.</small></span></label></li>
   </ul>
@@ -421,8 +454,8 @@ dialog .close{background:var(--inv-bg);color:var(--inv-fg);border-radius:12px;pa
   <form method="dialog"><button class="close">알겠어요</button></form>
 </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js" data-inline="d3"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js" data-inline="topojson"></script>
+<!-- 지도 도구: d3에서 쓰는 부분(select·geo·zoom·transition)과 topojson만 묶은 파일(scripts/vendor 참고) -->
+<script src="/vendor/map.js"></script>
 <!--INLINE_DATA-->
 <script>
 (async function(){
@@ -436,12 +469,12 @@ const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 let data=window.__NEWS__, world=window.__WORLD__;
 try{
   if(!data){let r=await fetch("data/lite.json",{cache:"no-cache"});if(!r.ok) r=await fetch("data/news.json",{cache:"no-cache"});data=await r.json()}
-  if(!world) world=await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")).json();
+  if(!world) world=await (await fetch("/vendor/countries-110m.json")).json();
 }catch(e){document.getElementById("loading").textContent="데이터를 불러오지 못했어요. 새로고침해 주세요.";return}
 document.getElementById("loading").remove();
 const C=data.countries, CAT=data.categories; window.__C__=C;
 const byId={}; for(const [a2,c] of Object.entries(C)) if(c.id) byId[c.id]=a2;
-const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null,sort:"hot"};
+const state={cat:"all",sel:null,kw:null,tab:"ko",ckw:null,sort:"hot",q:null};
 try{const v=localStorage.getItem("wim-sort");if(v==="new"||v==="week")state.sort=v}catch(e){}
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let pins=ls.get("wim-pins",[]).filter(a=>data.countries[a]);
@@ -480,7 +513,8 @@ function value(a2){
   const w=catW(c,state.cat); return w?Math.round(100*Math.log1p(w)/Math.log1p(catMax[state.cat])):0;
 }
 const kwC={}; for(const k of (data.global_keywords||[])) kwC[k.kw]=new Set(k.countries);
-const kwHit=a2=>!state.kw||(C[a2]&&((kwC[state.kw]&&kwC[state.kw].has(a2))||C[a2].kw.includes(state.kw)||C[a2].items.some(i=>i.t.includes(state.kw))));
+let qC=null;
+const kwHit=a2=>state.q?(!qC||qC.has(a2)):!state.kw||(C[a2]&&((kwC[state.kw]&&kwC[state.kw].has(a2))||C[a2].kw.includes(state.kw)||C[a2].items.some(i=>i.t.includes(state.kw))));
 const ranked=()=>{let l=Object.keys(C).filter(a=>value(a)>0).sort((a,b)=>value(b)-value(a)||C[b].n-C[a].n);return state.kw?l.filter(kwHit):l};
 let dom=[0,100],top3=[],ST=[],RED="",LAND="";
 function refresh(){
@@ -594,7 +628,8 @@ const words=document.getElementById("words");
 words.innerHTML=(data.global_keywords||[]).map(k=>`<button type="button" data-kw="${esc(k.kw)}" aria-pressed="false"><b>${esc(k.kw)}</b><small>${k.countries.length}개국</small></button>`).join("")
   ||`<span class="empty">아직 집계된 단어가 없어요.</span>`;
 words.onclick=e=>{const b=e.target.closest("button");if(!b)return;
-  state.kw=state.kw===b.dataset.kw?null:b.dataset.kw;shown=BASE;
+  state.kw=state.kw===b.dataset.kw?null:b.dataset.kw;shown=BASE;fShown=20;
+  if(state.q){state.q=null;qC=null;qIn.value="";try{history.replaceState(null,"",location.pathname)}catch(e){}}
   words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.kw===state.kw));
   paint();render()};
 
@@ -617,7 +652,8 @@ function latestRows(){
 }
 function render(){
   if(state.sel) return renderCountry(state.sel);
-  if(state.kw) return renderKeyword(state.kw);
+  if(state.q) return renderFound(state.q,"q");
+  if(state.kw) return renderFound(state.kw,"kw");
   if(state.sort==="new") return renderLatest();
   if(state.sort==="week") return renderWeek();
   const list=ranked();
@@ -650,22 +686,58 @@ function render(){
       ${list.length>shown?`<button type="button" class="more" data-more>나라 ${Math.min(STEP,list.length-shown)}개 더 보기 (${list.length-shown}개 남음)</button>`:""}
       ${shown>BASE?`<button type="button" class="more fold" data-fold>접기</button>`:""}</div>`:""}`;
 }
-function renderKeyword(kw){
-  const rows=[];
-  for(const a of ranked()){const c=C[a];
-    for(const i of c.items) if(i.t.includes(kw)) rows.push([a,c,i]);
+// ── 검색·단어 결과: 전체 기사에서 서버가 찾아 준다 ──
+const sRes={}, sP={};
+function fetchSearch(q){return sP[q]||(sP[q]=fetch("api/search?q="+encodeURIComponent(q)).then(r=>r.ok?r.json():null).catch(()=>null).then(r=>{sRes[q]=r||{q,n:0,items:[],countries:[]};return sRes[q]}))}
+let fShown=20;
+function renderFound(term,mode){
+  const back=`<button type="button" class="back" ${mode==="q"?"data-clearq":"data-clearkw"}><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>${mode==="q"?"검색 닫기":"전체 목록"}</button>`;
+  const lc=term.charCodeAt(term.length-1), ga=lc>=0xAC00&&lc<=0xD7A3&&(lc-0xAC00)%28?"이":"가";
+  const head=mode==="q"?`‘${esc(term)}’ 검색 결과`:`‘${esc(term)}’${ga} 나온 뉴스`;
+  const r=sRes[term];
+  if(!r){
+    side.innerHTML=`${back}<h2>${head}</h2><p class="sub">찾는 중이에요.</p>`;
+    fetchSearch(term).then(x=>{if(mode==="q"&&state.q===term){qC=new Set(x.countries.map(c=>c.a2));paint()}
+      if((state.q||state.kw)===term&&!state.sel) render()});
+    return;
   }
-  rows.sort((x,y)=>(y[2].k*(y[2].sc||1))-(x[2].k*(x[2].sc||1)));
-  const nC=new Set(rows.map(r=>r[0])).size;
-  side.innerHTML=`
-    <button type="button" class="back" data-clearkw><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><path d="M8.5 2 4 6.5 8.5 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>전체 목록</button>
-    <h2>‘${esc(kw)}’가 나온 뉴스</h2>
-    <p class="sub">${nC}개 나라에서 ${rows.length}건이 나왔어요. 지도에도 이 나라들만 남겨 뒀어요.</p>
-    <ul class="news">${rows.slice(0,30).map(([a,c,i])=>`<li>
-      <button type="button" class="ctag" data-a2="${a}">${esc(c.ko)}</button>
-      <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>${i.o?`<div class="orig">${esc(i.o)}</div>`:""}
-      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${i.k>1?`<span>관련 ${i.k}건</span>`:""}</div>
-    </li>`).join("")||`<li class="empty">이 단어가 제목에 들어간 뉴스가 없어요.</li>`}</ul>`;
+  if(mode==="q"&&!qC){qC=new Set(r.countries.map(c=>c.a2));paint()}
+  const nC=r.countries.length, other=r.items.filter(i=>!i.a2).length;
+  const TAG={econ:"경제·증시",buzz:"지금 화제"};
+  side.innerHTML=`${back}<h2>${head}</h2>
+    <p class="sub">${r.n?`${nC?`${nC}개 나라`:""}${nC&&other?"와 ":""}${other?"경제·화제 묶음":""}에서 최근 24시간 기사 ${r.n}건을 찾았어요.${mode==="q"&&nC?" 지도에도 이 나라들만 남겨 뒀어요.":""}`:"최근 24시간 헤드라인에는 이 단어가 없어요. 다른 표현으로 찾아보세요."}</p>
+    <div class="trend" data-trend="${esc(term)}" hidden></div>
+    ${nC>1?`<div class="fcs">${r.countries.slice(0,8).map(c=>`<button type="button" data-a2="${c.a2}">${esc(c.ko)}<small>${c.n}</small></button>`).join("")}</div>`:""}
+    <ul class="news">${r.items.slice(0,fShown).map(i=>`<li>
+      ${i.a2?`<button type="button" class="ctag" data-a2="${i.a2}">${esc(C[i.a2]?C[i.a2].ko:i.a2)}${i.tag==="local"?" 현지 1면":""}</button>`:`<span class="ftag">${TAG[i.tag]||""}</span>`}
+      <a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a>
+      <div class="meta"><span>${esc(i.s)}</span>${i.p?`<span>${when(i.p)}</span>`:""}${i.sc>1?`<span class="ok">언론 ${i.sc}곳</span>`:""}</div>
+    </li>`).join("")}</ul>
+    ${r.items.length>fShown?`<div class="morebar"><button type="button" class="more" data-fmore>${Math.min(STEP,r.items.length-fShown)}개 더 보기</button></div>`:""}`;
+  getArc().then(()=>fillTrend(term));
+}
+// 단어 7일 추이: 날마다 그 단어가 들어간 헤드라인 수(수집 기록 archive.json)
+function getArc(){
+  if(arc) return Promise.resolve(arc);
+  if(!arcP) arcP=fetch("data/archive.json",{cache:"no-cache"}).then(r=>r.json()).catch(()=>({days:{}})).then(x=>{arc=x;if(state.sort==="week"&&!state.sel&&!state.kw&&!state.q)render();return x});
+  return arcP;
+}
+function fillTrend(term){
+  const box=side.querySelector(`.trend[data-trend="${CSS.escape(term)}"]`); if(!box||!arc) return;
+  const keys=Object.keys(arc.days||{}).sort().slice(-7); if(keys.length<2) return;
+  const low=term.toLowerCase();
+  const val=d=>{const kw=arc.days[d].kw;if(!kw)return null;if(term in kw)return kw[term];
+    for(const k in kw) if(k.toLowerCase()===low) return kw[k]; return 0};
+  const vals=keys.map(val); if(vals.every(v=>v==null)||vals.every(v=>!v)) return;
+  const max=Math.max(1,...vals.map(v=>v||0)), last=vals[vals.length-1], prev=vals[vals.length-2];
+  const md=d=>{const [,m,x]=d.split("-");return `${+m}.${+x}`};
+  const diff=last!=null&&prev!=null?last-prev:null;
+  const lc=term.charCodeAt(term.length-1), ga=lc>=0xAC00&&lc<=0xD7A3&&(lc-0xAC00)%28?"이":"가";
+  box.innerHTML=`<h3>지난 7일, ‘${esc(term)}’${ga} 들어간 헤드라인 수</h3>
+    <div class="tbars" role="img" aria-label="${keys.map((d,i)=>`${md(d)} ${vals[i]==null?"기록 없음":vals[i]+"건"}`).join(", ")}">${keys.map((d,i)=>{const v=vals[i];
+      return `<div class="tb${i===keys.length-1?" now":""}" title="${md(d)} ${v==null?"기록 없음":v+"건"}"><i style="height:${v?Math.max(3,Math.round(56*v/max)):0}px"></i><span>${i===keys.length-1?"오늘":md(d)}</span></div>`}).join("")}</div>
+    <p>오늘 ${last||0}건${diff==null?"":diff>0?`, 어제보다 ${diff}건 늘었어요.`:diff<0?`, 어제보다 ${-diff}건 줄었어요.`:", 어제와 같아요."}</p>`;
+  box.hidden=false;
 }
 function renderLatest(){
   const rows=latestRows();
@@ -686,7 +758,7 @@ let arc=null, arcP=null;
 function renderWeek(){
   if(!arc){
     side.innerHTML=`<div class="shead"><h2>지난 7일</h2>${sortTab()}</div><p class="sub">불러오는 중이에요.</p>`;
-    if(!arcP) arcP=fetch("data/archive.json",{cache:"no-cache"}).then(r=>r.json()).catch(()=>({days:{}})).then(x=>{arc=x;if(state.sort==="week"&&!state.sel&&!state.kw)render()});
+    getArc();
     return;
   }
   const days=Object.keys(arc.days||{}).sort().reverse().slice(0,7);
@@ -698,7 +770,8 @@ function renderWeek(){
       return `<li><p class="day">${+m}월 ${+dd}일 ${dow}요일</p><ol>${(arc.days[d].top||[]).slice(0,3).map((x,i)=>{
         const c=C[x.a2];if(!c) return "";
         return `<li><span class="r">${i+1}</span><span><button type="button" class="ctag" data-a2="${x.a2}">${esc(c.ko)}</button>${x.u?`<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>`:""}</span></li>`}).join("")}</ol></li>`}).join("")
-      ||`<li class="empty">아직 쌓인 기록이 없어요.</li>`}</ul>`;
+      ||`<li class="empty">아직 쌓인 기록이 없어요.</li>`}</ul>
+    <a class="clink" href="/weekly/">이번 주 정리 페이지 열기</a>`;
 }
 const fullP={};
 function loadFull(a2){
@@ -758,11 +831,13 @@ side.addEventListener("click",e=>{
     t.disabled=true;t.textContent="신고했어요";reported.add(u);ls.set("wim-rep",[...reported].slice(-200));
     fetch("api/report",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({vid,u,a2:a,t:it.t})}).catch(()=>{});
     toast("알려 주셔서 고마워요. 3건이 모이면 이 나라 목록에서 빠져요.")}
+  else if("clearq" in t.dataset){clearQ()}
+  else if("fmore" in t.dataset){fShown+=STEP;render()}
   else if("clearkw" in t.dataset){state.kw=null;words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));paint();render()}
 });
 function select(a2,fromHash){
   state.sel=a2;state.tab="ko";state.ckw=null;hideTip();
-  if(!fromHash){try{history.replaceState(null,"",a2?"#"+a2:location.pathname+location.search)}catch(e){}}
+  if(!fromHash){try{history.replaceState(null,"",location.pathname+location.search+(a2?"#"+a2:""))}catch(e){}}
   paint();render();side.scrollTop=0;
   if(a2) side.scrollIntoView({behavior:reduceMotion?"auto":"smooth",block:"nearest"});
 }
@@ -833,7 +908,26 @@ econEl.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)ret
 renderEcon();
 if(location.hash==="#buzz") setTimeout(()=>econEl.scrollIntoView({block:"start"}),300);
 
-fromHash(); if(!state.sel) render();
+// ── 검색 ──
+const qIn=document.getElementById("q");
+function setQ(v){
+  v=(v||"").trim().slice(0,30);
+  if(!v) return clearQ();
+  state.q=v; state.kw=null; state.sel=null; qC=null; fShown=20;
+  words.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
+  try{history.replaceState(null,"","?q="+encodeURIComponent(v))}catch(e){}
+  paint(); render();
+  side.scrollIntoView({behavior:reduceMotion?"auto":"smooth",block:"start"});
+}
+function clearQ(){
+  state.q=null; qC=null; qIn.value="";
+  try{history.replaceState(null,"",location.pathname)}catch(e){}
+  paint(); render();
+}
+document.getElementById("searchF").addEventListener("submit",e=>{e.preventDefault();qIn.blur();setQ(qIn.value)});
+const q0=new URLSearchParams(location.search).get("q");
+if(q0){qIn.value=q0;state.q=q0.trim().slice(0,30)||null}
+fromHash(); if(!state.sel) render(); if(state.q) paint();
 })();
 // ── 알림(웹 푸시): 종 버튼 → 알림 설정 창 ──
 (function(){
@@ -847,17 +941,18 @@ fromHash(); if(!state.sel) render();
   const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
   const DEF={surge:true,econ:true,buzz:false,pins:true,morning:false,quiet:true};
   const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
-  const prefs=()=>({...DEF,...lsGet("wim-push",{}),list:lsGet("wim-pins",[]).slice(0,5)});
+  const prefs=()=>({...DEF,...lsGet("wim-push",{}),list:lsGet("wim-pins",[]).slice(0,5),kw:lsGet("wim-kw",[]).slice(0,10)});
   const u8=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");const b=atob(s+"===".slice((s.length+3)%4));return Uint8Array.from(b,c=>c.charCodeAt(0))};
   const reg=()=>navigator.serviceWorker.ready;
   let sub=null;
   const post=(u,b)=>fetch(u,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)});
   function paint(){
     const p=prefs();
-    opts.querySelectorAll("input").forEach(i=>{i.checked=!!p[i.dataset.k]});
+    opts.querySelectorAll("input[data-k]").forEach(i=>{i.checked=!!p[i.dataset.k]});
     const names=p.list.map(a=>{try{return (window.__C__||{})[a]?.ko||a}catch(e){return a}});
     const last=names[names.length-1]||"",lc=last.charCodeAt(last.length-1),ig=lc>=0xAC00&&lc<=0xD7A3&&(lc-0xAC00)%28?"이":"가";
     $("alPins").textContent=p.list.length?`${names.join(", ")}${ig} 3위 안에 들거나 보도가 2배로 늘면 알려요. 나라마다 하루 1번.`:"나라 화면에서 '관심'을 누른 나라가 3위 안에 들거나 보도가 2배로 늘면 알려요. 지금은 관심 나라가 없어요.";
+    $("kwList").innerHTML=p.kw.map(w=>`<button type="button" data-kwdel="${w.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}" aria-label="${w.replace(/["<>&]/g,"")} 빼기">${w.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`).join("");
     btn.setAttribute("aria-pressed",!!sub);btn.setAttribute("aria-label",sub?"알림 설정 (켜짐)":"알림 설정");
     if(!ok){stat.textContent="이 브라우저는 알림을 지원하지 않아요.";main.hidden=true;test.hidden=true;return}
     if(ios&&!standalone){stat.textContent="아이폰은 홈 화면에 앱으로 설치한 뒤 알림을 켤 수 있어요.";main.hidden=true;test.hidden=true;return}
@@ -869,12 +964,20 @@ fromHash(); if(!state.sel) render();
     if(!ok) return paint();
     try{sub=await (await reg()).pushManager.getSubscription()}catch(e){sub=null}
     if(sub){try{const r=await fetch("api/push/prefs?e="+encodeURIComponent(sub.endpoint));
-      if(r.ok){const {prefs:sp}=await r.json();const {list,...rest}=sp;localStorage.setItem("wim-push",JSON.stringify(rest))}
+      if(r.ok){const {prefs:sp}=await r.json();const {list,kw,...rest}=sp;localStorage.setItem("wim-push",JSON.stringify(rest));if(Array.isArray(kw)&&kw.length&&!lsGet("wim-kw",[]).length)localStorage.setItem("wim-kw",JSON.stringify(kw))}
       else if(r.status===404){await post("api/push/sub",{sub:sub.toJSON(),prefs:prefs()})}}catch(e){}}
     paint();
   }
   const save=()=>sub&&post("api/push/prefs",{endpoint:sub.endpoint,prefs:prefs()}).catch(()=>{});
   window.wnmPinsChanged=()=>{save()};
+  const kwIn=$("kwIn");
+  function addKw(){const w=kwIn.value.trim().slice(0,20);if(!w)return;const l=lsGet("wim-kw",[]);
+    if(!l.includes(w)){if(l.length>=10){toast("단어는 10개까지 등록할 수 있어요.");return}l.push(w);try{localStorage.setItem("wim-kw",JSON.stringify(l))}catch(x){}}
+    kwIn.value="";paint();save();if(!sub)toast("아래 '알림 켜기'를 누르면 이 단어 알림이 시작돼요.")}
+  $("kwAdd").onclick=addKw;
+  kwIn.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addKw()}});
+  $("kwList").addEventListener("click",e=>{const b=e.target.closest("[data-kwdel]");if(!b)return;
+    const l=lsGet("wim-kw",[]).filter(x=>x!==b.dataset.kwdel);try{localStorage.setItem("wim-kw",JSON.stringify(l))}catch(x){}paint();save()});
   opts.addEventListener("change",e=>{const i=e.target;if(!i.dataset.k)return;
     const cur=lsGet("wim-push",{});cur[i.dataset.k]=i.checked;try{localStorage.setItem("wim-push",JSON.stringify(cur))}catch(x){}
     paint();save()});

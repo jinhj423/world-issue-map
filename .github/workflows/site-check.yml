@@ -16,7 +16,7 @@ jobs:
           echo "## 방문자·알림 구독"; curl -s "$SITE/api/visit"; echo
           echo "## 수집 깨우기"; curl -s "$SITE/api/cron-check"; echo
           echo "## 주소별 응답"
-          for p in / /c/jp/ /c/us/ /econ/ /about/ /sitemap.xml /robots.txt /data/news.json /data/archive.json /og.png /page.css; do
+          for p in / /c/jp/ /c/us/ /econ/ /weekly/ /about/ /sitemap.xml /robots.txt /data/lite.json /data/archive.json /vendor/map.js /og.png /page.css "/api/search?q=AI"; do
             printf "%-20s " "$p"; curl -s -o /dev/null -w "%{http_code} %{size_download}B\n" "$SITE$p"
           done
           echo "## 메인 공유 제목"; curl -s "$SITE/" | grep -o '<meta property="og:title" content="[^"]*"'

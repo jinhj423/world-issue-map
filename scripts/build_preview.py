@@ -7,12 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 NM = ROOT / "build" / "node_modules"
 html = (ROOT / "public" / "index.html").read_text("utf-8")
-libs = {"d3": NM / "d3/dist/d3.min.js", "topojson": NM / "topojson-client/dist/topojson-client.min.js"}
-for name, p in libs.items():
-    html = re.sub(rf'<script src="[^"]+" data-inline="{name}"></script>',
-                  lambda m: "<script>" + p.read_text("utf-8") + "</script>", html)
+mapjs = (ROOT / "public" / "vendor" / "map.js").read_text("utf-8")
+html = html.replace('<script src="/vendor/map.js"></script>', "<script>" + mapjs + "</script>")
 news = (ROOT / "public" / "data" / "news.json").read_text("utf-8")
-world = (NM / "world-atlas/countries-110m.json").read_text("utf-8")
+world = (ROOT / "public" / "vendor" / "countries-110m.json").read_text("utf-8")
 html = html.replace("<!--INLINE_DATA-->",
                     f"<script>window.__NEWS__={news};window.__WORLD__={world};</script>")
 assert "data-inline" not in html

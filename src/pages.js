@@ -40,7 +40,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 </head><body><div class="wrap">
 <header class="top"><a class="brand" href="/">${LOGO}세계 이슈 지도</a><a class="go" href="/">지도 열기</a></header>
 <main>${body}</main>
-<footer><p class="visits" id="visits" hidden></p><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
+<footer><p class="visits" id="visits" hidden></p><p>뉴스 출처: Google News RSS. 헤드라인을 누르면 언론사 원문으로 이동해요.</p><p><a href="/econ/">오늘의 경제·증시 뉴스</a>, <a href="/weekly/">이번 주 정리</a></p><p><a href="/about/">소개, 개인정보, 문의</a></p></footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -143,6 +143,38 @@ ${econCountries.length ? `<section class="card"><h2>나라별 경제 뉴스</h2>
   });
 }
 
+// 주간 정리: archive.json의 live(최근 7일) 또는 weeks.json의 끝난 주
+export function weeklyPage(origin, w, d, weekIds, wid) {
+  const CAT = (d && d.categories) || {};
+  const names = (a2) => (d && d.countries[a2] && d.countries[a2].ko) || a2;
+  const md = (x) => { const [, m, dd] = x.split("-"); return `${+m}월 ${+dd}일`; };
+  const range = w.from ? `${md(w.from)}~${md(w.to)}` : "";
+  const title = wid ? `${wid.replace("-W", "년 ")}주차 세계 뉴스 정리` : "이번 주 세계 뉴스 정리";
+  const c1 = (w.countries || [])[0];
+  const daysRows = (w.days || []).slice().reverse().map((x) => {
+    const t = (x.top || [])[0];
+    return t ? `<li><span class="d">${md(x.day)}</span><span><a class="w1" href="/c/${t.a2.toLowerCase()}/">${esc(t.ko || names(t.a2))}</a>${t.u ? ` <a href="${esc(t.u)}" target="_blank" rel="noopener nofollow">${esc(t.t)}</a>` : ""}${(x.top || []).slice(1).length ? `<span class="also">2·3위 ${(x.top || []).slice(1).map((y) => esc(y.ko || names(y.a2))).join(", ")}</span>` : ""}</span></li>` : "";
+  }).join("");
+  const cRows = (w.countries || []).map((c, i) => `<li><span class="r">${i + 1}</span><a href="/c/${c.a2.toLowerCase()}/">${esc(c.ko || names(c.a2))}</a><span class="v">5위 안 ${c.days}일${c.first ? `, 1위 ${c.first}일` : ""}</span></li>`).join("");
+  const maxW = Math.max(1, ...(w.words || []).map((x) => x.n));
+  const wRows = (w.words || []).map((x) => `<li><a href="/?q=${encodeURIComponent(x.w)}">${esc(x.w)}</a><span class="bar"><i style="width:${Math.round(100 * x.n / maxW)}%"></i></span><span class="v">${x.n}건</span></li>`).join("");
+  const li = (i) => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener nofollow">${esc(i.t)}</a><div class="meta"><span>${esc(i.s)}</span>${i.day ? `<span>${md(i.day)}</span>` : ""}${i.sc > 1 ? `<span class="ok">언론 ${i.sc}곳 보도</span>` : ""}</div></li>`;
+  const others = (weekIds || []).filter((x) => x !== wid).slice(-8).reverse();
+  const body = `
+<p class="crumb"><a href="/">세계 이슈 지도</a> / 주간 정리</p>
+<h1>${esc(title)}</h1>
+<p class="lead">${range ? `${range}에 ` : ""}${c1 ? `가장 자주 상위권에 오른 나라는 ${esc(c1.ko || names(c1.a2))}였어요.` : "모인 기록이 아직 적어요."} 날마다 마지막 집계를 모아 정리했어요.</p>
+<div class="acts"><a class="btn pri" href="/">오늘 지도 보기</a><button type="button" class="btn sec" data-share>공유하기</button></div>
+${daysRows ? `<section class="card"><h2>날마다 가장 시끄러웠던 나라</h2><ul class="wdays">${daysRows}</ul></section>` : ""}
+${cRows ? `<section class="card"><h2>이번 주 자주 상위권에 든 나라</h2><p class="sub">하루 마지막 순위 기준, 5위 안에 든 날 수예요.</p><ol class="wrank">${cRows}</ol></section>` : ""}
+${wRows ? `<section class="card"><h2>많이 나온 단어</h2><p class="sub">그 단어가 들어간 헤드라인 수를 더했어요. 누르면 오늘 뉴스에서 찾아요.</p><ul class="wwords">${wRows}</ul></section>` : ""}
+${(w.econ || []).length ? `<section class="card"><h2>경제·증시, 많이 다뤄진 소식</h2><ol class="list">${w.econ.map(li).join("")}</ol></section>` : ""}
+${(w.buzz || []).length ? `<section class="card"><h2>화제가 된 소식</h2><ol class="list">${w.buzz.map(li).join("")}</ol></section>` : ""}
+${others.length ? `<section class="card"><h2>지난 주간 정리</h2><ul class="chips">${wid ? `<li><a href="/weekly/">이번 주</a></li>` : ""}${others.map((x) => `<li><a href="/weekly/${x}/">${esc(x.replace("-W", "년 "))}주차</a></li>`).join("")}</ul></section>` : ""}`;
+  const desc = c1 ? `${range} 세계 뉴스 정리: 가장 자주 상위권에 오른 나라 ${c1.ko || names(c1.a2)}, 많이 나온 단어 ${(w.words || []).slice(0, 3).map((x) => x.w).join(", ")}.` : "한 주 동안 세계에서 가장 시끄러웠던 나라와 경제 뉴스를 정리합니다.";
+  return shell({ origin, path: wid ? `/weekly/${wid}/` : "/weekly/", title: `${title} | 세계 이슈 지도`, desc, body, ogTitle: title });
+}
+
 export function aboutPage(origin) {
   const body = `
 <p class="crumb"><a href="/">세계 이슈 지도</a> / 소개</p>
@@ -162,9 +194,10 @@ export function aboutPage(origin) {
   return shell({ origin, path: "/about/", title: "소개, 개인정보, 문의 | 세계 이슈 지도", desc: "세계 이슈 지도가 뉴스를 모으고 순위를 매기는 방법, 개인정보 처리, 문의 방법.", body });
 }
 
-export function sitemap(origin, d) {
+export function sitemap(origin, d, weekIds) {
   const lm = d && d.updated_at ? d.updated_at.slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/econ/", "hourly", "0.9"], [origin + "/about/", "monthly", "0.3"]];
+  const urls = [[origin + "/", "hourly", "1.0"], [origin + "/econ/", "hourly", "0.9"], [origin + "/weekly/", "daily", "0.7"], [origin + "/about/", "monthly", "0.3"]];
+  for (const w of weekIds || []) urls.push([`${origin}/weekly/${w}/`, "monthly", "0.5"]);
   if (d) for (const a2 of Object.keys(d.countries)) urls.push([`${origin}/c/${a2.toLowerCase()}/`, "hourly", "0.8"]);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

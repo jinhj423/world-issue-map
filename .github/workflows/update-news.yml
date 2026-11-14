@@ -33,6 +33,7 @@ jobs:
             git show FETCH_HEAD:news.json > public/data/news.json
             git show FETCH_HEAD:history.json > public/data/history.json
             git show FETCH_HEAD:archive.json > public/data/archive.json 2>/dev/null || true
+            git show FETCH_HEAD:weeks.json > public/data/weeks.json 2>/dev/null || true
           fi
 
       - name: 최근 수집 확인 (보조 예약 실행만)
@@ -69,11 +70,12 @@ jobs:
         run: |
           d=$(mktemp -d)
           cp public/data/news.json public/data/history.json public/data/archive.json "$d"/
+          [ -f public/data/weeks.json ] && cp public/data/weeks.json "$d"/
           cd "$d"
           git init -q -b data
           git config user.name "news-bot"
           git config user.email "news-bot@users.noreply.github.com"
-          git add news.json history.json archive.json
+          git add news.json history.json archive.json $( [ -f weeks.json ] && echo weeks.json )
           git commit -q -m "data: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') 갱신 [skip ci]"
           # 기록 없이 덮어쓴다(저장소 용량이 늘지 않음)
           for i in 1 2 3; do

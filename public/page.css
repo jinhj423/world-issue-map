@@ -83,6 +83,27 @@ details.fold[open]>summary::after{content:"접기"}
 footer{font-size:13px;color:var(--ink-3);padding:32px 0 48px}
 footer p{margin:0 0 4px}
 footer a{color:var(--ink-2)}
+.wdays{list-style:none;margin:8px 0 0;padding:0}
+.wdays li{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:15px;line-height:1.55}
+.wdays li:first-child{border-top:0}
+.wdays .d{color:var(--ink-3);font-size:14px;font-variant-numeric:tabular-nums}
+.wdays a{text-decoration:none}
+.wdays a:hover{text-decoration:underline}
+.wdays .w1{font-weight:800;color:var(--link)}
+.wdays .also{display:block;font-size:13px;color:var(--ink-3);margin-top:2px}
+.wrank{list-style:none;margin:8px 0 0;padding:0}
+.wrank li{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.wrank li:first-child{border-top:0}
+.wrank .r{flex:0 0 20px;font-weight:800;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.wrank li:first-child .r{color:var(--red-ink)}
+.wrank a{font-weight:700;text-decoration:none}
+.wrank .v{margin-left:auto;font-size:13px;color:var(--ink-3)}
+.wwords{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.wwords li{display:grid;grid-template-columns:7em minmax(0,1fr) 3.5em;align-items:center;gap:12px;font-size:14px}
+.wwords a{font-weight:700;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wwords .bar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+.wwords .bar i{display:block;height:100%;background:var(--bar);border-radius:4px}
+.wwords .v{text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (max-width:600px){

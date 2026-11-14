@@ -1,6 +1,6 @@
 // 세계 이슈 지도 — 서비스 워커: 설치 요건 + 오프라인에서 마지막 데이터 보여주기
-const V = "wim-v5";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
+const V = "wim-v6";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "vendor/map.js", "vendor/countries-110m.json"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
