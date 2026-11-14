@@ -46,6 +46,14 @@ DAYS_KEEP = 35
 BACK_DAYS = 8                 # 평소 수준 계산용으로 거슬러 받는 날 수
 BUDGET_S = float(next((a.split("=")[1] for a in sys.argv if a.startswith("--budget=")), 240))
 SHOW_TITLES = False
+NOT_ARTICLE = re.compile(r"/(tag|tags|category|categories|topic|topics|author|search|page)/", re.I)
+# 인물로 잘못 잡히는 도시·나라·직함 이름
+NOT_PERSON = {"los angeles", "las vegas", "abu dhabi", "new york", "hong kong", "san francisco", "buenos aires", "tel aviv",
+              "kuala lumpur", "rio de janeiro", "sao paulo", "new delhi", "cape town", "el paso", "san diego", "san jose",
+              "santa clara", "costa rica", "puerto rico", "sri lanka", "saudi arabia", "new zealand", "south africa",
+              "north korea", "south korea", "united states", "united kingdom", "white house", "prime minister",
+              "america latin", "latin america", "middle east", "wall street", "silicon valley", "new jersey", "new mexico",
+              "north carolina", "south carolina", "west virginia", "rhode island", "salt lake", "hamas israel"}
 THEMES_LOG = "--themes" in sys.argv
 ROWS, F2I = C.load()
 
@@ -148,6 +156,8 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
             iso = F2I.get(f[2])
             if not iso:
                 unknown[f[2]] += 1
+                if f[0] == "1":
+                    fips_names[f[2]][f[1]] += 1
                 continue
             isos.add(iso)
             name = f[1].split(",")[0].strip()
@@ -192,7 +202,8 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
         ex = st.pp.setdefault(hk, {}).setdefault(prim, {"p": {}, "l": {}, "s": {}})
         for p in set((row[11] or "").split(";")):
             p = p.strip()
-            if p and " " in p and p.lower() not in locnames and len(p) <= 40:
+            pl = p.lower()
+            if p and " " in p and pl not in locnames and pl not in NOT_PERSON and len(p) <= 40 and not pl.endswith((" minister", " president")):
                 ex["p"][p] = ex["p"].get(p, 0) + 1
         for name, c in places_by.get(prim, {}).items():
             ex["l"][name] = ex["l"].get(name, 0) + c
@@ -200,7 +211,7 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
         if src:
             ex["s"][src] = ex["s"].get(src, 0) + 1
         url = (row[4] or "").strip()
-        if url.startswith("http") and len(url) < 400:
+        if url.startswith("http") and len(url) < 400 and not NOT_ARTICLE.search(url):
             st.links.setdefault(prim, []).append([stamp, url, src, m, round(tone, 1)])
     cov = st.dcov.setdefault(dk, {"en": 0, "tr": 0})
     cov[kind] = cov.get(kind, 0) + 1
@@ -276,7 +287,7 @@ def collect(st: State) -> int:
     print(f"처리 {got}개 · 아직 없음 {miss}개 · 남은 지난 파일 약 {max(left, 0)}개 · {time.time() - t0:.0f}초")
     check_fips(fips_names)
     if unknown:
-        print("표에 없는 FIPS(기사 수):", unknown.most_common(25))
+        print("표에 없는 FIPS(기사 수, GDELT 이름):", [(f, n, (fips_names.get(f) or Counter()).most_common(1)) for f, n in unknown.most_common(25)])
     if theme_seen and "--themes" in sys.argv:
         for key, name, *_ in T.CATS:
             hits = [(t, c) for t, c in theme_seen.items() if (_theme_memo.get(t, 0) >> T.KEYS.index(key)) & 1]
@@ -289,6 +300,8 @@ def check_fips(fips_names: dict):
     bad = []
     for f, names in fips_names.items():
         iso = F2I.get(f)
+        if not iso:
+            continue
         top = names.most_common(1)[0][0] if names else ""
         if iso and top and top.lower() != ROWS[iso]["en"].lower():
             bad.append(f"{f}→{iso}({ROWS[iso]['en']}) GDELT:{top}")
@@ -298,9 +311,11 @@ def check_fips(fips_names: dict):
         print(f"FIPS 검사: 나라 {len(fips_names)}곳 이름 일치")
 
 
-def heat(n: float, ref: float, ratio: float | None) -> int:
-    """세계 이슈 지도와 같은 식: 보도량 65% + 평소 대비 35%(√보도량으로 줄임)."""
-    vol = min(1.0, math.log1p(n) / math.log1p(max(ref, 1.0)))
+def heat(n: float, ref: float, ratio: float | None, floor: int = 20) -> int:
+    """세계 이슈 지도와 같은 식: 보도량 65% + 평소 대비 35%(√보도량으로 줄임).
+    GDELT는 나라 간 기사 수 차이가 수천 배라, 보도량 몫은 문턱(floor)~최댓값을 로그 눈금으로 편다."""
+    lo, hi = math.log1p(floor), math.log1p(max(ref, floor + 1))
+    vol = max(0.0, min(1.0, (math.log1p(n) - lo) / (hi - lo)))
     surge = 0.5 if ratio is None else max(0.0, min(1.0, 0.5 + math.log2(max(ratio, 1e-6)) / 4))
     return round(100 * (0.65 * vol + 0.35 * surge * math.sqrt(vol)))
 
@@ -324,10 +339,17 @@ def build(st: State, out: Path):
             for i, x in enumerate(v):
                 a[i] += x
 
+    gday = {d: [sum(v[0] for v in st.days.get(d, {}).values()), sum(v[IINV] for v in st.days.get(d, {}).values())] for d in complete}
+    # 날짜 묶음과 같은 잣대(나라별 건수의 합)로 비교한다
+    g24 = [sum(a[0] for a in agg.values()), sum(a[IINV] for a in agg.values())]
+
     def base_of(iso: str, idx: int) -> float | None:
+        """평소 몫(지난 완전한 날들의 전체 대비 비율 중앙값)을 지금 24시간 전체 기사 수에 곱한 '평소라면 기대되는 건수'."""
         if len(complete) < 3:
             return None
-        return statistics.median([st.days.get(d, {}).get(iso, [0] * VLEN)[idx] for d in complete])
+        k = 0 if idx == 0 else 1
+        shares = [st.days.get(d, {}).get(iso, [0] * VLEN)[idx] / gday[d][k] for d in complete if gday[d][k]]
+        return statistics.median(shares) * g24[k] if shares else None
 
     def tone_base(iso: str) -> float | None:
         if len(complete) < 3:
@@ -351,7 +373,7 @@ def build(st: State, out: Path):
         tb = tone_base(iso)
         cs[iso] = {
             "n": n, "b": None if b is None else round(b), "r": r, "g": heat(n, ref_g, r),
-            "i": ni, "ib": None if bi is None else round(bi), "ir": ri, "gi": heat(ni, ref_i, ri),
+            "i": ni, "ib": None if bi is None else round(bi), "ir": ri, "gi": heat(ni, ref_i, ri, 10),
             "t": t, "dt": None if (t is None or tb is None) else round(t - tb, 2),
             "c": {k: a[2 + j] for j, k in enumerate(T.KEYS) if a[2 + j]},
             "s": [st.days.get(d, {}).get(iso, [0] * VLEN)[0] for d in days7],
