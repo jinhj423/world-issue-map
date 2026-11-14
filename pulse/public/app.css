@@ -9,8 +9,25 @@
   --r-lg: 16px; --r-md: 10px; --r-sm: 6px;
   --shadow: 0 1px 2px rgba(17, 20, 24, 0.04);
   --shadow-pop: 0 8px 24px rgba(17, 20, 24, 0.12);
+  --shadow-sm: 0 1px 3px rgba(17, 20, 24, 0.1);
+  --flag-ring: rgba(17, 20, 24, 0.08);
+  color-scheme: light;
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --wrap: 1360px; --pad: 32px;
+}
+/* 다크 모드: 같은 구성, 어두운 바탕용 값. 지도 단계는 어두운 바탕에서 '낮음=어두움, 높음=밝음'으로 뒤집는다.
+ * 대비(카드 바탕 기준): 글자 14.5, 보조 글자 9.2, 흐린 글자 5.8, 파랑·빨강 6.2 이상. */
+:root[data-theme="dark"] {
+  --bg: #0D1117; --card: #161B22; --line: #262C36; --line2: #343C48; --fill: #1F252E; --fill2: #262D38; --track: #232A33;
+  --ink: #E8EBF0; --ink2: #B6BEC9; --muted: #8C96A5; --spk: #5E6878; --on-ink: #0D1117;
+  --acc: #6E98FF; --acc-hover: #8FB0FF; --acc-wash: #1C2A4A; --acc-wash2: #151F33;
+  --up: #FF6B5E; --up-wash: #3B1F1D; --down: #6E98FF; --ok: #3FCF8E; --err: #FF6B5E;
+  --m0: #1B2A4F; --m1: #1D3263; --m2: #22438C; --m3: #2B58B6; --m4: #3F72E0; --m5: #6F97FF; --m6: #AFC6FF; --nd: #252B34;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --flag-ring: rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }
@@ -32,7 +49,7 @@ p { margin: 0; }
 .tabs { display: flex; gap: 4px; background: var(--fill2); border-radius: var(--r-md); padding: 3px; }
 .tabs a { padding: 7px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--ink2); text-decoration: none; white-space: nowrap; transition: background-color 120ms, color 120ms; }
 .tabs a:hover { color: var(--ink); }
-.tabs a[aria-current="page"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(17, 20, 24, 0.1); }
+.tabs a[aria-current="page"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .search { position: relative; margin-left: auto; width: 260px; }
 .search label { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 12px; height: 40px; transition: border-color 120ms; }
 .search label:focus-within { border-color: var(--acc); }
@@ -50,6 +67,12 @@ p { margin: 0; }
 .asof::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 .asof.stale::before { background: var(--muted); }
 .asof.bad::before { background: var(--err); }
+.theme { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); color: var(--ink2); cursor: pointer; transition: border-color 120ms, color 120ms; }
+.theme:hover { border-color: var(--acc); color: var(--ink); }
+.theme svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.theme .sun { display: none; }
+:root[data-theme="dark"] .theme .sun { display: block; }
+:root[data-theme="dark"] .theme .moon { display: none; }
 .about { font-size: 13px; color: var(--ink2); text-decoration: none; white-space: nowrap; }
 .about:hover { color: var(--acc); }
 
@@ -73,7 +96,7 @@ p { margin: 0; }
 button.kv { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; border-radius: var(--r-sm); justify-self: start; max-width: 100%; }
 button.kv:hover > span { color: var(--acc); }
 .ks { font-size: 13px; color: var(--ink2); }
-.flag { width: 24px; height: 18px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(17, 20, 24, 0.08); flex: none; object-fit: cover; background: var(--nd); }
+.flag { width: 24px; height: 18px; border-radius: 3px; box-shadow: 0 0 0 1px var(--flag-ring); flex: none; object-fit: cover; background: var(--nd); }
 .kv .flag { width: 30px; height: 22px; }
 .sk { display: inline-block; height: 0.9em; width: 5em; border-radius: 6px; background: linear-gradient(90deg, var(--track), var(--fill), var(--track)); background-size: 200% 100%; animation: sk 1.2s linear infinite; vertical-align: middle; }
 @keyframes sk { to { background-position: -200% 0; } }
@@ -150,7 +173,7 @@ button.kv:hover > span { color: var(--acc); }
 .seg { display: flex; gap: 2px; background: var(--fill); border-radius: 8px; padding: 2px; }
 .seg button { border: 0; background: none; padding: 4px 10px; border-radius: 6px; font-size: 13px; color: var(--ink2); cursor: pointer; }
 .seg button:hover { color: var(--ink); }
-.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(17, 20, 24, 0.1); }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
 .chart { position: relative; height: 150px; touch-action: pan-y; }
 .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .big { fill: none; stroke: var(--acc); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
@@ -271,6 +294,7 @@ body.page .extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 body.page .extra .artsbox { grid-column: 1 / -1; }
 body.page .arts li { grid-template-columns: 96px minmax(0, 1fr) auto; }
 body.page .about { margin-left: auto; }
+body.page .about + .theme { margin-left: 0; }
 .crumb { justify-self: start; font-size: 14px; font-weight: 600; color: var(--ink2); text-decoration: none; padding: 4px 2px; }
 .crumb:hover { color: var(--acc); }
 .prose h1 { font-size: 26px; font-weight: 800; }

@@ -131,10 +131,11 @@ function shell(req, title, desc, body, canonical, status = 200) {
   return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(new URL(canonical, req.url).href)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta name="theme-color" content="#F5F6F8">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("wp-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
 <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="/app.css"></head><body class="page">
-<header class="bar"><a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a><nav class="tabs" aria-label="판 고르기"><a href="/">일반</a><a href="/invest/">투자자</a></nav><a class="about" href="/about/">방법과 출처</a></header>
+<link rel="stylesheet" href="/app.css"><script src="/theme.js" defer></script></head><body class="page">
+<header class="bar"><a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a><nav class="tabs" aria-label="판 고르기"><a href="/">일반</a><a href="/invest/">투자자</a></nav><a class="about" href="/about/">방법과 출처</a><button type="button" class="theme" id="theme" aria-label="어두운 화면으로 바꾸기" title="어두운 화면으로 바꾸기"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button></header>
 <main class="wrap">${body}</main>
 <footer class="foot"><p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다. 사건 종류 GDELT 사건 자료, 주요 사건 문장 위키백과(CC BY-SA 4.0). 국기 그림 <a href="https://github.com/lipis/flag-icons">flag-icons</a>(MIT), 지도 Natural Earth.</p><p>보도량 통계이며 투자 권유가 아닙니다. <a href="/about/">세는 방법과 출처</a></p></footer>
 </body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=120" } });
