@@ -9,5 +9,8 @@
     "binding": "ASSETS",
     "run_worker_first": ["/", "/index.html", "/invest", "/invest/", "/data/*", "/c/*", "/about", "/about/", "/sitemap.xml", "/robots.txt"]
   },
+  // 예약 실행은 쓰지 않는다. 빈 목록을 적어 두면, 실수로 저장소 맨 위 설정(세계 이슈 지도, 10분마다 실행)으로
+  // 한 번 배포된 적이 있어도 다음 배포 때 그 예약이 지워진다.
+  "triggers": { "crons": [] },
   "observability": { "enabled": true }
 }
