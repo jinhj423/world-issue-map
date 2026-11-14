@@ -178,7 +178,8 @@ def fixed_items(fixed: dict) -> list[dict]:
 
 # ── 대형주 실적(Nasdaq) ──
 NASDAQ = "https://api.nasdaq.com/api/calendar/earnings?date={}"
-KO_NAME = {"NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트", "GOOGL": "알파벳(구글)", "GOOG": "알파벳(구글)",
+KO_NAME = {"DIS": "디즈니", "DE": "디어앤드컴퍼니", "ADI": "아날로그디바이시스", "CRWD": "크라우드스트라이크", "BHP": "BHP",
+           "MDT": "메드트로닉", "ANET": "아리스타", "MRVL": "마벨", "LULU": "룰루레몬", "AVGO": "브로드컴","NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트", "GOOGL": "알파벳(구글)", "GOOG": "알파벳(구글)",
            "AMZN": "아마존", "META": "메타", "TSLA": "테슬라", "AVGO": "브로드컴", "TSM": "TSMC", "WMT": "월마트",
            "JPM": "JP모건", "V": "비자", "MA": "마스터카드", "ORCL": "오라클", "COST": "코스트코", "NFLX": "넷플릭스",
            "AMD": "AMD", "MU": "마이크론", "HD": "홈디포", "BABA": "알리바바", "PDD": "PDD홀딩스", "CRM": "세일즈포스",
@@ -237,6 +238,12 @@ def build(now: datetime | None = None) -> dict:
             print(f"  ! {name}: {e.__class__.__name__}", file=sys.stderr)
             got = []
         print(f"  {name}: {len(got)}건")
+        if "--debug" in sys.argv and name == "census":
+            for x in got[:12]:
+                print("    ", x["date"], x["time"], x["title"])
+            body = get(CENSUS_URL) or ""
+            i = body.find("Retail")
+            print("    HTML:", re.sub(r"\s+", " ", body[max(0, i - 600): i + 900]))
         items += got
     lo, hi = (today - timedelta(days=2)).isoformat(), (today + timedelta(days=45)).isoformat()
     seen, rows = set(), []
