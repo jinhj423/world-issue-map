@@ -552,13 +552,13 @@ def build(st: State, out: Path):
             "p": [x for x in ex["p"].most_common(12) if x[0].lower() not in NOT_PERSON][:6] if ex else [], "l": ex["l"].most_common(5) if ex else [],
             "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl, "evh": evh,
         }
-    # AI 요약 재료(briefin.json, 공개하지 않음): 순위·급증 나라마다 최근 시간부터 시간당 2개씩 제목 20개까지
+    # AI 요약 재료(briefin.json, 공개하지 않음): 순위·급증 나라마다 최근 시간부터 시간당 4개씩 제목 20개까지
     targets = list(dict.fromkeys(rank["general"][:30] + rank["surge"][:10] + rank["invest"][:10]))
     bin_ = {}
     for iso in targets:
         xs, seen = [], set()
         for hk in win:
-            for t, _src in st.tt.get(hk, {}).get(iso, [])[:2]:
+            for t, _src in st.tt.get(hk, {}).get(iso, [])[:4]:
                 k = t.lower()[:50]
                 if k not in seen:
                     seen.add(k)
