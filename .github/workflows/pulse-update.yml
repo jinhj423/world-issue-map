@@ -1,0 +1,58 @@
+name: 월드펄스 수집
+
+# 월드펄스(pulse/) 자료: GDELT 15분 파일 + 미국 공공기관 경제 일정 → pulse-data 브랜치(커밋 1개, 덮어쓰기).
+# 깨우는 길: 세계 이슈 지도 수집(뉴스 수집, 10분마다)이 끝날 때마다 따라 돈다 — 새 비밀값·예약이 필요 없다.
+# GDELT 파일은 15분마다 나오고 약 1시간 늦게 올라오므로, 새 파일이 없으면 아무것도 올리지 않고 끝난다.
+on:
+  workflow_run:
+    workflows: ["뉴스 수집 (10분마다)"]
+    types: [completed]
+  workflow_dispatch: {}
+  push:
+    branches: [probe-gdelt]
+  schedule:
+    - cron: "17 */2 * * *"   # 보조 경로(위가 멈췄을 때만 의미 있음)
+
+concurrency:
+  group: pulse-update
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: 지난 자료 받기 (pulse-data 브랜치)
+        run: |
+          mkdir -p pulse-out
+          if git fetch -q --depth=1 origin pulse-data 2>/dev/null; then
+            for f in state.json pulse.json detail.json calendar.json; do
+              git show "origin/pulse-data:$f" > "pulse-out/$f" 2>/dev/null || rm -f "pulse-out/$f"
+            done
+          fi
+          ls -la pulse-out
+      - name: 수집
+        run: python3 pulse/collect/collect.py pulse-out --budget=300 --themes
+      - name: pulse-data 브랜치에 올리기
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f pulse-out/.changed ]; then echo "새 자료 없음"; exit 0; fi
+          d=$(mktemp -d)
+          cp pulse-out/state.json pulse-out/pulse.json pulse-out/detail.json "$d"/
+          [ -f pulse-out/calendar.json ] && cp pulse-out/calendar.json "$d"/
+          cd "$d"
+          git init -q -b pulse-data
+          git config user.name "pulse-bot"
+          git config user.email "pulse-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "pulse: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') 갱신 [skip ci]"
+          for i in 1 2 3; do
+            git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pulse-data && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
