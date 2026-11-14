@@ -27,6 +27,7 @@ KST = ZoneInfo("Asia/Seoul")
 WAIT = timedelta(hours=2)
 KEEP = timedelta(hours=6)      # 이번에 못 쓴 나라는 6시간 안의 지난 요약을 그대로 둔다
 CHUNK = 35
+VER = 2                        # 형식이 바뀌면 올려서 기다리지 않고 바로 다시 쓴다
 RULES = """- 여러 제목에서 되풀이되거나 위키백과 사건 문장으로 확인되는 일을 먼저 씁니다. 한 제목에만 나온 일은 빼도 됩니다.
 - 기사 제목의 문장이나 독특한 표현을 그대로 옮기지 말고, 사실만 뽑아 직접 쓴 문장으로 씁니다. 따옴표 인용은 쓰지 않습니다.
 - 제목에 없는 내용, 원인 추측, 평가, 전망은 쓰지 않습니다. 숫자는 제목에 나온 것만 씁니다.
@@ -89,7 +90,7 @@ def main():
         return
     old = json.loads(bp.read_text("utf-8")) if bp.exists() else {}
     now = datetime.now(KST)
-    if old.get("at") and now - datetime.fromisoformat(old["at"]) < WAIT:
+    if old.get("v") == VER and now - datetime.fromisoformat(old["at"]) < WAIT:
         return
     if not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
         print("AI 요약 건너뜀: CLAUDE_CODE_OAUTH_TOKEN 없음")
@@ -112,7 +113,7 @@ def main():
         print("  ! AI 요약: 쓸 만한 답이 없음")
         return
     # 이번에 못 쓴 나라는 6시간 안의 지난 요약을 남긴다
-    if old.get("at") and now - datetime.fromisoformat(old["at"]) < KEEP:
+    if old.get("v") == VER and now - datetime.fromisoformat(old["at"]) < KEEP:
         for iso, v in (old.get("countries") or {}).items():
             res.setdefault(iso, v)
     world = old.get("world") if old.get("world") and failed else None
@@ -133,7 +134,7 @@ def main():
             world = {"items": items[:6]}
     except Exception as e:  # noqa: BLE001
         print(f"  ! AI 세계 브리핑: {e.__class__.__name__}: {e}")
-    outj = {"at": now.isoformat(timespec="minutes"), "asof": data.get("asof"), "countries": res,
+    outj = {"v": VER, "at": now.isoformat(timespec="minutes"), "asof": data.get("asof"), "countries": res,
             "m": sum(len(v["t"]) for v in cs.values()), "w": len(data.get("world", {}).get("wiki", []))}
     if world:
         outj["world"] = world
