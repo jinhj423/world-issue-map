@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import csv
+import html
 import io
 import json
 import math
@@ -64,6 +65,8 @@ NOT_PERSON = {"los angeles", "las vegas", "abu dhabi", "new york", "hong kong", 
               "america latin", "latin america", "middle east", "wall street", "silicon valley", "new jersey", "new mexico",
               "north carolina", "south carolina", "west virginia", "rhode island", "salt lake", "hamas israel"}
 THEMES_LOG = "--themes" in sys.argv
+TITLE_RE = re.compile(r"<PAGE_TITLE>(.*?)</PAGE_TITLE>", re.S)
+TITLES_PER_FILE = 2           # AI 요약 재료: 15분 파일마다 나라별 기사 제목 2개(공개하지 않는다)
 ROWS, F2I = C.load()
 
 
@@ -127,6 +130,7 @@ class State:
         self.eh, self.ed = d.get("eh", {}), d.get("ed", {})      # 사건 묶음: 시간별·날짜별 {나라: {묶음: 기사 수}}
         self.egh, self.egd = d.get("egh", {}), d.get("egd", {})  # 사건 전체(뿌리 사건 기사 수) 시간별·날짜별
         self.el = d.get("el", {})                                # 사건 예시 기사 {나라: {묶음: [[파일 시각, 주소, 기사 수]]}}
+        self.tt = d.get("tt", {})                                # 기사 제목 표본 {시간: {나라: [[제목, 언론사]]}} — AI 요약 재료, 공개 안 함
 
     def save(self):
         newest = max([max(v) for v in self.done.values() if v] or ["0"])
@@ -137,9 +141,10 @@ class State:
         self.hours, self.ghours = keep(self.hours, HOURS_KEEP), keep(self.ghours, HOURS_KEEP)
         self.pp, self.days, self.dcov = keep(self.pp, EXTRA_KEEP), keep(self.days, DAYS_KEEP), keep(self.dcov, DAYS_KEEP)
         self.eh, self.egh, self.ed, self.egd = keep(self.eh, HOURS_KEEP), keep(self.egh, HOURS_KEEP), keep(self.ed, EV_DAYS), keep(self.egd, EV_DAYS)
+        self.tt = keep(self.tt, EXTRA_KEEP)
         out = {"v": 1, "done": {k: sorted(v) for k, v in self.done.items()}, "hours": self.hours, "days": self.days,
                "dcov": self.dcov, "ghours": self.ghours, "pp": self.pp, "links": self.links, "newest": self.newest,
-               "eh": self.eh, "ed": self.ed, "egh": self.egh, "egd": self.egd, "el": self.el}
+               "eh": self.eh, "ed": self.ed, "egh": self.egh, "egd": self.egd, "el": self.el, "tt": self.tt}
         self.path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), "utf-8")
 
 
@@ -160,6 +165,7 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
     dv = st.days.setdefault(dk, {})
     g = st.ghours.setdefault(hk, [0] * (1 + NCAT + 1))
     n = 0
+    tpf: Counter = Counter()
     for row in rows_of(blob):
         isos, places_by = set(), defaultdict(Counter)
         locnames = set()
@@ -227,6 +233,13 @@ def process(st: State, kind: str, stamp: str, blob: bytes, fips_names: dict, unk
         url = (row[4] or "").strip()
         if url.startswith("http") and len(url) < 400 and not NOT_ARTICLE.search(url):
             st.links.setdefault(prim, []).append([stamp, url, src, m, round(tone, 1)])
+            tm = TITLE_RE.search(row[26]) if len(row) > 26 and tpf[prim] < TITLES_PER_FILE else None
+            title = re.sub(r"\s+", " ", html.unescape(tm.group(1))).strip() if tm else ""
+            if 15 <= len(title) <= 200:
+                xs = st.tt.setdefault(hk, {}).setdefault(prim, [])
+                if all(title != x[0] for x in xs):
+                    xs.append([title, src])
+                    tpf[prim] += 1
     cov = st.dcov.setdefault(dk, {"en": 0, "tr": 0})
     cov[kind] = cov.get(kind, 0) + 1
     st.done[kind].add(stamp)
@@ -538,6 +551,22 @@ def build(st: State, out: Path):
             "p": [x for x in ex["p"].most_common(12) if x[0].lower() not in NOT_PERSON][:6] if ex else [], "l": ex["l"].most_common(5) if ex else [],
             "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl,
         }
+    # AI 요약 재료(briefin.json, 공개하지 않음): 순위·급증 나라마다 최근 시간부터 시간당 2개씩 제목 20개까지
+    targets = list(dict.fromkeys(rank["general"][:30] + rank["surge"][:10] + rank["invest"][:10]))
+    bin_ = {}
+    for iso in targets:
+        xs, seen = [], set()
+        for hk in win:
+            for t, _src in st.tt.get(hk, {}).get(iso, [])[:2]:
+                k = t.lower()[:50]
+                if k not in seen:
+                    seen.add(k)
+                    xs.append(t[:140])
+        if len(xs) >= 5:
+            c = cs[iso]
+            bin_[iso] = {"ko": ROWS[iso]["ko"], "n": c["n"], "r": c["r"],
+                         "e": [[E.NAMES[g], k] for g, k, *_ in c.get("e", [])[:3]], "t": xs[:20]}
+    (out / "briefin.json").write_text(json.dumps({"asof": pulse["asof"], "countries": bin_}, ensure_ascii=False), "utf-8")
     for iso in list(st.links):
         st.links[iso] = [x for x in st.links[iso] if x[0] >= cutoff]
         if not st.links[iso]:

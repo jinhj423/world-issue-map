@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p pulse-out
           if git fetch -q --depth=1 origin pulse-data 2>/dev/null; then
-            for f in state.json pulse.json detail.json calendar.json news.json ko.json; do
+            for f in state.json pulse.json detail.json calendar.json news.json ko.json brief.json; do
               git show "origin/pulse-data:$f" > "pulse-out/$f" 2>/dev/null || rm -f "pulse-out/$f"
             done
           fi
@@ -42,6 +42,11 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: python3 pulse/collect/translate.py pulse-out
+      - name: 나라별 AI 요약 (2시간마다, Claude 구독 열쇠가 있을 때만)
+        if: env.HAS_CLAUDE == 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: python3 pulse/collect/brief.py pulse-out
       - name: pulse-data 브랜치에 올리기
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,6 +57,7 @@ jobs:
           [ -f pulse-out/calendar.json ] && cp pulse-out/calendar.json "$d"/
           [ -f pulse-out/news.json ] && cp pulse-out/news.json "$d"/
           [ -f pulse-out/ko.json ] && cp pulse-out/ko.json "$d"/
+          [ -f pulse-out/brief.json ] && cp pulse-out/brief.json "$d"/
           cd "$d"
           git init -q -b pulse-data
           git config user.name "pulse-bot"

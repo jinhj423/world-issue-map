@@ -45,15 +45,20 @@ def apply(news: dict, cache: dict) -> bool:
     return changed
 
 
-def call_claude(todo: dict) -> dict:
-    cmd = ["npx", "-y", "@anthropic-ai/claude-code@latest", "-p", PROMPT + json.dumps(todo, ensure_ascii=False, indent=0),
+def ask(prompt: str, payload: dict) -> dict:
+    """Claude Code(구독 열쇠)에 한 번 묻고 답의 JSON 객체를 돌려준다. brief.py도 같이 쓴다."""
+    cmd = ["npx", "-y", "@anthropic-ai/claude-code@latest", "-p", prompt + json.dumps(payload, ensure_ascii=False, indent=0),
            "--model", "sonnet", "--output-format", "json", "--max-turns", "1"]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if r.returncode != 0:
         raise RuntimeError(f"claude 종료 코드 {r.returncode}: {(r.stderr or r.stdout)[-300:]}")
     res = json.loads(r.stdout).get("result", "")
     a, b = res.find("{"), res.rfind("}")
-    out = json.loads(res[a:b + 1]) if a >= 0 < b else {}
+    return json.loads(res[a:b + 1]) if a >= 0 < b else {}
+
+
+def call_claude(todo: dict) -> dict:
+    out = ask(PROMPT, todo)
     return {k: v.strip() for k, v in out.items() if k in todo and isinstance(v, str) and v.strip()}
 
 

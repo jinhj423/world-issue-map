@@ -17,7 +17,7 @@
   const SHOW = 12;
   const $ = (s, r = document) => r.querySelector(s);
   const params = new URLSearchParams(location.search);
-  let P = null, D = null, N = null, paths = null, expanded = false, view = "48h", newsDay = null, newsAll = false;
+  let P = null, D = null, N = null, B = null, paths = null, expanded = false, view = "48h", newsDay = null, newsAll = false;
   let sel = (params.get("c") || "").toUpperCase() || null;
   let cat = params.get("cat") || "all";
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -324,13 +324,16 @@
   // 무슨 일이 있었나: GDELT 사건 묶음(예시 기사는 detail.json을 받은 뒤 링크로 바뀐다) + 위키백과 주요 사건 중 이 나라
   function whatHTML(iso) {
     const es = (P.countries[iso] || {}).e || [];
+    const ai = B && (B.countries || {})[iso];
+    const aiHTML = ai ? `<p class="aisum"><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}` : "";
     const chips = es.map(([g, n, r, b]) => `<span class="evc" data-g="${g}"><b>${esc(evName(g))}</b> ${fmt(n)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${evRatio(r, b)}</i>` : ""}</span>`).join("");
     const wl = newsFor(iso).slice(0, 3);
-    if (!chips && !wl.length) return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
+    if (!ai && !chips && !wl.length) return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
     return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3>
+      ${aiHTML}
       ${chips ? `<div class="evs">${chips}</div>` : ""}
       ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${wtext(it)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}
-      <p class="note">${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
+      <p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
   const wtext = (it) => `${esc(it.ko || it.text)}${it.ko ? ` <button type="button" class="orig" aria-expanded="false">원문</button><span class="en" hidden>${esc(it.text)}</span>` : ""}`;
@@ -385,6 +388,17 @@
       const L = line(gl.hs[k] || [], 240, 40, { area: true, cls: "mln" });
       return `<div class="mult"><div class="t"><span>${esc(P.cats[k])}</span><b>${fmt(gl.c[k])}</b></div>${L ? L.svg : ""}</div>`;
     }).join("");
+  }
+
+  // 나라별 AI 요약(기사 제목 표본을 Claude가 읽고 새로 쓴 문장, 2시간마다)
+  async function loadBrief() {
+    try {
+      B = await getJSON("/data/brief.json");
+    } catch (err) {
+      B = null;
+      return;
+    }
+    if (sel && $("#detail .what")) renderDetail();
   }
 
   // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
@@ -584,10 +598,12 @@
           if (np.asof !== P.asof) { P = np; D = null; renderAll(true); }
         } catch (err) { /* 다음 차례에 다시 받는다 */ }
         loadNews();
+        loadBrief();
       }, 5 * 60e3);
     }
     renderAll(true);
     loadNews();
+    loadBrief();
     if (!paths) await drawMap();
   }
   start();
