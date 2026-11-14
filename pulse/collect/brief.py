@@ -27,10 +27,11 @@ KST = ZoneInfo("Asia/Seoul")
 WAIT = timedelta(hours=2)
 KEEP = timedelta(hours=6)      # 이번에 못 쓴 나라는 6시간 안의 지난 요약을 그대로 둔다
 CHUNK = 35
-VER = 2                        # 형식이 바뀌면 올려서 기다리지 않고 바로 다시 쓴다
+VER = 3                        # 형식이 바뀌면 올려서 기다리지 않고 바로 다시 쓴다
 RULES = """- 여러 제목에서 되풀이되거나 위키백과 사건 문장으로 확인되는 일을 먼저 씁니다. 한 제목에만 나온 일은 빼도 됩니다.
 - 기사 제목의 문장이나 독특한 표현을 그대로 옮기지 말고, 사실만 뽑아 직접 쓴 문장으로 씁니다. 따옴표 인용은 쓰지 않습니다.
 - 제목에 없는 내용, 원인 추측, 평가, 전망은 쓰지 않습니다. 숫자는 제목에 나온 것만 씁니다.
+- 범죄·의혹·사고 책임처럼 사람의 평판에 관한 내용은 단정하지 말고 '~했다는 보도가 나왔습니다'처럼 보도로 씁니다.
 - 합니다체, 사람·지명·단체 이름은 국내 언론 표기를 따릅니다."""
 PROMPT_C = """아래 JSON은 나라마다 최근 24시간 동안 그 나라를 다룬 전 세계 기사 제목 일부(여러 언어 표본, 최신순), 같은 기간 위키백과 주요 사건 문장, 평소보다 늘어난 사건 종류와 통계입니다.
 나라마다 지금 무엇이 보도되고 있는지 한국어로 정리해, 같은 나라 코드를 키로 쓴 JSON 객체 하나만 출력하세요. 설명이나 코드 블록 표시는 쓰지 마세요.
@@ -123,11 +124,12 @@ def main():
                                             for iso, v in res.items()},
                                 "위키백과 주요 사건": w.get("wiki", []), "보도가 크게 늘어난 나라(코드, 이름, 평소 대비 배수)": w.get("surge", []),
                                 "위험 사건이 늘어난 나라(코드, 이름, 늘어난 사건 종류)": w.get("alert", [])})
-        ok = set(res) | {x[0] for x in w.get("surge", []) + w.get("alert", []) if x}
+        # 나라 코드는 문장에 그 나라 이름이 실제로 나올 때만 붙인다(엉뚱한 나라 국기가 붙지 않게)
+        names = {iso: v["ko"] for iso, v in cs.items()} | {x[0]: x[1] for x in w.get("surge", []) + w.get("alert", []) if x}
         items = []
         for it in got.get("items") or []:
             t = clean((it or {}).get("t"))
-            c = [x for x in ((it or {}).get("c") or []) if isinstance(x, str) and x in ok][:3]
+            c = [x for x in ((it or {}).get("c") or []) if isinstance(x, str) and x in names and names[x] in t][:3]
             if 10 <= len(t) <= 160:
                 items.append({"t": t, "c": c})
         if items:
