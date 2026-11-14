@@ -17,7 +17,7 @@
   const SHOW = 12;
   const $ = (s, r = document) => r.querySelector(s);
   const params = new URLSearchParams(location.search);
-  let P = null, D = null, N = null, B = null, paths = null, expanded = false, view = "48h", newsDay = null, newsAll = false;
+  let P = null, D = null, N = null, B = null, evOpen = null, paths = null, expanded = false, view = "48h", newsDay = null, newsAll = false;
   let sel = (params.get("c") || "").toUpperCase() || null;
   let cat = params.get("cat") || "all";
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -279,6 +279,7 @@
     if (!sel || !P.countries[sel]) sel = order()[0] || (P.rank[CFG.rank] || [])[0] || null;
     if (!sel) { box.innerHTML = `<h2 id="h-detail" class="subh">나라를 고르면 자세히 보여 줍니다</h2><p class="hint">아직 고를 수 있는 나라가 없습니다.</p>`; return; }
     const c = P.countries[sel], nm = name(sel);
+    evOpen = null;
     const rk = (P.rank[CFG.rank] || []).indexOf(sel);
     const cats = P[CFG.cats].map((k) => [k, (c.c || {})[k] || 0]).sort((a, b) => b[1] - a[1]);
     const maxC = Math.max(1, ...cats.map((x) => x[1]));
@@ -326,17 +327,45 @@
     const es = (P.countries[iso] || {}).e || [];
     const ai = B && (B.countries || {})[iso];
     const aiHTML = ai ? `<p class="aisum"><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}` : "";
-    const chips = es.map(([g, n, r, b]) => `<span class="evc" data-g="${g}"><b>${esc(evName(g))}</b> ${fmt(n)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${evRatio(r, b)}</i>` : ""}</span>`).join("");
+    const chips = es.map(([g, n, r, b]) => `<button type="button" class="evc" data-g="${g}" aria-expanded="false" aria-controls="evp"><b>${esc(evName(g))}</b> ${fmt(n)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${evRatio(r, b)}</i>` : ""}</button>`).join("");
     const wl = newsFor(iso).slice(0, 3);
     if (!ai && !chips && !wl.length) return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
     return `<div class="what"><h3 class="subh">무슨 일이 있었나</h3>
       ${aiHTML}
-      ${chips ? `<div class="evs">${chips}</div>` : ""}
+      ${chips ? `<div class="evs">${chips}</div><div class="evp" id="evp" hidden></div>` : ""}
       ${wl.length ? `<ul class="wl">${wl.map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${wtext(it)}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}
-      <p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
+      <p class="note">${chips ? "사건 종류를 누르면 뜻과 시간별 흐름, 예시 기사가 펼쳐집니다. " : ""}${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${B.at.slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? `사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수${P.ev_days >= 3 ? "" : "이고, 평소 수준은 사건 자료가 3일치 모이면 계산합니다"}.` : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "(영어 원문)"}입니다.` : ""}</p></div>`;
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
   const wtext = (it) => `${esc(it.ko || it.text)}${it.ko ? ` <button type="button" class="orig" aria-expanded="false">원문</button><span class="en" hidden>${esc(it.text)}</span>` : ""}`;
+  // 사건 종류 상자: 뜻, 24시간 기사 수와 평소 대비, 시간별 막대, 예시 기사(평소의 1.5배 넘게 늘어난 종류만)
+  function bars24(vals) {
+    const W = 480, H = 64, max = Math.max(1, ...vals), gap = 3, bw = (W - gap * (vals.length - 1)) / vals.length;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="최근 24시간 시간별 기사 수, 가장 많은 시간 ${fmt(Math.max(...vals))}건">${vals.map((v, i) => {
+      const h = v ? Math.max(2, (v / max) * (H - 2)) : 0;
+      return `<rect class="bar7" x="${(i * (bw + gap)).toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"><title>${hourLabel(48 - vals.length + i, 48)} ${fmt(v)}건</title></rect>`;
+    }).join("")}<line class="gl" x1="0" x2="${W}" y1="${H}" y2="${H}"/></svg>`;
+  }
+  function evPanel(g) {
+    const box = $("#evp");
+    if (!box) return;
+    const e = ((P.countries[sel] || {}).e || []).find((x) => x[0] === g);
+    if (!e) { box.hidden = true; return; }
+    const [, n, r, b] = e;
+    const d = D && (D.countries || {})[sel];
+    const hs = d && (d.evh || {})[g];
+    const ex = d && (d.ev || {})[g];
+    const list = ex ? (Array.isArray(ex[0]) ? ex : [ex]) : null;
+    box.innerHTML = `
+      <div class="evp-h"><b>${esc(evName(g))}</b><span>${esc((P.evd || {})[g] || "")}</span></div>
+      <p class="evp-n">24시간 동안 이 종류의 사건을 다룬 기사 <b>${fmt(n)}건</b>${b != null ? `, 평소라면 약 ${fmt(Math.round(b))}건${r != null ? `(${evRatio(r, b)})` : ""}` : ""}입니다.</p>
+      ${hs ? `<div class="evp-c">${bars24(hs)}</div><div class="axis"><span>24시간 전</span><span>12시간 전</span><span>${P.asof.slice(11, 16)}</span></div>` : d ? "" : `<p class="hint">시간별 흐름을 받는 중</p>`}
+      ${list ? `<h4 class="subh">예시 기사</h4><ul class="arts">${list.map(([u, dom, t]) => `<li><span class="t">${t ? esc(t.replace("-", ".")) : ""}</span><span class="s"><span class="src">${esc(dom)}</span></span><a href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">원문 보기</a></li>`).join("")}</ul>`
+        : r != null && r < 1.5 ? `<p class="hint">평소 수준이라 예시 기사는 싣지 않습니다.</p>` : d ? `<p class="hint">예시 기사가 아직 없습니다.</p>` : ""}
+      <p class="note">GDELT가 기사 첫머리 문장을 기계로 분류한 결과라 엉뚱한 기사가 섞일 수 있습니다.</p>`;
+    box.hidden = false;
+  }
+
   const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(l)}</a>`).join("");
   function newsFor(iso) {
     if (!N) return [];
@@ -356,10 +385,7 @@
     }
     if (want !== sel || !$("#d-extra")) return;
     const d = (D.countries || {})[sel] || { p: [], l: [], src: [], a: [] };
-    for (const el of document.querySelectorAll("#detail .evc[data-g]")) {
-      const x = (d.ev || {})[el.dataset.g];
-      if (x) el.outerHTML = `<a class="evc" href="${esc(safeUrl(x[0]))}" rel="nofollow noopener" target="_blank" title="예시 기사: ${esc(x[1])}">${el.innerHTML}</a>`;
-    }
+    if (evOpen) evPanel(evOpen);
     const list = (xs, unit) => (xs.length ? `<ol class="plain">${xs.slice(0, 8).map(([k, v]) => `<li><span>${esc(k)}</span><span class="v">${fmt(v)}${unit}</span></li>`).join("")}</ol>` : `<p class="state">아직 없습니다.</p>`);
     const arts = d.a.length ? `<ul class="arts">${d.a.slice(0, 10).map(([t, u, s, ks]) => `<li><span class="t">${esc(t.replace("-", "."))}</span><span class="s"><span class="src">${esc(s)}</span>${ks.length ? `<span class="tags">${ks.slice(0, 3).map((k) => `<span class="tag">${esc(P.cats[k] || k)}</span>`).join("")}</span>` : ""}</span><a href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">원문 보기</a></li>`).join("")}</ul>` : `<p class="state">아직 없습니다.</p>`;
     $("#d-extra").innerHTML = `<div><h3 class="subh">많이 나온 인물</h3>${list(d.p, "건")}</div><div><h3 class="subh">많이 나온 장소</h3>${list(d.l, "회")}</div><div><h3 class="subh">많이 다룬 언론</h3>${list(d.src, "건")}</div><div class="artsbox"><h3 class="subh">최근 기사</h3>${arts}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p></div>`;
@@ -586,6 +612,14 @@
       $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); });
       $("#news-days").addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && b.dataset.day !== newsDay) { newsDay = b.dataset.day; newsAll = false; renderNews(); } });
       $("#news-more").addEventListener("click", () => { newsAll = !newsAll; renderNews(); });
+      $("#detail").addEventListener("click", (e) => {
+        const c = e.target.closest(".evc[data-g]");
+        if (!c) return;
+        const open = c.getAttribute("aria-expanded") !== "true";
+        for (const x of document.querySelectorAll("#detail .evc[data-g]")) x.setAttribute("aria-expanded", "false");
+        evOpen = open ? c.dataset.g : null;
+        if (open) { c.setAttribute("aria-expanded", "true"); evPanel(evOpen); } else $("#evp").hidden = true;
+      });
       $("#news-list").addEventListener("click", (e) => {
         const b = e.target.closest("button[data-iso]");
         if (!b) return;

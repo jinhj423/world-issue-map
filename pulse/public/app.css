@@ -228,8 +228,22 @@ button.kv:hover > span { color: var(--acc); }
 .evc b { color: var(--ink); font-weight: 700; }
 .evc i { font-style: normal; font-weight: 600; color: var(--muted); }
 .evc i.up { color: var(--up); } .evc i.down { color: var(--down); }
-a.evc { transition: border-color 120ms, background-color 120ms; }
-a.evc:hover { border-color: var(--acc); background: var(--card); }
+button.evc { cursor: pointer; transition: border-color 120ms, background-color 120ms; }
+button.evc:hover { border-color: var(--acc); }
+button.evc[aria-expanded="true"] { border-color: var(--acc); background: var(--acc-wash); }
+.evp { margin-top: 10px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); }
+.evp-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.evp-h b { font-size: 15px; }
+.evp-h span { font-size: 13px; color: var(--muted); }
+.evp-n { font-size: 14px; color: var(--ink2); margin: 6px 0 10px; }
+.evp-n b { color: var(--ink); }
+.evp-c svg { display: block; width: 100%; height: 64px; }
+.evp .subh { margin: 14px 0 4px; font-size: 14px; }
+.evp .note { margin-top: 8px; }
+.evall { margin-top: 10px; font-size: 14px; }
+.evall summary { cursor: pointer; color: var(--acc); font-weight: 600; font-size: 13px; }
+.evall ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.evall li { color: var(--ink2); line-height: 1.55; }
 .wl { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
 .wl li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.55; color: var(--ink2); }
 .wd { color: var(--muted); font-size: 13px; }

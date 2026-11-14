@@ -48,15 +48,14 @@ function whatHTML(p, n, iso, det, br) {
   const ai = br && (br.countries || {})[iso];
   const aiHTML = ai ? `<p class="aisum"><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}` : "";
   const ratio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
-  const chips = es.map(([g, k, r, b]) => {
-    const inner = `<b>${esc((p.evk || {})[g] || g)}</b> ${fmt(k)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${ratio(r, b)}</i>` : ""}`;
-    const x = ((det && det.ev) || {})[g];
-    return x ? `<a class="evc" href="${esc(safeUrl(x[0]))}" rel="nofollow noopener" target="_blank" title="예시 기사: ${esc(x[1])}">${inner}</a>` : `<span class="evc">${inner}</span>`;
-  }).join("");
+  const chips = es.map(([g, k, r, b]) => `<span class="evc"><b>${esc((p.evk || {})[g] || g)}</b> ${fmt(k)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${ratio(r, b)}</i>` : ""}</span>`).join("");
+  // 사건 종류마다 뜻과 예시 기사(평소의 1.5배 넘게 늘어난 종류만) — 펼쳐 보기
+  const exOf = (g) => { const x = ((det && det.ev) || {})[g]; return x ? (Array.isArray(x[0]) ? x : [x]) : []; };
+  const evAll = es.length ? `<details class="evall"><summary>사건 종류 뜻과 예시 기사 보기</summary><ul>${es.map(([g, k, r, b]) => `<li><b>${esc((p.evk || {})[g] || g)}</b>: ${esc((p.evd || {})[g] || "")}. 24시간 ${fmt(k)}건${b != null ? `, 평소 약 ${fmt(Math.round(b))}건` : ""}.${exOf(g).map(([u, dom]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(dom)}</a>`).join("")}</li>`).join("")}</ul></details>` : "";
   const wl = [];
   for (const d of (n && n.days) || []) for (const it of d.items) if ((it.c || []).includes(iso)) wl.push([d.date, it]);
   if (!ai && !chips && !wl.length) return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2><p class="hint">두드러진 사건이 아직 잡히지 않았습니다.</p></div>`;
-  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${aiHTML}${chips ? `<div class="evs">${chips}</div>` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.ko || it.text)}${it.ko ? ` <details class="origd"><summary>원문</summary>${esc(it.text)}</details>` : ""}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}<p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${String(br.at).slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(CC BY-SA 4.0)${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "의 영어 원문"}입니다.` : ""}</p></div>`;
+  return `<div class="what"><h2 class="subh">무슨 일이 있었나</h2>${aiHTML}${chips ? `<div class="evs">${chips}</div>${evAll}` : ""}${wl.length ? `<ul class="wl">${wl.slice(0, 5).map(([d, it]) => `<li><span class="wd">${dd(d)}</span><span>${esc(it.ko || it.text)}${it.ko ? ` <details class="origd"><summary>원문</summary>${esc(it.text)}</details>` : ""}${srcLinks(it.src)}</span></li>`).join("")}</ul>` : ""}<p class="note">${ai ? `AI 요약은 이 나라를 다룬 기사 제목 ${ai.m}개를 Claude가 읽고 새로 쓴 문장(${String(br.at).slice(11, 16)} 기준)이라 틀릴 수 있습니다. ` : ""}${chips ? "사건 종류는 GDELT가 기사 첫머리 문장을 기계로 분류한 것이라 틀릴 수 있습니다. 숫자는 그 사건을 다룬 기사 수입니다." : ""}${wl.length ? `${chips ? " " : ""}문장은 위키백과 주요 사건(CC BY-SA 4.0)${wl.some(([, it]) => it.ko) ? "을 AI로 옮긴 것" : "의 영어 원문"}입니다.` : ""}</p></div>`;
 }
 
 // 선 그래프 경로(app.js line과 같은 계산)

@@ -511,7 +511,7 @@ def build(st: State, out: Path):
         "baseline_days": len(complete),
         "days": days7,
         "cats": T.NAMES, "general_cats": T.GENERAL, "invest_cats": T.INVEST,
-        "evk": E.NAMES, "ev_days": len(ecomp),
+        "evk": E.NAMES, "evd": E.DESC, "ev_days": len(ecomp),
         "global": gl, "rank": rank, "countries": cs,
         "meta": {iso: {"ko": r["ko"], "id": r["id"], "en": r["en"]} for iso, r in ROWS.items()},
         "source": {"name": "GDELT Project", "url": "https://www.gdeltproject.org/"},
@@ -538,18 +538,19 @@ def build(st: State, out: Path):
                          [k for j, k in enumerate(T.KEYS) if (m >> j) & 1], tone])
             if len(arts) >= 8:
                 break
-        evl = {}
-        # 예시 기사는 평소보다 1.5배 넘게 늘어난 묶음에만 단다(흔한 묶음의 예시는 엉뚱한 기사일 때가 많다)
+        evl, evh = {}, {}
         for g, _, r, _ in cs[iso].get("e", []):
+            # 사건 묶음의 24시간 시간별 기사 수(오래된 시간부터) — 화면에서 '언제 늘었나' 막대
+            evh[g] = [st.eh.get(h, {}).get(iso, {}).get(g, 0) for h in reversed(win)]
+            # 예시 기사는 평소보다 1.5배 넘게 늘어난 묶음에만 단다(흔한 묶음의 예시는 엉뚱한 기사일 때가 많다)
             if r is not None and r < 1.5:
                 continue
-            xs = [x for x in st.el.get(iso, {}).get(g, []) if x[0] >= cutoff]
+            xs = sorted((x for x in st.el.get(iso, {}).get(g, []) if x[0] >= cutoff), key=lambda x: -x[2])[:3]
             if xs:
-                url = max(xs, key=lambda x: x[2])[1]
-                evl[g] = [url, urlparse(url).netloc.removeprefix("www.")]
+                evl[g] = [[x[1], urlparse(x[1]).netloc.removeprefix("www."), st_dt(x[0]).astimezone(KST).strftime("%m-%d %H:%M")] for x in xs]
         det[iso] = {
             "p": [x for x in ex["p"].most_common(12) if x[0].lower() not in NOT_PERSON][:6] if ex else [], "l": ex["l"].most_common(5) if ex else [],
-            "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl,
+            "src": ex["s"].most_common(5) if ex else [], "a": arts, "ev": evl, "evh": evh,
         }
     # AI 요약 재료(briefin.json, 공개하지 않음): 순위·급증 나라마다 최근 시간부터 시간당 2개씩 제목 20개까지
     targets = list(dict.fromkeys(rank["general"][:30] + rank["surge"][:10] + rank["invest"][:10]))
