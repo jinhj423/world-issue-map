@@ -1,6 +1,6 @@
 // 월드펄스 서비스 워커 — 앱 설치(홈 화면 추가)와 인터넷이 끊겼을 때 마지막으로 본 화면 보여 주기.
 // 화면·자료는 늘 새로 받고(4초 안에 안 오면 저장해 둔 것), 국기·지도·아이콘처럼 거의 안 바뀌는 파일만 저장본을 먼저 쓴다.
-const VER = "wp-1";
+const VER = "wp-2";
 const CORE = ["/", "/app.css", "/app.js", "/theme.js", "/pwa.js", "/vendor/map.js", "/icon.svg", "/manifest.webmanifest"];
 const STATIC = /^\/(flags|vendor|icons)\/|^\/icon\.svg$/;
 

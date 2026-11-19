@@ -1,34 +1,35 @@
-/* 월드펄스 화면 — D안(밝은 회색 바탕, 흰 카드, 파란색 하나, 2026-11-15) 위에 A2안 한 화면 대시보드 첫 화면(2026-11-19 사용자 선택, A3 이슈 카드형은 너무 큼직해 보여 바꿈).
- * 색은 모두 아래 토큰을 거친다. 지도 단계 m0~m6은 같은 파랑의 밝기 7단계(분위 순위). */
+/* 월드펄스 화면 — 무채색 + 등락색만(2026-11-19 사용자 선택: 회색·검정, 색은 오름 빨강·내림 파랑·늘어난 곳에만). D안(2026-11-15) 구성 위에 A2안 한 화면 대시보드 첫 화면(2026-11-19 사용자 선택, A3 이슈 카드형은 너무 큼직해 보여 바꿈).
+ * 색은 모두 아래 토큰을 거친다. 지도 단계 m0~m6은 회색 밝기 7단계(분위 순위). */
 :root {
-  --bg: #F5F6F8; --card: #FFFFFF; --line: #E9EBEF; --line2: #DDE1E7; --fill: #F1F3F6; --fill2: #E6E9EE; --track: #EEF1F5;
-  --ink: #111418; --ink2: #3C434D; --muted: #6B7380; --spk: #9AA3AF; --on-ink: #FFFFFF;
-  --acc: #1A4BE0; --acc-hover: #1238B8; --acc-wash: #E8EEFD; --acc-wash2: #F3F6FE;
-  --up: #E5483A; --up-wash: #FDECEA; --down: #2F6BEA; --ok: #22A06B; --err: #D93A2B;
-  --m0: #E6ECFB; --m1: #C9D6F8; --m2: #A2B9F3; --m3: #7898EC; --m4: #4E76E5; --m5: #2A55D9; --m6: #1736A8; --nd: #EDEEF1;
+  --bg: #F4F4F3; --card: #FFFFFF; --line: #E6E6E3; --line2: #DEDEDA; --fill: #EFEFEC; --fill2: #E8E8E5; --track: #EDEDEA;
+  --ink: #161616; --ink2: #3F3F3D; --muted: #6E6E6A; --spk: #A3A39E; --on-ink: #FFFFFF;
+  --acc: #161616; --acc-hover: #3F3F46; --acc-wash: #EDEDEA; --acc-wash2: #F6F6F4;
+  --up: #E0453A; --up-wash: #FCEBE9; --down: #2F6BEA; --ok: #22A06B; --err: #D93A2B;
+  --m0: #E2E2DF; --m1: #CBCBC7; --m2: #B0B0AB; --m3: #91918C; --m4: #71716C; --m5: #50504C; --m6: #2E2E2B; --nd: #F3F3F1;
   --r-lg: 16px; --r-md: 10px; --r-sm: 6px;
-  --shadow: 0 1px 2px rgba(17, 20, 24, 0.04);
-  --shadow-pop: 0 8px 24px rgba(17, 20, 24, 0.12);
-  --shadow-sm: 0 1px 3px rgba(17, 20, 24, 0.1);
-  --flag-ring: rgba(17, 20, 24, 0.08);
+  --shadow: 0 1px 2px rgba(22, 22, 22, 0.04);
+  --shadow-pop: 0 8px 24px rgba(22, 22, 22, 0.12);
+  --shadow-sm: 0 1px 3px rgba(22, 22, 22, 0.1);
+  --flag-ring: rgba(22, 22, 22, 0.1);
   color-scheme: light;
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --wrap: 1360px; --pad: 32px;
 }
-/* 다크 모드: 같은 구성, 어두운 바탕용 값. 지도 단계는 어두운 바탕에서 '낮음=어두움, 높음=밝음'으로 뒤집는다.
- * 대비(카드 바탕 기준): 글자 14.5, 보조 글자 9.2, 흐린 글자 5.8, 파랑·빨강 6.2 이상. */
+/* 다크 모드: 같은 무채색, 어두운 바탕용 값. 지도 단계는 '낮음=어두움, 높음=밝음'으로 뒤집는다.
+ * 색은 오름(빨강)·내림(파랑)·늘어난 곳 표시에만 쓴다. */
 :root[data-theme="dark"] {
-  --bg: #0D1117; --card: #161B22; --line: #262C36; --line2: #343C48; --fill: #1F252E; --fill2: #262D38; --track: #232A33;
-  --ink: #E8EBF0; --ink2: #B6BEC9; --muted: #8C96A5; --spk: #5E6878; --on-ink: #0D1117;
-  --acc: #6E98FF; --acc-hover: #8FB0FF; --acc-wash: #1C2A4A; --acc-wash2: #151F33;
-  --up: #FF6B5E; --up-wash: #3B1F1D; --down: #6E98FF; --ok: #3FCF8E; --err: #FF6B5E;
-  --m0: #1B2A4F; --m1: #1D3263; --m2: #22438C; --m3: #2B58B6; --m4: #3F72E0; --m5: #6F97FF; --m6: #AFC6FF; --nd: #252B34;
+  --bg: #0E0E0F; --card: #171718; --line: #262628; --line2: #333336; --fill: #202022; --fill2: #29292C; --track: #232325;
+  --ink: #EDEDED; --ink2: #BDBDBA; --muted: #8E8E8A; --spk: #5F5F5C; --on-ink: #111111;
+  --acc: #EDEDED; --acc-hover: #FFFFFF; --acc-wash: #262628; --acc-wash2: #1D1D1F;
+  --up: #FF6B5E; --up-wash: #3A1F1D; --down: #6E98FF; --ok: #3FCF8E; --err: #FF6B5E;
+  --m0: #2A2A2C; --m1: #3A3A3D; --m2: #4E4E51; --m3: #69696C; --m4: #8A8A8D; --m5: #B0B0B2; --m6: #DCDCDD; --nd: #1F1F21;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --flag-ring: rgba(255, 255, 255, 0.12);
   color-scheme: dark;
 }
+:root[data-theme="dark"] .brand img { border-radius: 8px; box-shadow: 0 0 0 1px var(--line2); }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; font-feature-settings: "tnum"; -webkit-font-smoothing: antialiased; }
@@ -160,6 +161,17 @@ a.bl-chip:hover { color: var(--acc); }
 .pin i { position: relative; width: 7px; height: 7px; margin-top: 7px; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 2px var(--card); }
 .pin i::before { content: ""; position: absolute; left: 3px; bottom: 7px; width: 1px; height: 7px; background: var(--muted); }
 .map.zoomed .pin { display: none; }
+/* 칸 높이 맞추기(app.js fitCols): 잴 때만 칸을 늘이지 않고, 채운 줄은 아래 모양 */
+.dash.fit { align-items: flex-start; }
+.bl-xw { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.bl-xh { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.bl-x { list-style: none; margin: 4px 0 0; padding: 0; }
+.bl-x li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; padding: 7px 0; font-size: 13.5px; line-height: 1.55; color: var(--ink2); }
+.bl-x .flag { width: 20px; height: 15px; margin-top: 3px; border-radius: 2px; }
+.bl-x a { font-weight: 700; color: var(--ink); text-decoration: none; }
+.bl-x a:hover { text-decoration: underline; }
+.kb-p { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; color: var(--ink2); }
+.kb-p li + li { margin-top: 4px; }
 .pin.dn { transform: translate(-50%, -3px); flex-direction: column-reverse; }
 .pin.dn i { margin: 0 0 7px; }
 .pin.dn i::before { bottom: auto; top: 7px; }

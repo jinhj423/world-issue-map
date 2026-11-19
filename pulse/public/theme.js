@@ -8,7 +8,7 @@
   function set(t) {
     root.dataset.theme = t;
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = t === "dark" ? "#0D1117" : "#F5F6F8";
+    if (m) m.content = t === "dark" ? "#0E0E0F" : "#F4F4F3";
     const b = document.getElementById("theme");
     if (b) {
       const label = t === "dark" ? "밝은 화면으로 바꾸기" : "어두운 화면으로 바꾸기";

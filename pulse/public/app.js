@@ -169,15 +169,15 @@
     more.textContent = expanded ? "순위 접기" : `순위 더 보기 (${ord.length}곳)`;
     more.setAttribute("aria-expanded", expanded);
     const selAt = ord.indexOf(sel);
-    const row = (iso, k) => {
-      const c = P.countries[iso];
-      const v = cat === "all" ? c[CFG.key] : fmt(c.c[cat]);
-      const rt = cat === "all" ? `<span class="rt ${upDown(c[CFG.r])}">${rtxt(c[CFG.r])}</span>` : `<span class="rt">${Math.round((100 * c.c[cat]) / Math.max(1, c.n))}%</span>`;
-      return `<li data-iso="${iso}" aria-selected="${iso === sel}"><span class="rn">${k + 1}</span>${cname(iso)}<span class="ix">${v}</span>${rt}</li>`;
-    };
-    // 접힌 상태에서 고른 나라가 12위 밖이면 그 줄만 아래에 덧붙인다
-    ol.innerHTML = (expanded ? ord : ord.slice(0, SHOW)).map(row).join("")
-      + (!expanded && selAt >= SHOW ? `<li class="gap" aria-hidden="true"></li>${row(sel, selAt)}` : "");
+    // 접힌 상태에서 고른 나라가 순위 밖이면 그 줄만 아래에 덧붙인다
+    ol.innerHTML = (expanded ? ord : ord.slice(0, SHOW)).map(rankRow).join("")
+      + (!expanded && selAt >= SHOW ? `<li class="gap" aria-hidden="true"></li>${rankRow(sel, selAt)}` : "");
+  }
+  function rankRow(iso, k) {
+    const c = P.countries[iso];
+    const v = cat === "all" ? c[CFG.key] : fmt(c.c[cat]);
+    const rt = cat === "all" ? `<span class="rt ${upDown(c[CFG.r])}">${rtxt(c[CFG.r])}</span>` : `<span class="rt">${Math.round((100 * c.c[cat]) / Math.max(1, c.n))}%</span>`;
+    return `<li data-iso="${iso}" aria-selected="${iso === sel}"><span class="rn">${k + 1}</span>${cname(iso)}<span class="ix">${v}</span>${rt}</li>`;
   }
 
   // 나라 페이지로 간다(Ctrl·⌘이면 새 탭)
@@ -252,11 +252,89 @@
       ol.innerHTML = `<li class="state">${P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`}</li>`;
       return;
     }
-    const max = Math.max(...xs.map((i) => P.countries[i][CFG.r] || 0));
-    ol.innerHTML = xs.map((iso) => {
-      const c = P.countries[iso], w = why(iso);
-      return `<li data-iso="${iso}"><a class="sg-r" href="/c/${iso.toLowerCase()}/">${flag(iso)}<span class="sg-n">${esc(name(iso))}</span><span class="sg-b" aria-hidden="true"><i style="width:${((100 * c[CFG.r]) / max).toFixed(1)}%"></i></span><b class="up">${rtxt(c[CFG.r])}</b></a><p class="sg-w">${w ? `${esc(w)}, ` : ""}${esc(CFG.art)} ${fmt(c[CFG.n])}건</p></li>`;
-    }).join("");
+    ol.innerHTML = xs.map(surgeRow).join("");
+  }
+  function surgeRow(iso) {
+    const c = P.countries[iso], w = why(iso), max = P.countries[surgeList()[0]][CFG.r] || 1;
+    return `<li data-iso="${iso}"><a class="sg-r" href="/c/${iso.toLowerCase()}/">${flag(iso)}<span class="sg-n">${esc(name(iso))}</span><span class="sg-b" aria-hidden="true"><i style="width:${((100 * c[CFG.r]) / max).toFixed(1)}%"></i></span><b class="up">${rtxt(c[CFG.r])}</b></a><p class="sg-w">${w ? `${esc(w)}, ` : ""}${esc(CFG.art)} ${fmt(c[CFG.n])}건</p></li>`;
+  }
+
+  // 세 칸 높이 맞추기: 칸이 나란히 놓였을 때(PC·태블릿 가로) 가장 긴 칸 높이에 맞춰 짧은 칸에 내용을 한 줄씩 더 채운다.
+  // 브리핑 → 나라별 AI 한 줄, 가운데 → 평소보다 늘어난 곳, 오른쪽 → 한국 이슈 → 순위. 넘치면 마지막 줄을 뺀다.
+  // 채운 줄은 data-x로 표시해 다시 맞출 때(자료 갱신·창 크기 변경·분야 바꿈) 지우고 새로 잰다.
+  function fitCols() {
+    const dash = $(".dash");
+    if (!dash || !P) return;
+    for (const x of dash.querySelectorAll("[data-x]")) x.remove();
+    if (expanded) return;
+    const cols = [$("#brief"), ...dash.querySelectorAll(".dcol")];
+    const tops = cols.map((c) => Math.round(c.getBoundingClientRect().top));
+    if (cols.length !== 3 || Math.max(...tops) - Math.min(...tops) > 2) return;
+    dash.classList.add("fit");
+    const hgt = (c) => c.getBoundingClientRect().height;
+    const target = Math.max(...cols.map(hgt));
+    [briefMore(), surgeMore(), rightMore()].forEach((add, i) => {
+      for (let n = 0; n < 30 && hgt(cols[i]) < target - 2; n++) {
+        const undo = add();
+        if (!undo) break;
+        if (hgt(cols[i]) > target + 1) { undo(); break; }
+      }
+    });
+    dash.classList.remove("fit");
+  }
+  const mark = (el) => { el.dataset.x = "1"; return el; };
+  function briefMore() {
+    const used = new Set(["KR"]);
+    for (const it of (B && B.world && B.world.items) || []) for (const c of it.c || []) used.add(c);
+    const xs = (P.rank[CFG.rank] || []).filter((iso) => !used.has(iso) && B && B.countries && (B.countries[iso] || {}).s).slice(0, 12);
+    let i = 0;
+    return () => {
+      if (i >= xs.length) return null;
+      const body = $("#brief-body");
+      let ul = body.querySelector(".bl-x"), made = null;
+      if (!ul) {
+        made = mark(document.createElement("div"));
+        made.className = "bl-xw";
+        made.innerHTML = `<h3 class="bl-xh">나라별 AI 한 줄</h3><ul class="bl-x"></ul>`;
+        body.appendChild(made);
+        ul = made.querySelector("ul");
+      }
+      const iso = xs[i++];
+      const li = mark(document.createElement("li"));
+      li.innerHTML = `${flag(iso)}<span><a href="/c/${iso.toLowerCase()}/">${esc(name(iso))}</a> ${esc(B.countries[iso].s)}</span>`;
+      ul.appendChild(li);
+      return () => { li.remove(); if (made) made.remove(); i--; };
+    };
+  }
+  function surgeMore() {
+    const xs = surgeList(), ol = $("#surge");
+    let i = ol.querySelectorAll("li[data-iso]").length;
+    return () => {
+      if (!i || i >= Math.min(xs.length, 15)) return null;
+      ol.insertAdjacentHTML("beforeend", surgeRow(xs[i++]));
+      const li = mark(ol.lastElementChild);
+      return () => { li.remove(); i--; };
+    };
+  }
+  function rightMore() {
+    const pts = ((B && B.countries && B.countries.KR) || {}).pts || [];
+    const box = $("#korea"), ol = $("#rank"), ord = order();
+    let p = 0, r = ol.querySelectorAll("li[data-iso]").length;
+    return () => {
+      if (!box.hidden && p < pts.length) {
+        let ul = box.querySelector(".kb-p"), made = null;
+        if (!ul) { made = ul = mark(document.createElement("ul")); ul.className = "kb-p"; box.insertBefore(ul, box.querySelector(".kb-go")); }
+        const li = document.createElement("li");
+        li.textContent = pts[p++];
+        ul.appendChild(li);
+        return () => { li.remove(); if (made) made.remove(); p--; };
+      }
+      if (ol.querySelector(".gap") || r >= Math.min(ord.length, 20)) return null;
+      ol.insertAdjacentHTML("beforeend", rankRow(ord[r], r));
+      r++;
+      const li = mark(ol.lastElementChild);
+      return () => { li.remove(); r--; };
+    };
   }
   // 지도 위 표시: 평소보다 가장 크게 늘어난 나라 세 곳(전체 보기에서만, 확대하면 숨김)
   let CEN = {};
@@ -333,6 +411,7 @@
     renderAlert();
     renderBrief();
     renderKorea();
+    fitCols();
   }
   // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
   async function loadNews() {
@@ -505,6 +584,7 @@
     paintMap();
     renderPins();
     if (first) { renderKpis(); renderBrief(); renderKorea(); renderMoves(); renderAlert(); renderMultiples(); renderCal(); }
+    fitCols();
   }
 
   function showError() {
@@ -556,7 +636,10 @@
         setURL();
         renderAll(false);
       });
-      $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); });
+      $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); fitCols(); });
+      let rt = 0;
+      addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(fitCols, 150); });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCols);
       $("#news-days").addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && b.dataset.day !== newsDay) { newsDay = b.dataset.day; newsAll = false; renderNews(); } });
       $("#news-more").addEventListener("click", () => { newsAll = !newsAll; renderNews(); });
       $("#news-list").addEventListener("click", (e) => {
