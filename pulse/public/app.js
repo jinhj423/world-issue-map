@@ -437,7 +437,7 @@
   function renderHead() {
     if (!P) return;
     for (const a of document.querySelectorAll(".tabs a")) if (a.dataset.ed === ED) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-    document.title = ED === "invest" ? "시장 관련 보도가 몰린 나라 | 월드펄스 투자자판" : "전 세계 언론이 지금 다루는 나라 | 월드펄스";
+    document.title = ED === "invest" ? "투자자가 볼 세계 이슈 | 월드펄스 투자자판" : "세계가 많이 다룬 이슈 | 월드펄스";
     $("#h-board").textContent = `${+P.asof.slice(5, 7)}월 ${+P.asof.slice(8, 10)}일, ${CFG.h1}`;
     $("#h-map").textContent = CFG.mapT;
     $("#lead").textContent = CFG.lead;
