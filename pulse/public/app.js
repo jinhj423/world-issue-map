@@ -347,6 +347,31 @@
     if (!newsDay || !days.some((d) => d.date === newsDay)) newsDay = (days.find((d) => d.items.length >= 4) || days.reduce((a, d) => (d.items.length > (a ? a.items.length : -1) ? d : a), null) || {}).date;
     renderNews();
   }
+  // 처음 보이는 사건: 분야를 돌아가며 하나씩 골라 한 분야·한 주제·한 나라에 몰리지 않게 한다
+  // (같은 주제는 하나만, 한 나라는 두 개까지). 고른 뒤에는 원래 순서대로 분야별로 보여 준다.
+  function pickNews(items, lim) {
+    const byCat = [];
+    for (const it of items) {
+      let g = byCat.find((x) => x[0] === it.cat);
+      if (!g) byCat.push((g = [it.cat, []]));
+      g[1].push(it);
+    }
+    const picked = new Set(), topics = new Set(), per = {};
+    const ok = (it) => !topics.has(it.topic || it.text) && (it.c || []).every((c) => (per[c] || 0) < 2);
+    for (let more = true; more && picked.size < lim;) {
+      more = false;
+      for (const [, xs] of byCat) {
+        if (picked.size >= lim) break;
+        const it = xs.find((x) => !picked.has(x) && ok(x));
+        if (!it) continue;
+        picked.add(it);
+        topics.add(it.topic || it.text);
+        for (const c of it.c || []) per[c] = (per[c] || 0) + 1;
+        more = true;
+      }
+    }
+    return items.filter((it) => picked.has(it));
+  }
   function renderNews() {
     const days = (N && N.days) || [];
     const day = days.find((d) => d.date === newsDay);
@@ -356,8 +381,8 @@
       box.innerHTML = `<p class="hint">이날 정리된 사건이 아직 없습니다. 위키백과 편집자들이 하루 동안 채워 갑니다.</p>`;
       more.hidden = true;
     } else {
-      const LIM = 6;
-      const shown = newsAll ? day.items : day.items.slice(0, LIM);
+      const LIM = 8;
+      const shown = newsAll ? day.items : pickNews(day.items, LIM);
       const groups = [];
       for (const it of shown) {
         let g = groups.find((x) => x[0] === it.cat);
@@ -365,7 +390,7 @@
         g[1].push(it);
       }
       box.innerHTML = groups.map(([c, xs]) => `<div class="ncat"><h3 class="subh">${esc(c)}</h3><ul class="nl">${xs.map((it) => `<li>${(it.c || []).length ? `<span class="nfs">${it.c.slice(0, 3).map((iso) => `<button type="button" class="nf" data-iso="${iso}" title="${esc(name(iso))} 보기" aria-label="${esc(name(iso))} 보기">${flag(iso)}</button>`).join("")}</span>` : ""}<span class="nt">${it.topic ? `<span class="topic">${esc(it.kp || it.topic)}</span>` : ""}${wtext(it)}${srcLinks(it.src)}${bgHTML(it)}</span></li>`).join("")}</ul></div>`).join("");
-      more.hidden = day.items.length <= LIM;
+      more.hidden = day.items.length <= shown.length && !newsAll;
       more.textContent = newsAll ? "접기" : `모두 보기 (${day.items.length}건)`;
       more.setAttribute("aria-expanded", newsAll);
     }

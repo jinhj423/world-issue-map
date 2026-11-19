@@ -308,8 +308,10 @@ button.evc[aria-expanded="true"] { border-color: var(--acc); background: var(--a
 /* 세계에서 있었던 일 */
 #news .ch { flex-wrap: wrap; }
 .nws { columns: 2; column-gap: 40px; }
-.ncat { break-inside: avoid; margin-bottom: 18px; }
-.ncat .subh { margin-bottom: 6px; }
+/* 두 열이 고르게 차도록 분야 묶음 안에서도 열이 나뉠 수 있게 하고, 사건 한 줄과 분야 제목 바로 뒤에서만 끊지 않는다 */
+.ncat { margin-bottom: 18px; }
+.ncat .subh { margin-bottom: 6px; break-after: avoid; }
+.nl li { break-inside: avoid; }
 .nl { list-style: none; margin: 0; padding: 0; }
 .nl li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.55; }
 .nl li:last-child { border-bottom: 0; }
