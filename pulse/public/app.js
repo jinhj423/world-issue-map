@@ -1,4 +1,4 @@
-// 월드펄스 첫 화면(A3안 이슈 카드형). 자료: /data/pulse.json(나라별 지수·사건 묶음), /data/brief.json(AI 세계 브리핑·나라별 요약),
+// 월드펄스 첫 화면(A2안 한 화면 대시보드, 2026-11-19). 자료: /data/pulse.json(나라별 지수·사건 묶음), /data/brief.json(AI 세계 브리핑·나라별 요약),
 // /data/news.json(위키백과 주요 사건, CC BY-SA 4.0), /data/calendar.json(투자자판 경제 일정).
 // 숫자 출처: GDELT 15분 파일(GKG·사건)을 월드펄스 수집기(pulse/collect)가 센 값. 시세·기사 제목은 쓰지 않는다.
 (() => {
@@ -7,14 +7,14 @@
   document.body.dataset.ed = ED;
   const CFG = {
     general: { key: "g", n: "n", r: "r", b: "b", s: "s", h: "h", rank: "general", cats: "general_cats", all: "전체", metric: "보도 지수",
-      h1: "세계가 많이 다룬 이슈", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라",
+      h1: "세계가 많이 다룬 이슈", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라", topT: "가장 많이 다룬 나라",
       lead: "최근 24시간 기사 수와 평소 대비 변화로 매긴 0~100 점수입니다.", art: "기사" },
     invest: { key: "gi", n: "i", r: "ir", b: "ib", s: "si", h: "hi", rank: "invest", cats: "invest_cats", all: "시장 전체", metric: "시장 보도 지수",
-      h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라",
+      h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라", topT: "시장 기사가 가장 많은 나라",
       lead: "경제·시장·에너지·무역 기사만 세어 매긴 0~100 점수입니다. 투자 권유가 아닙니다.", art: "시장 기사" },
   }[ED];
   const STEPS = 7;
-  const SHOW = 12;
+  const SHOW = 10;
   const $ = (s, r = document) => r.querySelector(s);
   const params = new URLSearchParams(location.search);
   let P = null, N = null, B = null, paths = null, expanded = false, newsDay = null, newsAll = false;
@@ -169,13 +169,11 @@
     more.textContent = expanded ? "순위 접기" : `순위 더 보기 (${ord.length}곳)`;
     more.setAttribute("aria-expanded", expanded);
     const selAt = ord.indexOf(sel);
-    const top = cat === "all" ? 100 : Math.max(1, P.countries[ord[0]].c[cat]);
     const row = (iso, k) => {
       const c = P.countries[iso];
       const v = cat === "all" ? c[CFG.key] : fmt(c.c[cat]);
       const rt = cat === "all" ? `<span class="rt ${upDown(c[CFG.r])}">${rtxt(c[CFG.r])}</span>` : `<span class="rt">${Math.round((100 * c.c[cat]) / Math.max(1, c.n))}%</span>`;
-      const w = cat === "all" ? c[CFG.key] : (100 * c.c[cat]) / top;
-      return `<li data-iso="${iso}" aria-selected="${iso === sel}"><span class="rn">${k + 1}</span>${cname(iso)}<span class="rb" aria-hidden="true"><i style="width:${w.toFixed(1)}%"></i></span><span class="ix">${v}</span>${rt}</li>`;
+      return `<li data-iso="${iso}" aria-selected="${iso === sel}"><span class="rn">${k + 1}</span>${cname(iso)}<span class="ix">${v}</span>${rt}</li>`;
     };
     // 접힌 상태에서 고른 나라가 12위 밖이면 그 줄만 아래에 덧붙인다
     ol.innerHTML = (expanded ? ord : ord.slice(0, SHOW)).map(row).join("")
@@ -205,41 +203,60 @@
     return best;
   }
 
-  // 오늘의 이슈: AI 세계 브리핑 문장을 카드로. 첫 카드는 크게, 그 나라 기사 수·평소 대비·늘어난 사건을 붙인다.
-  // 카드의 숫자는 늘 일반판 기준(그 나라 전체 기사)이다. worker.js issueCards와 같은 모양.
-  function issueCard(it, i) {
-    const iso = (it.c || []).find((x) => P.countries[x]);
-    const c = iso && P.countries[iso], nm = iso && name(iso);
-    const top = i === 0;
-    const flags = (it.c || []).slice(0, 2).map((x) => flag(x)).join("");
-    const badge = top && iso && surgeList()[0] === iso ? `<span class="iss-badge">가장 크게 늘어남</span>` : "";
-    const head = `<div class="iss-top">${it.k ? `<span class="iss-cat">${esc(it.k)}</span>` : ""}${badge}<span class="iss-fl">${flags}</span></div>`;
-    if (!top) {
-      return `<article class="iss">${head}<h3 class="iss-t">${esc(it.t)}</h3>${c ? `<a class="iss-d" href="/c/${iso.toLowerCase()}/">${esc(nm)} 기사 ${fmt(c.n)}건 <span class="${upDown(c.r)}">평소 ${rtxt(c.r)}</span></a>` : ""}</article>`;
-    }
-    const ai = iso && B && (B.countries || {})[iso];
-    const ev = iso && evTop(iso);
-    const cell = (l, v, cls = "") => `<div><span>${esc(l)}</span><b class="${cls}">${v}</b></div>`;
-    return `<article class="iss lead">${head}<h2 class="iss-t">${esc(it.t)}</h2>${ai && ai.s ? `<p class="iss-s">${esc(ai.s)}</p>` : ""}${c ? `<div class="iss-m">${cell(`${nm} 24시간 기사`, `${fmt(c.n)}건`)}${cell("평소 대비", rtxt(c.r), upDown(c.r))}${ev ? cell(`${evName(ev[0])} 보도`, ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2]), "up") : ""}<a class="iss-go" href="/c/${iso.toLowerCase()}/">${esc(nm)} 자세히</a></div>` : ""}</article>`;
+  // 요약 띠 네 칸 — worker.js kpiStrip과 같은 모양
+  function renderKpis() {
+    const top = (P.rank[CFG.rank] || [])[0], sg = surgeList()[0];
+    const cats = P[CFG.cats].map((k) => [k, P.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
+    const who = (iso, tail) => `<a class="kv" href="/c/${iso.toLowerCase()}/">${flag(iso)}${esc(name(iso))}${tail}</a>`;
+    const cell = (l, v) => `<div class="kc"><span class="kl">${esc(l)}</span>${v}</div>`;
+    $("#kpis").innerHTML = [
+      cell("24시간 전 세계 기사", `<span class="kv">${fmt(P.global.n)}</span>`),
+      cell(CFG.topT, top ? who(top, ` <small>${fmt(P.countries[top][CFG.n])}건</small>`) : `<span class="kv">없음</span>`),
+      cell("평소보다 가장 크게 늘어난 곳", sg ? who(sg, ` <b class="up">${rtxt(P.countries[sg][CFG.r])}</b>`) : `<span class="kv"><small>${P.baseline_days < 3 ? "평소 수준 계산 중" : "1.6배 넘은 곳 없음"}</small></span>`),
+      cell("가장 많이 다룬 분야", cats[0] ? `<span class="kv">${esc(P.cats[cats[0][0]])} <small>기사의 ${Math.round((100 * cats[0][1]) / Math.max(1, P.global.n))}%</small></span>` : `<span class="kv">없음</span>`),
+    ].join("");
   }
-  function renderIssues() {
-    const box = $("#issues");
+  // AI 브리핑: 첫 줄은 크게, 그 나라 기사 수·평소 대비·가장 늘어난 사건을 붙이고, 나머지는 국기와 한 줄씩.
+  // 숫자는 늘 일반판 기준(그 나라 전체 기사)이다. worker.js briefBody와 같은 모양.
+  function renderBrief() {
+    const box = $("#brief-body");
     const xs = (B && B.world && B.world.items) || [];
+    $("#brief-at").textContent = B && B.at ? `AI 정리 ${B.at.slice(11, 16)}` : "";
     if (!xs.length) {
-      if (!box.querySelector(".iss")) box.innerHTML = `<p class="state">${B ? "AI 브리핑을 준비하는 중입니다. 2시간마다 새로 씁니다." : "AI 브리핑을 받는 중"}</p>`;
+      if (!box.querySelector(".bl-t")) box.innerHTML = `<p class="state">${B ? "AI 브리핑을 준비하는 중입니다. 2시간마다 새로 씁니다." : "AI 브리핑을 받는 중"}</p>`;
       return;
     }
-    const cards = xs.map(issueCard);
-    box.innerHTML = `<div class="iss-row">${cards[0]}<div class="iss-side">${cards.slice(1, 3).join("")}</div></div>${cards.length > 3 ? `<div class="iss-grid">${cards.slice(3).join("")}</div>` : ""}`;
+    const [it, ...rest] = xs;
+    const iso = (it.c || []).find((x) => P.countries[x]);
+    const c = iso && P.countries[iso], ev = iso && evTop(iso);
+    const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso)}${esc(name(iso))} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evName(ev[0]))} ${ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2])}</span>` : ""}</div>` : "";
+    const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i)).join("");
+    box.innerHTML = `${it.k ? `<span class="bl-k">${esc(it.k)}</span>` : ""}<p class="bl-t">${esc(it.t)}</p>${chips}<ul class="bl-l">${rest.map((x) => {
+      const j = (x.c || []).find((y) => P.countries[y]);
+      return `<li><span class="bl-f">${fl(x)}</span><span>${x.k ? `<span class="bl-k">${esc(x.k)}</span>` : ""}${j ? `<a href="/c/${j.toLowerCase()}/">${esc(x.t)}</a>` : esc(x.t)}</span></li>`;
+    }).join("")}</ul>`;
   }
-  // 한국은 지금: 순위·평소 대비·기사 수와 한국 AI 요약 한 줄
+  // 한국은 지금: 순위·평소 대비 한 줄과 한국 AI 요약
   function renderKorea() {
     const box = $("#korea"), c = P.countries.KR;
     if (!c) { box.hidden = true; return; }
     const rk = (P.rank[CFG.rank] || []).indexOf("KR");
     const ai = B && (B.countries || {}).KR;
     box.hidden = false;
-    box.innerHTML = `<div class="kb-h">${flag("KR")}<h2 id="h-kr">한국은 지금</h2></div><dl class="kb-n"><div><dt>순위</dt><dd>${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</dd></div><div><dt>평소 대비</dt><dd class="${upDown(c[CFG.r])}">${rtxt(c[CFG.r])}</dd></div><div><dt>24시간 ${esc(CFG.art)}</dt><dd>${fmt(c[CFG.n])}</dd></div></dl><p class="kb-t">${ai && ai.s ? esc(ai.s) : "AI 요약을 준비하는 중입니다."}</p><a class="kb-go" href="/c/kr/">한국 페이지</a>`;
+    box.innerHTML = `<div class="kb-h">${flag("KR")}<h2 id="h-kr">한국은 지금</h2><span class="kb-n">${rk >= 0 ? `${rk + 1}위` : "순위 밖"} <b class="${upDown(c[CFG.r])}">${rtxt(c[CFG.r])}</b></span></div><p class="kb-t">${ai && ai.s ? esc(ai.s) : "AI 요약을 준비하는 중입니다."}</p><a class="kb-go" href="/c/kr/">한국 페이지</a>`;
+  }
+  // 평소보다 크게 늘어난 곳: 배수 막대 + 늘어난 사건과 기사 수 한 줄
+  function renderSurge() {
+    const xs = surgeList().slice(0, 6), ol = $("#surge");
+    if (!xs.length) {
+      ol.innerHTML = `<li class="state">${P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`}</li>`;
+      return;
+    }
+    const max = Math.max(...xs.map((i) => P.countries[i][CFG.r] || 0));
+    ol.innerHTML = xs.map((iso) => {
+      const c = P.countries[iso], w = why(iso);
+      return `<li data-iso="${iso}"><a class="sg-r" href="/c/${iso.toLowerCase()}/">${flag(iso)}<span class="sg-n">${esc(name(iso))}</span><span class="sg-b" aria-hidden="true"><i style="width:${((100 * c[CFG.r]) / max).toFixed(1)}%"></i></span><b class="up">${rtxt(c[CFG.r])}</b></a><p class="sg-w">${w ? `${esc(w)}, ` : ""}${esc(CFG.art)} ${fmt(c[CFG.n])}건</p></li>`;
+    }).join("");
   }
   // 지도 위 표시: 평소보다 가장 크게 늘어난 나라 세 곳(전체 보기에서만, 확대하면 숨김)
   let CEN = {};
@@ -247,9 +264,16 @@
     const box = $("#map");
     for (const x of box.querySelectorAll(".pin")) x.remove();
     if (cat !== "all") return;
+    // 이름표가 겹치면 뒤의 것을 점 아래로 내린다(이름표 폭은 글자 수로 어림)
+    const W = box.clientWidth || 1000, H = box.clientHeight || 500, placed = [];
     box.insertAdjacentHTML("beforeend", surgeList().filter((iso) => CEN[iso]).slice(0, 3).map((iso) => {
       const [x, y] = CEN[iso];
-      return `<a class="pin" href="/c/${iso.toLowerCase()}/" style="left:${x}%;top:${y}%"><span>${esc(name(iso))} <b>${rtxt(P.countries[iso][CFG.r])}</b></span><i aria-hidden="true"></i></a>`;
+      const label = `${name(iso)} ${rtxt(P.countries[iso][CFG.r])}`;
+      const hw = ((label.length * 8 + 16) / W) * 50, hh = (34 / H) * 100;
+      const hit = (dn) => placed.some((q) => Math.abs(q.x - x) < q.hw + hw && (dn ? q.dn && Math.abs(q.y - y) < hh : !q.dn && Math.abs(q.y - y) < hh));
+      const dn = hit(false) && !hit(true);
+      placed.push({ x, y, hw, dn });
+      return `<a class="pin${dn ? " dn" : ""}" href="/c/${iso.toLowerCase()}/" style="left:${x}%;top:${y}%"><span>${esc(name(iso))} <b>${rtxt(P.countries[iso][CFG.r])}</b></span><i aria-hidden="true"></i></a>`;
     }).join(""));
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
@@ -259,17 +283,15 @@
   const srcLinks = (src) => (src || []).map(([l, u]) => ` <a class="srcl" href="${esc(safeUrl(u))}" rel="nofollow noopener" target="_blank">${esc(l)}</a>`).join("");
 
   // 크게 바뀐 나라
-  function miniRows(list, cols, empty, withWhy) {
+  function miniRows(list, cols, empty) {
     if (!list.length) return `<li class="state">${esc(empty)}</li>`;
     return `<li class="h" aria-hidden="true"><span>나라</span><span class="n">${cols[0]}</span><span class="x">${cols[1]}</span></li>` + list.slice(0, 10).map((iso) => {
       const [n, x, cls] = cols[2](P.countries[iso]);
-      const w = withWhy && why(iso);
-      return `<li data-iso="${iso}"><span class="nmw">${cname(iso)}${w ? `<span class="why">${esc(w)}</span>` : ""}</span><span class="n">${n}</span><span class="x ${cls}">${x}</span></li>`;
+      return `<li data-iso="${iso}"><span class="nmw">${cname(iso)}</span><span class="n">${n}</span><span class="x ${cls}">${x}</span></li>`;
     }).join("");
   }
   function renderMoves() {
-    $("#surge").innerHTML = miniRows(surgeList(), [CFG.art, "평소 대비", (c) => [fmt(c[CFG.n]), rtxt(c[CFG.r]), "up"]],
-      P.baseline_days < 3 ? `평소 수준을 계산할 자료가 ${P.baseline_days}일치뿐이라 아직 고르지 않습니다.` : `${ED === "invest" ? "시장 기사 50건" : "기사 100건"} 넘는 나라 중 평소의 1.6배를 넘은 곳이 없습니다.`, true);
+    renderSurge();
     $("#risk").innerHTML = miniRows(P.rank.risk || [], ["시장 기사", "논조 변화", (c) => [fmt(c.i), sign(c.dt), "down"]],
       P.baseline_days < 3 ? "평소 논조를 계산할 자료가 아직 모자랍니다." : "평소보다 논조가 나빠진 나라가 없습니다.");
   }
@@ -309,9 +331,8 @@
       return;
     }
     renderAlert();
-    renderIssues();
+    renderBrief();
     renderKorea();
-    renderHead();
   }
   // 세계에서 있었던 일(위키백과 Portal:Current events, CC BY-SA 4.0)
   async function loadNews() {
@@ -443,7 +464,7 @@
     $("#lead").textContent = CFG.lead;
     const as = $("#asof");
     const late = Date.now() - Date.parse(P.asof) > 3 * 3600e3;
-    as.textContent = `${clock(P.asof)} 기준, 24시간 전 세계 기사 ${fmt(P.global.n)}건${B && B.at ? `. AI 정리 ${B.at.slice(11, 16)}` : ""}`;
+    as.textContent = `${clock(P.asof)} 기준`;
     as.classList.toggle("stale", late);
     as.classList.remove("bad");
     if (late) as.title = "GDELT 파일이 평소보다 늦게 올라오고 있습니다"; else as.removeAttribute("title");
@@ -458,7 +479,7 @@
     renderRank();
     paintMap();
     renderPins();
-    if (first) { renderIssues(); renderKorea(); renderMoves(); renderAlert(); renderMultiples(); renderCal(); }
+    if (first) { renderKpis(); renderBrief(); renderKorea(); renderMoves(); renderAlert(); renderMultiples(); renderCal(); }
   }
 
   function showError() {

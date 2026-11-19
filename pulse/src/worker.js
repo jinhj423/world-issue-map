@@ -28,9 +28,9 @@ const fmt = (n) => (n == null ? "없음" : Number(n).toLocaleString("ko-KR"));
 const josa = (w, a, b) => { const c = (w || "").charCodeAt((w || "").length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
 
 const ED = {
-  general: { path: "/", h1: "세계가 많이 다룬 이슈", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라",
+  general: { path: "/", h1: "세계가 많이 다룬 이슈", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라", topT: "가장 많이 다룬 나라",
     lead: "최근 24시간 기사 수와 평소 대비 변화로 매긴 0~100 점수입니다.", key: "g", n: "n", r: "r", hk: "h", rank: "general", cats: "general_cats" },
-  invest: { path: "/invest/", h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라",
+  invest: { path: "/invest/", h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라", topT: "시장 기사가 가장 많은 나라",
     lead: "경제·시장·에너지·무역 기사만 세어 매긴 0~100 점수입니다. 투자 권유가 아닙니다.", key: "gi", n: "i", r: "ir", hk: "hi", rank: "invest", cats: "invest_cats" },
 };
 const flag = (iso, lazy = true) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18"${lazy ? ' loading="lazy"' : ""}>`;
@@ -77,12 +77,12 @@ function surgeOf(p, ed) {
 const arrow = (r) => ({ up: "▲ ", down: "▼ " }[upDown(r)] || "");
 const rtxt = (r) => (r == null ? "계산 중" : `${arrow(r)}${r.toFixed(1)}배`);
 
-// 순위 줄 — app.js renderRank와 같은 모양(지수 막대, 평소 대비 화살표)
-function rankRows(p, ed, limit = 12) {
+// 순위 줄 — app.js renderRank와 같은 모양(평소 대비 화살표)
+function rankRows(p, ed, limit = 10) {
   const e = ED[ed];
   return (p.rank[e.rank] || []).slice(0, limit).map((iso, k) => {
     const c = p.countries[iso], m = p.meta[iso] || {};
-    return `<li data-iso="${iso}"><span class="rn">${k + 1}</span><span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(m.ko || iso)}</a></span><span class="rb" aria-hidden="true"><i style="width:${c[e.key]}%"></i></span><span class="ix">${c[e.key]}</span><span class="rt ${upDown(c[e.r])}">${rtxt(c[e.r])}</span></li>`;
+    return `<li data-iso="${iso}"><span class="rn">${k + 1}</span><span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(m.ko || iso)}</a></span><span class="ix">${c[e.key]}</span><span class="rt ${upDown(c[e.r])}">${rtxt(c[e.r])}</span></li>`;
   }).join("");
 }
 
@@ -93,24 +93,46 @@ function evTop(p, iso) {
   for (const x of (p.countries[iso] || {}).e || []) if (x[1] >= 10 && x[2] != null && x[2] >= 1.5 && (!best || sc(x) > sc(best))) best = x;
   return best;
 }
+const evNm = (p, g) => (p.evk || {})[g] || g;
+const koName = (p, iso) => esc((p.meta[iso] || {}).ko || iso);
 
-// 오늘의 이슈 — AI 세계 브리핑을 카드로 서버에서 그려 둔다(검색·광고 심사가 읽는 우리 글). app.js issueCard와 같은 모양.
-function issueCards(p, br, ed) {
-  const items = br.world.items;
-  const nm = (iso) => esc((p.meta[iso] || {}).ko || iso);
-  const sg = surgeOf(p, ed)[0];
-  const card = (it, i) => {
-    const iso = (it.c || []).find((x) => p.countries[x]);
-    const c = iso && p.countries[iso];
-    const head = `<div class="iss-top">${it.k ? `<span class="iss-cat">${esc(it.k)}</span>` : ""}${i === 0 && iso && iso === sg ? `<span class="iss-badge">가장 크게 늘어남</span>` : ""}<span class="iss-fl">${(it.c || []).slice(0, 2).map((x) => flag(x, i > 2)).join("")}</span></div>`;
-    if (i > 0) return `<article class="iss">${head}<h3 class="iss-t">${esc(it.t)}</h3>${c ? `<a class="iss-d" href="/c/${iso.toLowerCase()}/">${nm(iso)} 기사 ${fmt(c.n)}건 <span class="${upDown(c.r)}">평소 ${rtxt(c.r)}</span></a>` : ""}</article>`;
-    const ai = iso && (br.countries || {})[iso];
-    const ev = iso && evTop(p, iso);
-    const cell = (l, v, cls = "") => `<div><span>${esc(l)}</span><b class="${cls}">${v}</b></div>`;
-    return `<article class="iss lead">${head}<h2 class="iss-t">${esc(it.t)}</h2>${ai && ai.s ? `<p class="iss-s">${esc(ai.s)}</p>` : ""}${c ? `<div class="iss-m">${cell(`${(p.meta[iso] || {}).ko || iso} 24시간 기사`, `${fmt(c.n)}건`)}${cell("평소 대비", rtxt(c.r), upDown(c.r))}${ev ? cell(`${(p.evk || {})[ev[0]] || ev[0]} 보도`, ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2]), "up") : ""}<a class="iss-go" href="/c/${iso.toLowerCase()}/">${nm(iso)} 자세히</a></div>` : ""}</article>`;
-  };
-  const cards = items.map(card);
-  return `<div class="iss-row">${cards[0]}<div class="iss-side">${cards.slice(1, 3).join("")}</div></div>${cards.length > 3 ? `<div class="iss-grid">${cards.slice(3).join("")}</div>` : ""}`;
+// 요약 띠 네 칸 — app.js renderKpis와 같은 모양
+function kpiStrip(p, ed) {
+  const e = ED[ed];
+  const top = (p.rank[e.rank] || [])[0], sg = surgeOf(p, ed)[0];
+  const cats = p[e.cats].map((k) => [k, p.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
+  const who = (iso, tail) => `<a class="kv" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}${koName(p, iso)}${tail}</a>`;
+  const cell = (l, v) => `<div class="kc"><span class="kl">${esc(l)}</span>${v}</div>`;
+  return [
+    cell("24시간 전 세계 기사", `<span class="kv">${fmt(p.global.n)}</span>`),
+    cell(e.topT, top ? who(top, ` <small>${fmt(p.countries[top][e.n])}건</small>`) : `<span class="kv">없음</span>`),
+    cell("평소보다 가장 크게 늘어난 곳", sg ? who(sg, ` <b class="up">${rtxt(p.countries[sg][e.r])}</b>`) : `<span class="kv"><small>1.6배 넘은 곳 없음</small></span>`),
+    cell("가장 많이 다룬 분야", cats[0] ? `<span class="kv">${esc(p.cats[cats[0][0]])} <small>기사의 ${Math.round((100 * cats[0][1]) / Math.max(1, p.global.n))}%</small></span>` : `<span class="kv">없음</span>`),
+  ].join("");
+}
+
+// AI 브리핑 — 서버에서 그려 둔다(검색·광고 심사가 읽는 우리 글). app.js renderBrief와 같은 모양.
+function briefBody(p, br) {
+  const [it, ...rest] = br.world.items;
+  const iso = (it.c || []).find((x) => p.countries[x]);
+  const c = iso && p.countries[iso], ev = iso && evTop(p, iso);
+  const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}${koName(p, iso)} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evNm(p, ev[0]))} ${ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2])}</span>` : ""}</div>` : "";
+  const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i, false)).join("");
+  return `${it.k ? `<span class="bl-k">${esc(it.k)}</span>` : ""}<p class="bl-t">${esc(it.t)}</p>${chips}<ul class="bl-l">${rest.map((x) => {
+    const j = (x.c || []).find((y) => p.countries[y]);
+    return `<li><span class="bl-f">${fl(x)}</span><span>${x.k ? `<span class="bl-k">${esc(x.k)}</span>` : ""}${j ? `<a href="/c/${j.toLowerCase()}/">${esc(x.t)}</a>` : esc(x.t)}</span></li>`;
+  }).join("")}</ul>`;
+}
+
+// 평소보다 크게 늘어난 곳 — app.js renderSurge와 같은 모양
+function surgeRows(p, ed) {
+  const e = ED[ed], xs = surgeOf(p, ed).slice(0, 6);
+  if (!xs.length) return "";
+  const max = Math.max(...xs.map((i) => p.countries[i][e.r] || 0));
+  return xs.map((iso) => {
+    const c = p.countries[iso], ev = evTop(p, iso);
+    return `<li data-iso="${iso}"><a class="sg-r" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}<span class="sg-n">${koName(p, iso)}</span><span class="sg-b" aria-hidden="true"><i style="width:${((100 * c[e.r]) / max).toFixed(1)}%"></i></span><b class="up">${rtxt(c[e.r])}</b></a><p class="sg-w">${ev ? `${esc(evNm(p, ev[0]))} 늘어남, ` : ""}${ed === "invest" ? "시장 기사" : "기사"} ${fmt(c[e.n])}건</p></li>`;
+  }).join("");
 }
 
 // 한국은 지금 — app.js renderKorea와 같은 모양
@@ -118,7 +140,7 @@ function koreaBand(p, br, ed) {
   const e = ED[ed], c = p.countries.KR;
   const rk = (p.rank[e.rank] || []).indexOf("KR");
   const ai = br && (br.countries || {}).KR;
-  return `<div class="kb-h">${flag("KR", false)}<h2 id="h-kr">한국은 지금</h2></div><dl class="kb-n"><div><dt>순위</dt><dd>${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</dd></div><div><dt>평소 대비</dt><dd class="${upDown(c[e.r])}">${rtxt(c[e.r])}</dd></div><div><dt>24시간 ${ed === "invest" ? "시장 기사" : "기사"}</dt><dd>${fmt(c[e.n])}</dd></div></dl><p class="kb-t">${ai && ai.s ? esc(ai.s) : "AI 요약을 준비하는 중입니다."}</p><a class="kb-go" href="/c/kr/">한국 페이지</a>`;
+  return `<div class="kb-h">${flag("KR", false)}<h2 id="h-kr">한국은 지금</h2><span class="kb-n">${rk >= 0 ? `${rk + 1}위` : "순위 밖"} <b class="${upDown(c[e.r])}">${rtxt(c[e.r])}</b></span></div><p class="kb-t">${ai && ai.s ? esc(ai.s) : "AI 요약을 준비하는 중입니다."}</p><a class="kb-go" href="/c/kr/">한국 페이지</a>`;
 }
 
 async function homePage(req, env, ed) {
@@ -145,8 +167,11 @@ async function homePage(req, env, ed) {
     .on("#h-rank", { element(el) { el.setInnerContent(e.rankT); } })
     .on("#lead", { element(el) { el.setInnerContent(e.lead); } })
     .on(`.tabs a[data-ed="${ed}"]`, { element(el) { el.setAttribute("aria-current", "page"); } })
-    .on("#asof", { element(el) { if (p) el.setInnerContent(`${clockKo(p.asof)} 기준, 24시간 전 세계 기사 ${fmt(p.global.n)}건${hasW && br.at ? `. AI 정리 ${String(br.at).slice(11, 16)}` : ""}`); } })
-    .on("#issues", { element(el) { if (hasW) el.setInnerContent(issueCards(p, br, ed), { html: true }); } })
+    .on("#asof", { element(el) { if (p) el.setInnerContent(`${clockKo(p.asof)} 기준`); } })
+    .on("#kpis", { element(el) { if (p) el.setInnerContent(kpiStrip(p, ed), { html: true }); } })
+    .on("#brief-body", { element(el) { if (hasW) el.setInnerContent(briefBody(p, br), { html: true }); } })
+    .on("#brief-at", { element(el) { if (hasW && br.at) el.setInnerContent(`AI 정리 ${String(br.at).slice(11, 16)}`); } })
+    .on("#surge", { element(el) { const r = p && surgeRows(p, ed); if (r) el.setInnerContent(r, { html: true }); } })
     .on("#korea", { element(el) { if (hasK) { el.removeAttribute("hidden"); el.setInnerContent(koreaBand(p, br, ed), { html: true }); } } })
     .on("#rank", { element(el) { if (p) el.setInnerContent(rankRows(p, ed), { html: true }); } });
   const out = rw.transform(res);
@@ -267,7 +292,7 @@ function aboutPage(req) {
 <h2>앱으로 설치</h2>
 <p>휴대폰 홈 화면에 앱처럼 둘 수 있습니다. 안드로이드 크롬·삼성 인터넷은 위쪽의 내려받기 단추(또는 브라우저 메뉴의 "앱 설치"·"홈 화면에 추가")를 누르면 됩니다. 아이폰 사파리는 아래쪽 공유 단추 → "홈 화면에 추가"를 누릅니다. 설치한 뒤에는 인터넷이 끊겨도 마지막으로 본 화면이 열립니다.</p>
 <h2>AI 요약</h2>
-<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 여러 언어의 기사 제목 표본(최근 24시간, 최대 25개)과 위키백과 주요 사건, 평소보다 늘어난 사건 종류를 Claude(AI)가 함께 읽고 새로 쓴 한 줄 요약과 이슈 2~3줄입니다. 첫 화면의 "오늘의 이슈" 카드는 이 나라별 요약과 위키백과 사건, 보도가 크게 늘어난 나라를 다시 읽고 오늘의 큰 흐름 5~6가지를 골라 분야를 붙인 것입니다. 카드 아래 숫자(기사 수, 평소 대비)는 AI가 아니라 GDELT 기사 수로 센 값입니다. 둘 다 2시간마다 다시 씁니다.</p>
+<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 여러 언어의 기사 제목 표본(최근 24시간, 최대 25개)과 위키백과 주요 사건, 평소보다 늘어난 사건 종류를 Claude(AI)가 함께 읽고 새로 쓴 한 줄 요약과 이슈 2~3줄입니다. 첫 화면의 "AI 브리핑"은 이 나라별 요약과 위키백과 사건, 보도가 크게 늘어난 나라를 다시 읽고 오늘의 큰 흐름 5~6가지를 골라 분야를 붙인 것입니다. 첫 줄 아래 숫자(기사 수, 평소 대비)는 AI가 아니라 GDELT 기사 수로 센 값입니다. 둘 다 2시간마다 다시 씁니다.</p>
 <p>여러 제목에서 되풀이되는 사실만 뽑아 직접 쓴 문장이며, 기사 제목 문장은 화면에 옮기지 않습니다(한국어 제목과 15자 넘게 겹치는 문장은 자동으로 버립니다). 원인 추측·평가·전망은 쓰지 않지만, AI가 쓴 글이라 틀리거나 빠뜨린 내용이 있을 수 있습니다. 한국·북한·미국·중국·일본·러시아·우크라이나·대만·이스라엘·이란은 늘 요약합니다.</p>
 <h2>싣지 않는 것</h2>
 <p>기사 제목과 본문은 언론사 저작물이라 싣지 않습니다. 언론사 이름과 원문 주소만 남깁니다.</p>
