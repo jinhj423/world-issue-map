@@ -71,6 +71,7 @@ p { margin: 0; }
 .theme:hover { border-color: var(--acc); color: var(--ink); }
 .theme svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .theme .sun { display: none; }
+.inst[hidden] { display: none; }
 :root[data-theme="dark"] .theme .sun { display: block; }
 :root[data-theme="dark"] .theme .moon { display: none; }
 .about { font-size: 13px; color: var(--ink2); text-decoration: none; white-space: nowrap; }
@@ -372,7 +373,7 @@ body.page .about + .theme { margin-left: 0; }
   .search { order: 5; width: 100%; margin: 0; }
   .asof { margin-left: auto; }
   .about { display: none; }
-  body.page .about { display: block; }
+  body.page .tabs { margin-right: auto; } /* 나라·출처 페이지: "방법과 출처"는 바닥글 링크로, 단추는 첫 줄 오른쪽에 */
   .card { padding: 16px; }
   .kpis { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 0; }
   .kpi { padding: 14px 16px; }

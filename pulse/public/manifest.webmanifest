@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "월드펄스 — 세계 보도 지수",
+  "short_name": "월드펄스",
+  "description": "전 세계 언론 기사 수를 15분마다 세어 나라별 보도 지수와 평소 대비 변화, AI 요약을 보여 줍니다.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F6F8",
+  "theme_color": "#F5F6F8",
+  "categories": ["news", "finance"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "투자자판", "short_name": "투자자", "url": "/invest/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "한국 보도 지수", "short_name": "한국", "url": "/c/kr/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}
