@@ -24,18 +24,18 @@ async function data(name) {
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n) => (n == null ? "없음" : Number(n).toLocaleString("ko-KR"));
-const ratioTxt = (r) => (r == null ? "계산 중" : `${r.toFixed(1)}배`);
 // 받침에 따라 조사(을/를, 이/가)를 붙인다
 const josa = (w, a, b) => { const c = (w || "").charCodeAt((w || "").length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
 
 const ED = {
-  general: { path: "/", h1: "전 세계 언론이 지금 다루는 나라", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라", topT: "가장 많이 다룬 나라",
+  general: { path: "/", h1: "세계가 많이 다룬 이슈", mapT: "세계 보도 지수", rankT: "지금 많이 다루는 나라",
     lead: "최근 24시간 기사 수와 평소 대비 변화로 매긴 0~100 점수입니다.", key: "g", n: "n", r: "r", hk: "h", rank: "general", cats: "general_cats" },
-  invest: { path: "/invest/", h1: "시장 관련 보도가 몰린 나라", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라", topT: "시장 보도가 가장 많은 나라",
+  invest: { path: "/invest/", h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라",
     lead: "경제·시장·에너지·무역 기사만 세어 매긴 0~100 점수입니다. 투자 권유가 아닙니다.", key: "gi", n: "i", r: "ir", hk: "hi", rank: "invest", cats: "invest_cats" },
 };
 const flag = (iso, lazy = true) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18"${lazy ? ' loading="lazy"' : ""}>`;
-const upDown = (r) => (r == null ? "" : r >= 1.1 ? "up" : r <= 0.9 ? "down" : "");
+// 화면에 보이는 소수 한 자리 값으로 판단한다(1.06은 "1.1배"로 보이므로 오른 쪽으로 친다)
+const upDown = (r) => (r == null ? "" : Math.round(r * 10) >= 11 ? "up" : Math.round(r * 10) <= 9 ? "down" : "");
 const clockKo = (iso) => (iso ? `${+iso.slice(5, 7)}월 ${+iso.slice(8, 10)}일 ${iso.slice(11, 16)}` : "알 수 없음");
 
 const dd = (d) => `${+d.slice(5, 7)}.${d.slice(8, 10)}`;
@@ -74,45 +74,65 @@ function surgeOf(p, ed) {
     .sort((a, b) => p.countries[b].ir - p.countries[a].ir);
 }
 
+const arrow = (r) => ({ up: "▲ ", down: "▼ " }[upDown(r)] || "");
+const rtxt = (r) => (r == null ? "계산 중" : `${arrow(r)}${r.toFixed(1)}배`);
+
+// 순위 줄 — app.js renderRank와 같은 모양(지수 막대, 평소 대비 화살표)
 function rankRows(p, ed, limit = 12) {
   const e = ED[ed];
   return (p.rank[e.rank] || []).slice(0, limit).map((iso, k) => {
     const c = p.countries[iso], m = p.meta[iso] || {};
-    return `<li data-iso="${iso}" aria-selected="${k === 0}"><span class="rn">${k + 1}</span><span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(m.ko || iso)}</a></span><span class="sp">${line(c[e.hk], 64, 24)}</span><span class="ix">${c[e.key]}</span><span class="rt ${upDown(c[e.r])}">${ratioTxt(c[e.r])}</span></li>`;
+    return `<li data-iso="${iso}"><span class="rn">${k + 1}</span><span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(m.ko || iso)}</a></span><span class="rb" aria-hidden="true"><i style="width:${c[e.key]}%"></i></span><span class="ix">${c[e.key]}</span><span class="rt ${upDown(c[e.r])}">${rtxt(c[e.r])}</span></li>`;
   }).join("");
 }
 
-function kpiTiles(p, ed) {
-  const e = ED[ed];
-  const nm = (iso) => esc((p.meta[iso] || {}).ko || iso);
-  const top = (p.rank[e.rank] || [])[0], sg = surgeOf(p, ed)[0];
-  const cats = p[e.cats].map((k) => [k, p.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
-  const who = (iso) => `<button type="button" class="kv" data-iso="${iso}">${flag(iso, false)}<span>${nm(iso)}</span></button>`;
-  const txt = (t) => `<span class="kv"><span>${esc(t)}</span></span>`;
-  const tc = top && p.countries[top], sc = sg && p.countries[sg];
-  const tiles = [
-    ["24시간 전 세계 기사", txt(fmt(p.global.n)), ed === "invest" ? `그중 시장·금리 분야 ${fmt(p.global.c.markets)}건` : "GDELT가 모은 영어와 65개 언어 기사"],
-    [e.topT, top ? who(top) : txt("없음"), tc ? `${fmt(tc[e.n])}건, 평소의 ${ratioTxt(tc[e.r])}` : "자료를 모으는 중입니다"],
-    ["평소보다 가장 크게 늘어난 나라", sg ? who(sg) : txt("아직 없음"), sc ? `평소의 ${ratioTxt(sc[e.r])}, ${fmt(sc[e.n])}건` : "평소의 1.6배를 넘은 곳이 없습니다"],
-    ["가장 많이 다룬 분야", txt(cats[0] ? p.cats[cats[0][0]] : "없음"), cats[1] ? `${fmt(cats[0][1])}건, 2위 ${p.cats[cats[1][0]]}` : ""],
-  ];
-  return tiles.map(([l, v, s]) => `<div class="kpi"><span class="kl">${esc(l)}</span>${v}<span class="ks">${esc(s)}</span></div>`).join("");
+// 이 나라에서 가장 크게 늘어난 사건 묶음(기사 10건 넘고 평소의 1.5배 이상, 기사 수 × 배수가 가장 큰 것)
+function evTop(p, iso) {
+  let best = null;
+  const sc = (x) => x[1] * Math.min(5, x[2]);
+  for (const x of (p.countries[iso] || {}).e || []) if (x[1] >= 10 && x[2] != null && x[2] >= 1.5 && (!best || sc(x) > sc(best))) best = x;
+  return best;
 }
 
-// AI 세계 브리핑 — 첫 화면에 서버에서 그려 둔다(검색·광고 심사가 읽는 우리 글)
-function worldRows(p, br) {
-  return br.world.items.map((it) => `<li><p>${esc(it.t)}</p>${(it.c || []).length ? `<span class="wbc">${it.c.map((iso) => `<span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc((p.meta[iso] || {}).ko || iso)}</a></span>`).join("")}</span>` : ""}</li>`).join("");
+// 오늘의 이슈 — AI 세계 브리핑을 카드로 서버에서 그려 둔다(검색·광고 심사가 읽는 우리 글). app.js issueCard와 같은 모양.
+function issueCards(p, br, ed) {
+  const items = br.world.items;
+  const nm = (iso) => esc((p.meta[iso] || {}).ko || iso);
+  const sg = surgeOf(p, ed)[0];
+  const card = (it, i) => {
+    const iso = (it.c || []).find((x) => p.countries[x]);
+    const c = iso && p.countries[iso];
+    const head = `<div class="iss-top">${it.k ? `<span class="iss-cat">${esc(it.k)}</span>` : ""}${i === 0 && iso && iso === sg ? `<span class="iss-badge">가장 크게 늘어남</span>` : ""}<span class="iss-fl">${(it.c || []).slice(0, 2).map((x) => flag(x, i > 2)).join("")}</span></div>`;
+    if (i > 0) return `<article class="iss">${head}<h3 class="iss-t">${esc(it.t)}</h3>${c ? `<a class="iss-d" href="/c/${iso.toLowerCase()}/">${nm(iso)} 기사 ${fmt(c.n)}건 <span class="${upDown(c.r)}">평소 ${rtxt(c.r)}</span></a>` : ""}</article>`;
+    const ai = iso && (br.countries || {})[iso];
+    const ev = iso && evTop(p, iso);
+    const cell = (l, v, cls = "") => `<div><span>${esc(l)}</span><b class="${cls}">${v}</b></div>`;
+    return `<article class="iss lead">${head}<h2 class="iss-t">${esc(it.t)}</h2>${ai && ai.s ? `<p class="iss-s">${esc(ai.s)}</p>` : ""}${c ? `<div class="iss-m">${cell(`${(p.meta[iso] || {}).ko || iso} 24시간 기사`, `${fmt(c.n)}건`)}${cell("평소 대비", rtxt(c.r), upDown(c.r))}${ev ? cell(`${(p.evk || {})[ev[0]] || ev[0]} 보도`, ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2]), "up") : ""}<a class="iss-go" href="/c/${iso.toLowerCase()}/">${nm(iso)} 자세히</a></div>` : ""}</article>`;
+  };
+  const cards = items.map(card);
+  return `<div class="iss-row">${cards[0]}<div class="iss-side">${cards.slice(1, 3).join("")}</div></div>${cards.length > 3 ? `<div class="iss-grid">${cards.slice(3).join("")}</div>` : ""}`;
+}
+
+// 한국은 지금 — app.js renderKorea와 같은 모양
+function koreaBand(p, br, ed) {
+  const e = ED[ed], c = p.countries.KR;
+  const rk = (p.rank[e.rank] || []).indexOf("KR");
+  const ai = br && (br.countries || {}).KR;
+  return `<div class="kb-h">${flag("KR", false)}<h2 id="h-kr">한국은 지금</h2></div><dl class="kb-n"><div><dt>순위</dt><dd>${rk >= 0 ? `${rk + 1}위` : "순위 밖"}</dd></div><div><dt>평소 대비</dt><dd class="${upDown(c[e.r])}">${rtxt(c[e.r])}</dd></div><div><dt>24시간 ${ed === "invest" ? "시장 기사" : "기사"}</dt><dd>${fmt(c[e.n])}</dd></div></dl><p class="kb-t">${ai && ai.s ? esc(ai.s) : "AI 요약을 준비하는 중입니다."}</p><a class="kb-go" href="/c/kr/">한국 페이지</a>`;
 }
 
 async function homePage(req, env, ed) {
   const res = await env.ASSETS.fetch(new Request(new URL("/", req.url), { headers: req.headers }));
   const [p, br] = await Promise.all([data("pulse.json"), data("brief.json")]);
   const hasW = !!(p && br && br.world && (br.world.items || []).length);
+  const hasK = !!(p && p.countries.KR);
+  const day = p ? `${+p.asof.slice(5, 7)}월 ${+p.asof.slice(8, 10)}일, ` : "";
   const e = ED[ed];
   const top = p && p.rank[e.rank] && p.rank[e.rank][0];
   const topName = top ? (p.meta[top] || {}).ko : null;
-  const title = ed === "invest" ? "시장 관련 보도가 몰린 나라 | 월드펄스 투자자판" : "전 세계 언론이 지금 다루는 나라 | 월드펄스";
-  const desc = topName ? `${clockKo(p.asof)} 기준 ${e.h1.replace(" 나라", "")} 1위는 ${topName}입니다. GDELT 전 세계 기사 수로 15분마다 다시 셉니다.` : e.lead;
+  const title = ed === "invest" ? "투자자가 볼 세계 이슈 | 월드펄스 투자자판" : "세계가 많이 다룬 이슈 | 월드펄스";
+  const lead = hasW ? br.world.items[0].t : "";
+  const desc = lead ? `${clockKo(p.asof)} 기준 오늘 세계 언론이 많이 다룬 일: ${lead}` : topName ? `${clockKo(p.asof)} 기준 ${e.rankT} 1위는 ${topName}입니다. GDELT 전 세계 기사 수로 15분마다 다시 셉니다.` : e.lead;
   const rw = new HTMLRewriter()
     .on("body", { element(el) { el.setAttribute("data-ed", ed); } })
     .on("title", { element(el) { el.setInnerContent(title); } })
@@ -120,16 +140,15 @@ async function homePage(req, env, ed) {
     .on('meta[property="og:title"]', { element(el) { el.setAttribute("content", title); } })
     .on('meta[property="og:description"]', { element(el) { el.setAttribute("content", desc); } })
     .on('link[rel="canonical"]', { element(el) { el.setAttribute("href", new URL(e.path, req.url).href); } })
-    .on("#h-board", { element(el) { el.setInnerContent(e.h1); } })
+    .on("#h-board", { element(el) { el.setInnerContent(day + e.h1); } })
     .on("#h-map", { element(el) { el.setInnerContent(e.mapT); } })
     .on("#h-rank", { element(el) { el.setInnerContent(e.rankT); } })
     .on("#lead", { element(el) { el.setInnerContent(e.lead); } })
     .on(`.tabs a[data-ed="${ed}"]`, { element(el) { el.setAttribute("aria-current", "page"); } })
-    .on("#asof", { element(el) { if (p) el.setInnerContent(`${clockKo(p.asof)} 기준`); } })
-    .on("#kpis", { element(el) { if (p) el.setInnerContent(kpiTiles(p, ed), { html: true }); } })
-    .on("#rank", { element(el) { if (p) el.setInnerContent(rankRows(p, ed), { html: true }); } })
-    .on("#wbrief", { element(el) { if (hasW) el.removeAttribute("hidden"); } })
-    .on("#wb", { element(el) { if (hasW) el.setInnerContent(worldRows(p, br), { html: true }); } });
+    .on("#asof", { element(el) { if (p) el.setInnerContent(`${clockKo(p.asof)} 기준, 24시간 전 세계 기사 ${fmt(p.global.n)}건${hasW && br.at ? `. AI 정리 ${String(br.at).slice(11, 16)}` : ""}`); } })
+    .on("#issues", { element(el) { if (hasW) el.setInnerContent(issueCards(p, br, ed), { html: true }); } })
+    .on("#korea", { element(el) { if (hasK) { el.removeAttribute("hidden"); el.setInnerContent(koreaBand(p, br, ed), { html: true }); } } })
+    .on("#rank", { element(el) { if (p) el.setInnerContent(rankRows(p, ed), { html: true }); } });
   const out = rw.transform(res);
   const h = new Headers(out.headers);
   h.set("cache-control", "public, max-age=60");
@@ -144,7 +163,7 @@ function shell(req, title, desc, body, canonical, status = 200) {
 <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="월드펄스"><meta name="mobile-web-app-capable" content="yes"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/app.css"><script src="/theme.js" defer></script><script src="/pwa.js" defer></script></head><body class="page">
-<header class="bar"><a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a><nav class="tabs" aria-label="판 고르기"><a href="/">일반</a><a href="/invest/">투자자</a></nav><a class="about" href="/about/">방법과 출처</a><button type="button" class="theme inst" id="install" aria-label="앱으로 설치" title="앱으로 설치" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></button><button type="button" class="theme" id="theme" aria-label="어두운 화면으로 바꾸기" title="어두운 화면으로 바꾸기"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button></header>
+<header class="top"><div class="bar"><a class="brand" href="/"><img src="/icon.svg" alt="" width="30" height="30">월드펄스</a><nav class="tabs" aria-label="판 고르기"><a href="/">일반</a><a href="/invest/">투자자</a></nav><a class="about" href="/about/">방법과 출처</a><button type="button" class="theme inst" id="install" aria-label="앱으로 설치" title="앱으로 설치" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></button><button type="button" class="theme" id="theme" aria-label="어두운 화면으로 바꾸기" title="어두운 화면으로 바꾸기"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button></div></header>
 <main class="wrap">${body}</main>
 <footer class="foot"><p>보도량 자료 <a href="https://www.gdeltproject.org/">The GDELT Project</a>. 기사 수와 분야는 GDELT가 분류한 값을 월드펄스가 다시 센 것입니다. 사건 종류 GDELT 사건 자료, 주요 사건 문장 위키백과(CC BY-SA 4.0). 국기 그림 <a href="https://github.com/lipis/flag-icons">flag-icons</a>(MIT), 지도 Natural Earth.</p><p>보도량 통계이며 투자 권유가 아닙니다. <a href="/about/">세는 방법과 출처</a></p></footer>
 </body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=120" } });
@@ -248,7 +267,7 @@ function aboutPage(req) {
 <h2>앱으로 설치</h2>
 <p>휴대폰 홈 화면에 앱처럼 둘 수 있습니다. 안드로이드 크롬·삼성 인터넷은 위쪽의 내려받기 단추(또는 브라우저 메뉴의 "앱 설치"·"홈 화면에 추가")를 누르면 됩니다. 아이폰 사파리는 아래쪽 공유 단추 → "홈 화면에 추가"를 누릅니다. 설치한 뒤에는 인터넷이 끊겨도 마지막으로 본 화면이 열립니다.</p>
 <h2>AI 요약</h2>
-<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 여러 언어의 기사 제목 표본(최근 24시간, 최대 25개)과 위키백과 주요 사건, 평소보다 늘어난 사건 종류를 Claude(AI)가 함께 읽고 새로 쓴 한 줄 요약과 이슈 2~3줄입니다. 첫 화면의 "AI 세계 브리핑"은 이 나라별 요약과 위키백과 사건, 보도가 크게 늘어난 나라를 다시 읽고 오늘의 큰 흐름 5~6가지를 고른 것입니다. 둘 다 2시간마다 다시 씁니다.</p>
+<p>나라마다 붙는 "AI 요약"은 그 나라를 다룬 여러 언어의 기사 제목 표본(최근 24시간, 최대 25개)과 위키백과 주요 사건, 평소보다 늘어난 사건 종류를 Claude(AI)가 함께 읽고 새로 쓴 한 줄 요약과 이슈 2~3줄입니다. 첫 화면의 "오늘의 이슈" 카드는 이 나라별 요약과 위키백과 사건, 보도가 크게 늘어난 나라를 다시 읽고 오늘의 큰 흐름 5~6가지를 골라 분야를 붙인 것입니다. 카드 아래 숫자(기사 수, 평소 대비)는 AI가 아니라 GDELT 기사 수로 센 값입니다. 둘 다 2시간마다 다시 씁니다.</p>
 <p>여러 제목에서 되풀이되는 사실만 뽑아 직접 쓴 문장이며, 기사 제목 문장은 화면에 옮기지 않습니다(한국어 제목과 15자 넘게 겹치는 문장은 자동으로 버립니다). 원인 추측·평가·전망은 쓰지 않지만, AI가 쓴 글이라 틀리거나 빠뜨린 내용이 있을 수 있습니다. 한국·북한·미국·중국·일본·러시아·우크라이나·대만·이스라엘·이란은 늘 요약합니다.</p>
 <h2>싣지 않는 것</h2>
 <p>기사 제목과 본문은 언론사 저작물이라 싣지 않습니다. 언론사 이름과 원문 주소만 남깁니다.</p>
