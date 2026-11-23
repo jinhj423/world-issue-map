@@ -34,7 +34,8 @@
   const upDown = (r) => (r == null ? "" : Math.round(r * 10) >= 11 ? "up" : Math.round(r * 10) <= 9 ? "down" : "");
   const cname = (iso) => `<span class="nm">${flag(iso)}<a href="/c/${iso.toLowerCase()}/">${esc(name(iso))}</a></span>`;
   const evName = (g) => (P.evk || {})[g] || g;
-  const evRatio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
+  // 평소 기사가 적던 사건은 배수가 수십 배로 튄다: 10배 넘으면 배수 대신 평소 건수를 보여 준다
+  const evRatio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : r >= 10 && b != null ? `평소 ${fmt(Math.round(b))}건` : `평소의 ${r.toFixed(1)}배`);
   // '왜 늘었나' 한 줄: 기사 10건 넘고 평소의 1.5배를 넘은 사건 묶음 중 기사 수 × 배수(5배까지)가 가장 큰 것
   function why(iso) {
     let best = null;
@@ -42,6 +43,8 @@
     for (const e of (P.countries[iso] || {}).e || []) if (e[1] >= 10 && e[2] != null && e[2] >= 1.5 && (!best || sc(e) > sc(best))) best = e;
     return best ? `${evName(best[0])} 늘어남` : "";
   }
+  // 나라가 안 붙은 브리핑 줄(세계 경제 등)에 국기 대신 넣는 지구 표시
+  const GLOBE = `<svg class="globe" viewBox="0 0 20 15" aria-hidden="true"><circle cx="10" cy="7.5" r="6.5"/><ellipse cx="10" cy="7.5" rx="2.8" ry="6.5"/><line x1="3.5" y1="7.5" x2="16.5" y2="7.5"/></svg>`;
   const dd = (d) => `${+d.slice(5, 7)}.${d.slice(8, 10)}`;
 
   async function getJSON(u) {
@@ -205,14 +208,14 @@
 
   // 요약 띠 네 칸 — worker.js kpiStrip과 같은 모양
   function renderKpis() {
-    const top = (P.rank[CFG.rank] || [])[0], sg = surgeList()[0];
+    const top = (P.rank[CFG.rank] || [])[0], sgs = surgeList();
     const cats = P[CFG.cats].map((k) => [k, P.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
     const who = (iso, tail) => `<a class="kv" href="/c/${iso.toLowerCase()}/">${flag(iso)}${esc(name(iso))}${tail}</a>`;
     const cell = (l, v) => `<div class="kc"><span class="kl">${esc(l)}</span>${v}</div>`;
     $("#kpis").innerHTML = [
       cell("24시간 전 세계 기사", `<span class="kv">${fmt(P.global.n)}</span>`),
       cell(CFG.topT, top ? who(top, ` <small>${fmt(P.countries[top][CFG.n])}건</small>`) : `<span class="kv">없음</span>`),
-      cell("평소보다 가장 크게 늘어난 곳", sg ? who(sg, ` <b class="up">${rtxt(P.countries[sg][CFG.r])}</b>`) : `<span class="kv"><small>${P.baseline_days < 3 ? "평소 수준 계산 중" : "1.6배 넘은 곳 없음"}</small></span>`),
+      cell("평소보다 크게 늘어난 나라", P.baseline_days < 3 ? `<span class="kv"><small>평소 수준 계산 중</small></span>` : `<span class="kv">${sgs.length}곳 <small>평소의 1.6배 넘음</small></span>`),
       cell("가장 많이 다룬 분야", cats[0] ? `<span class="kv">${esc(P.cats[cats[0][0]])} <small>기사의 ${Math.round((100 * cats[0][1]) / Math.max(1, P.global.n))}%</small></span>` : `<span class="kv">없음</span>`),
     ].join("");
   }
@@ -229,8 +232,8 @@
     const [it, ...rest] = xs;
     const iso = (it.c || []).find((x) => P.countries[x]);
     const c = iso && P.countries[iso], ev = iso && evTop(iso);
-    const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso)}${esc(name(iso))} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evName(ev[0]))} ${ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2])}</span>` : ""}</div>` : "";
-    const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i)).join("");
+    const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso)}${esc(name(iso))} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evName(ev[0]))} ${ev[3] != null && (ev[3] < 1 || ev[2] >= 10) ? `${fmt(ev[1])}건, ${evRatio(ev[2], ev[3])}` : rtxt(ev[2])}</span>` : ""}</div>` : "";
+    const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i)).join("") || GLOBE;
     box.innerHTML = `${it.k ? `<span class="bl-k">${esc(it.k)}</span>` : ""}<p class="bl-t">${esc(it.t)}</p>${chips}<ul class="bl-l">${rest.map((x) => {
       const j = (x.c || []).find((y) => P.countries[y]);
       return `<li><span class="bl-f">${fl(x)}</span><span>${x.k ? `<span class="bl-k">${esc(x.k)}</span>` : ""}${j ? `<a href="/c/${j.toLowerCase()}/">${esc(x.t)}</a>` : esc(x.t)}</span></li>`;
@@ -353,6 +356,13 @@
       placed.push({ x, y, hw, dn });
       return `<a class="pin${dn ? " dn" : ""}" href="/c/${iso.toLowerCase()}/" style="left:${x}%;top:${y}%"><span>${esc(name(iso))} <b>${rtxt(P.countries[iso][CFG.r])}</b></span><i aria-hidden="true"></i></a>`;
     }).join(""));
+    // 가장자리 나라(바누아투 등)는 이름표가 지도 밖으로 나가므로, 점은 그대로 두고 이름표만 안쪽으로 민다
+    const mb = box.getBoundingClientRect();
+    for (const s of box.querySelectorAll(".pin span")) {
+      const r = s.getBoundingClientRect(), pad = 4;
+      const dx = r.left < mb.left + pad ? mb.left + pad - r.left : r.right > mb.right - pad ? mb.right - pad - r.right : 0;
+      if (dx) s.style.transform = `translateX(${dx.toFixed(1)}px)`;
+    }
   }
   // 위키백과 문장: 한국어 번역(ko·kp)이 있으면 그것을, '원문' 단추로 영어를 펼친다
   const wtext = (it) => `${esc(it.ko || it.text)}${it.ko ? ` <button type="button" class="orig" aria-expanded="false">원문</button><span class="en" hidden>${esc(it.text)}</span>` : ""}`;
@@ -638,8 +648,8 @@
       });
       $("#more").addEventListener("click", () => { expanded = !expanded; renderRank(); fitCols(); });
       let rt = 0;
-      addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(fitCols, 150); });
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCols);
+      addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { fitCols(); renderPins(); }, 150); });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitCols(); renderPins(); });
       $("#news-days").addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && b.dataset.day !== newsDay) { newsDay = b.dataset.day; newsAll = false; renderNews(); } });
       $("#news-more").addEventListener("click", () => { newsAll = !newsAll; renderNews(); });
       $("#news-list").addEventListener("click", (e) => {

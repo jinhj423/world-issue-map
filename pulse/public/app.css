@@ -32,6 +32,10 @@
 :root[data-theme="dark"] .brand img { border-radius: 8px; box-shadow: 0 0 0 1px var(--line2); }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }
+/* 설치한 앱(PWA)에서 화면 맨 아래·가장자리까지 같은 바탕으로 그린다(viewport-fit=cover). html 바탕을 직접 정해 두어야
+ * 스크롤 끝에서 당겼을 때나 시스템 막대 뒤로 다른 색이 비치지 않는다. 내용은 안전 영역만큼 안쪽에 둔다. */
+html { background: var(--bg); }
+body { padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; font-feature-settings: "tnum"; -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 button, input { font: inherit; color: inherit; }
@@ -129,6 +133,7 @@ a.bl-chip:hover { color: var(--acc); }
 .bl-l a:hover { color: var(--acc); }
 .bl-f { display: flex; gap: 3px; padding-top: 3px; }
 .bl-f .flag { width: 20px; height: 15px; border-radius: 2px; }
+.bl-f .globe { width: 20px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 1.2; }
 
 /* 평소보다 크게 늘어난 곳 */
 .sg { list-style: none; margin: 0; padding: 0; }
@@ -275,6 +280,8 @@ a.bl-chip:hover { color: var(--acc); }
 .plain li > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .plain .v { color: var(--muted); white-space: nowrap; }
 .arts { list-style: none; margin: 0; padding: 0; }
+.artsd summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
+.artsd[open] summary { margin-bottom: 6px; }
 .arts li { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .arts li:last-child { border-bottom: 0; }
 .arts .t { color: var(--muted); font-size: 13px; white-space: nowrap; }
@@ -386,7 +393,7 @@ body[data-ed="general"] .inv { display: none; }
 .retry:hover { background: var(--acc-hover); }
 .retry:active { transform: translateY(1px); }
 
-.foot { max-width: var(--wrap); margin: 0 auto; padding: 4px var(--pad) 40px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+.foot { max-width: var(--wrap); margin: 0 auto; padding: 4px var(--pad) calc(40px + env(safe-area-inset-bottom)); color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
 .foot a { color: var(--ink2); }
 
 /* 서버에서 그리는 페이지(나라·방법과 출처) */
