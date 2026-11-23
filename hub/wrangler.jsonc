@@ -1,0 +1,9 @@
+{
+  // 링크 모음(내가 만든 서비스 목록) — 정적 파일만 내보내는 Worker.
+  // Cloudflare Workers Builds에서 이 저장소를 연결할 때 Root directory를 "hub"로 둔다.
+  "name": "hub",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./public" },
+  // 예약 실행 없음. 저장소 맨 위 설정(세계 이슈 지도)의 예약이 섞여 들어오지 않게 빈 목록을 적어 둔다.
+  "triggers": { "crons": [] }
+}
