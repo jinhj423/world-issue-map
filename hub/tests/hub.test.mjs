@@ -16,7 +16,7 @@ test("서비스 링크는 모두 https이고 새 창으로 열린다", () => {
 });
 
 test("공개 서비스가 모두 들어 있다", () => {
-  for (const host of ["kson-ledger", "world-pulse", "wnm", "econ-flow", "research-notes"]) {
+  for (const host of ["kson-ledger", "congress-ledger", "world-pulse", "wnm", "econ-flow", "research-notes"]) {
     assert.ok(links.some((u) => u.includes(`${host}.jinhj423-42b.workers.dev`)), host);
   }
 });
