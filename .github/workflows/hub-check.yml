@@ -1,0 +1,31 @@
+name: 링크 모음 점검
+# hub/ 를 바꿔 푸시하면(브랜치 포함) 페이지 테스트를 돌리고, 페이지에 적힌 모든 링크가 실제로 열리는지 확인한다.
+# 작업 환경에서는 workers.dev 접속이 막혀 있어 이 결과로 링크를 확인한다.
+on:
+  push:
+    paths: ["hub/**", ".github/workflows/hub-check.yml"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: 페이지 테스트
+        run: node --test hub/tests/hub.test.mjs
+      - name: 링크 응답 확인
+        run: |
+          fail=0
+          for u in $(grep -o 'class="r" href="[^"]*"' hub/public/index.html | sed 's/.*href="//;s/"$//'); do
+            code=$(curl -s -L -o /tmp/p.html -w "%{http_code}" -m 20 "$u" || echo 000)
+            title=$(grep -o -m1 '<title>[^<]*' /tmp/p.html | sed 's/<title>//' || true)
+            printf "%-50s %s  %s\n" "$u" "$code" "$title"
+            [ "$code" = "200" ] || fail=1
+          done
+          echo "## 링크 모음 자체"
+          curl -s -o /dev/null -w "hub.jinhj423-42b.workers.dev %{http_code}\n" -m 20 https://hub.jinhj423-42b.workers.dev/ || true
+          exit $fail
