@@ -24,7 +24,8 @@ jobs:
             code=$(curl -s -L -o /tmp/p.html -w "%{http_code}" -m 20 "$u" || echo 000)
             title=$(grep -o -m1 '<title>[^<]*' /tmp/p.html | sed 's/<title>//' || true)
             printf "%-50s %s  %s\n" "$u" "$code" "$title"
-            [ "$code" = "200" ] || fail=1
+            # 401은 비밀번호 잠금 서비스(리서치노트)의 정상 응답
+            case "$code" in 200|401) ;; *) fail=1 ;; esac
           done
           echo "## 링크 모음 자체"
           curl -s -o /dev/null -w "hub.jinhj423-42b.workers.dev %{http_code}\n" -m 20 https://hub.jinhj423-42b.workers.dev/ || true
