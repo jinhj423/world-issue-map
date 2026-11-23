@@ -33,6 +33,11 @@ const ED = {
   invest: { path: "/invest/", h1: "투자자가 볼 세계 이슈", mapT: "시장 보도 지수", rankT: "시장 보도가 몰린 나라", topT: "시장 기사가 가장 많은 나라",
     lead: "경제·시장·에너지·무역 기사만 세어 매긴 0~100 점수입니다. 투자 권유가 아닙니다.", key: "gi", n: "i", r: "ir", hk: "hi", rank: "invest", cats: "invest_cats" },
 };
+// 평소 기사가 적던 사건은 배수가 수십 배로 튄다: 10배 넘으면 배수 대신 평소 건수 (app.js evRatio와 같음)
+const evRatio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : r >= 10 && b != null ? `평소 ${fmt(Math.round(b))}건` : `평소의 ${r.toFixed(1)}배`);
+const GLOBE = `<svg class="globe" viewBox="0 0 20 15" aria-hidden="true"><circle cx="10" cy="7.5" r="6.5"/><ellipse cx="10" cy="7.5" rx="2.8" ry="6.5"/><line x1="3.5" y1="7.5" x2="16.5" y2="7.5"/></svg>`;
+// 인물 이름은 GDELT가 소문자로 주므로 낱말 첫 글자만 대문자로
+const titled = (s) => String(s).replace(/(^|[\s\-'.])(\p{Ll})/gu, (m, a, c) => a + c.toUpperCase());
 const flag = (iso, lazy = true) => `<img class="flag" src="/flags/${iso.toLowerCase()}.svg" alt="" width="24" height="18"${lazy ? ' loading="lazy"' : ""}>`;
 // 화면에 보이는 소수 한 자리 값으로 판단한다(1.06은 "1.1배"로 보이므로 오른 쪽으로 친다)
 const upDown = (r) => (r == null ? "" : Math.round(r * 10) >= 11 ? "up" : Math.round(r * 10) <= 9 ? "down" : "");
@@ -47,7 +52,7 @@ function whatHTML(p, n, iso, det, br) {
   const es = (p.countries[iso] || {}).e || [];
   const ai = br && (br.countries || {})[iso];
   const aiHTML = ai ? `<div class="aisum"><p><span class="ait">AI 요약</span>${esc(ai.s)}</p>${ai.pts && ai.pts.length ? `<ul class="aipts">${ai.pts.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${ai.k && ai.k.length ? `<p class="aik">${ai.k.map((k) => `<span class="tag">${esc(k)}</span>`).join("")}</p>` : ""}</div>` : "";
-  const ratio = (r, b) => (r == null ? "" : b != null && b < 1 ? "평소엔 거의 없음" : `평소의 ${r.toFixed(1)}배`);
+  const ratio = evRatio;
   const chips = es.map(([g, k, r, b]) => `<span class="evc"><b>${esc((p.evk || {})[g] || g)}</b> ${fmt(k)}건${r != null ? ` <i class="${r >= 1.5 ? "up" : r <= 0.67 ? "down" : ""}">${ratio(r, b)}</i>` : ""}</span>`).join("");
   // 사건 종류마다 뜻과 예시 기사(평소의 1.5배 넘게 늘어난 종류만) — 펼쳐 보기
   const exOf = (g) => { const x = ((det && det.ev) || {})[g]; return x ? (Array.isArray(x[0]) ? x : [x]) : []; };
@@ -99,14 +104,14 @@ const koName = (p, iso) => esc((p.meta[iso] || {}).ko || iso);
 // 요약 띠 네 칸 — app.js renderKpis와 같은 모양
 function kpiStrip(p, ed) {
   const e = ED[ed];
-  const top = (p.rank[e.rank] || [])[0], sg = surgeOf(p, ed)[0];
+  const top = (p.rank[e.rank] || [])[0], sgs = surgeOf(p, ed);
   const cats = p[e.cats].map((k) => [k, p.global.c[k] || 0]).sort((a, b) => b[1] - a[1]);
   const who = (iso, tail) => `<a class="kv" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}${koName(p, iso)}${tail}</a>`;
   const cell = (l, v) => `<div class="kc"><span class="kl">${esc(l)}</span>${v}</div>`;
   return [
     cell("24시간 전 세계 기사", `<span class="kv">${fmt(p.global.n)}</span>`),
     cell(e.topT, top ? who(top, ` <small>${fmt(p.countries[top][e.n])}건</small>`) : `<span class="kv">없음</span>`),
-    cell("평소보다 가장 크게 늘어난 곳", sg ? who(sg, ` <b class="up">${rtxt(p.countries[sg][e.r])}</b>`) : `<span class="kv"><small>1.6배 넘은 곳 없음</small></span>`),
+    cell("평소보다 크게 늘어난 나라", p.baseline_days < 3 ? `<span class="kv"><small>평소 수준 계산 중</small></span>` : `<span class="kv">${sgs.length}곳 <small>평소의 1.6배 넘음</small></span>`),
     cell("가장 많이 다룬 분야", cats[0] ? `<span class="kv">${esc(p.cats[cats[0][0]])} <small>기사의 ${Math.round((100 * cats[0][1]) / Math.max(1, p.global.n))}%</small></span>` : `<span class="kv">없음</span>`),
   ].join("");
 }
@@ -116,8 +121,8 @@ function briefBody(p, br) {
   const [it, ...rest] = br.world.items;
   const iso = (it.c || []).find((x) => p.countries[x]);
   const c = iso && p.countries[iso], ev = iso && evTop(p, iso);
-  const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}${koName(p, iso)} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evNm(p, ev[0]))} ${ev[3] != null && ev[3] < 1 ? "평소엔 거의 없음" : rtxt(ev[2])}</span>` : ""}</div>` : "";
-  const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i, false)).join("");
+  const chips = c ? `<div class="bl-c"><a class="bl-chip" href="/c/${iso.toLowerCase()}/">${flag(iso, false)}${koName(p, iso)} ${fmt(c.n)}건</a><span class="bl-chip ${upDown(c.r)}">평소 ${rtxt(c.r)}</span>${ev ? `<span class="bl-chip up">${esc(evNm(p, ev[0]))} ${ev[3] != null && (ev[3] < 1 || ev[2] >= 10) ? `${fmt(ev[1])}건, ${evRatio(ev[2], ev[3])}` : rtxt(ev[2])}</span>` : ""}</div>` : "";
+  const fl = (x) => (x.c || []).slice(0, 2).map((i) => flag(i, false)).join("") || GLOBE;
   return `${it.k ? `<span class="bl-k">${esc(it.k)}</span>` : ""}<p class="bl-t">${esc(it.t)}</p>${chips}<ul class="bl-l">${rest.map((x) => {
     const j = (x.c || []).find((y) => p.countries[y]);
     return `<li><span class="bl-f">${fl(x)}</span><span>${x.k ? `<span class="bl-k">${esc(x.k)}</span>` : ""}${j ? `<a href="/c/${j.toLowerCase()}/">${esc(x.t)}</a>` : esc(x.t)}</span></li>`;
@@ -181,7 +186,7 @@ async function homePage(req, env, ed) {
 }
 
 function shell(req, title, desc, body, canonical, status = 200) {
-  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(new URL(canonical, req.url).href)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta name="theme-color" content="#F4F4F3">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("wp-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
@@ -259,10 +264,10 @@ async function countryPage(req, iso) {
 </section>
 <section class="card">
   <div class="extra flat">
-    <div><h2 class="subh">많이 나온 인물</h2>${list(det.p, "건")}</div>
+    <div><h2 class="subh">많이 나온 인물</h2>${list(det.p.map(([k, v]) => [titled(k), v]), "건")}</div>
     <div><h2 class="subh">많이 나온 장소</h2>${list(det.l, "회")}</div>
     <div><h2 class="subh">많이 다룬 언론</h2>${list(det.src, "건")}</div>
-    <div class="artsbox"><h2 class="subh">최근 기사</h2>${arts}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p></div>
+    <div class="artsbox">${det.a.length ? `<details class="artsd"><summary>최근 기사 원문 링크 ${det.a.length}개</summary>${arts}</details>` : `<h2 class="subh">최근 기사</h2>${arts}`}<p class="note">기사 제목은 언론사 저작물이라 싣지 않고 원문으로 연결합니다.</p></div>
   </div>
 </section>`;
   return shell(req, `${name} 보도 지수 | 월드펄스`, sent.slice(0, 150), body, `/c/${iso.toLowerCase()}/`);
